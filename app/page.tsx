@@ -70,7 +70,7 @@ const projects = [
     status: "ACTIVE",
     title: "BILL & ONEIRO",
     copy:
-      "Two local-first systems: a conversational runtime wrapping a local model in memory, retrieval and verification alongside a from-scratch predictor, and a generative art system that teaches a NumPy pixel-art model continuously.",
+      "Two local-first systems: a conversational runtime wrapping a local model in memory, retrieval and verification alongside a from-scratch predictor, and a generative art system that teaches a NumPy pixel-art model continuously. Both run their model through Ollama — you must have Ollama installed; nothing is sent off the machine and there is no hosted fallback.",
     file: "/downloads/project-03-readme.txt",
   },
 ];
@@ -797,12 +797,15 @@ export default function Home() {
               <div className="notes-grid">
                 <article>
                   <p className="note-date">07 / 28 / 1996</p>
-                  <h3>WHY SMALL AGENTS ARE EASIER TO TRUST</h3>
+                  <h3>EVERY BACKTEST NEEDS A CONFIGURATION THAT CANNOT WIN</h3>
                   <p>
-                    A useful agent does not need to hide every detail behind one
-                    magical response. Small steps, visible tool calls, and
-                    reversible actions make failures easier to understand—and
-                    make ambitious systems much easier to improve.
+                    Two defects in my own market harness produced enormous
+                    fictitious profits. One clamped the modelled quote but not
+                    the fair value, inventing a spread out of nothing; the other
+                    compounded a bankroll with no position cap and returned
+                    10^250. Neither looked like an error. Both were caught by
+                    one rule: the zero-edge control must return exactly zero,
+                    and it is the first number you read.
                   </p>
                   <a
                     className="text-art-button"
@@ -811,8 +814,48 @@ export default function Home() {
                     Discuss this note via electronic mail →
                   </a>
                 </article>
+                <article>
+                  <p className="note-date">07 / 26 / 1996</p>
+                  <h3>A SILENT DECIDER IS WORSE THAN A SLOW ONE</h3>
+                  <p>
+                    My backward decider treated an exhausted search window as a
+                    contradiction, so it confidently certified the BB(2,4)
+                    champion — a machine that halts after 3,932,964 steps — as
+                    non-halting. It announced nothing. Exhaustion and refutation
+                    are different answers, and a decider that conflates them
+                    returns a proof it does not have.
+                  </p>
+                  <a
+                    className="text-art-button"
+                    href="/api/paper/001"
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    Read the full write-up →
+                  </a>
+                </article>
+                <article>
+                  <p className="note-date">07 / 21 / 1996</p>
+                  <h3>A PROBE PROVES PRESENCE, NOT USE</h3>
+                  <p>
+                    On a system built so the answer was known in advance, a
+                    channel decodable at 100 percent accuracy contributed 0.9998
+                    bits to a correlational description of a layer and 0.0006 to
+                    an interventional one. The network never used it. Reporting
+                    probe accuracy as a mechanistic result is off by roughly
+                    1600x there.
+                  </p>
+                  <a
+                    className="text-art-button"
+                    href="/api/paper/003"
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    Read the full write-up →
+                  </a>
+                </article>
                 <div className="artifact-drawer">
-                  <p className="artifact-title">WEB RESEARCH SURVIVAL KIT</p>
+                  <p className="artifact-title">CURRENT BENCH STATE</p>
                   <div className="artifact-stickers" aria-hidden="true">
                     <span>💾</span>
                     <span>📡</span>
@@ -820,8 +863,9 @@ export default function Home() {
                     <span>✦</span>
                   </div>
                   <ul>
-                    <li>1 floppy of half-finished ideas</li>
-                    <li>3 bookmarked paper directories</li>
+                    <li>4 Turing classes closed, 0 undecided</li>
+                    <li>1 negative result nobody wanted</li>
+                    <li>1 state-count question still open</li>
                     <li>∞ questions for tomorrow</li>
                   </ul>
                   <p className="artifact-status">MODEM LINK: READY_</p>

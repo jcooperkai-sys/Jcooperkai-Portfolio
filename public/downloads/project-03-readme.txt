@@ -9,6 +9,18 @@ A local language model wrapped in retrieval, durable memory, planning, grounding
 and verification, paired with a separate from-scratch predictor that can be read
 line by line.
 
+  REQUIREMENT -- YOU MUST HAVE OLLAMA INSTALLED
+  Bill runs its language model locally through Ollama. Without Ollama installed
+  and running, Bill will not start; there is no hosted fallback and no API key to
+  supply, because nothing is sent off the machine by design. Install Ollama from
+  ollama.com, then pull the model:
+
+      ollama pull llama3.2:3b
+      ollama serve
+
+  The from-scratch core (bill2, reachable via /legacy) is the one part that runs
+  without Ollama, since it uses no ML frameworks at all.
+
   Durable, user-confirmed memory that survives restarts
   Prioritised retrieval across a local corpus, a knowledge store, and web search
   A planning pass, an evidence contract, a factual verifier, a response gate
@@ -29,6 +41,11 @@ Repository: github.com/jcooperkai-sys/Bill
 
 --------------------------------------------------------------------------
 ONEIRO -- a continuously running generative art system
+
+  REQUIREMENT -- YOU MUST HAVE OLLAMA INSTALLED
+  The teacher model runs locally through Ollama, the same as Bill. Without it the
+  idea stream has no source and the system has nothing to learn from. The pixel-art
+  generator itself is pure NumPy and needs nothing beyond Python.
 
 A local model free-associates one word at a time. Each idea becomes a training
 example for a pixel-art generator written from scratch in NumPy, which then
