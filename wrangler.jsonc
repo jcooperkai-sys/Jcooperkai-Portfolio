@@ -1,0 +1,49 @@
+{
+  // Deploy configuration for jcooperkai.com.
+  //
+  // `vinext deploy` generates this file only when it is absent and preserves it otherwise, so the
+  // bindings below survive repeated deploys. It must stay in sync with `localBindingConfig` in
+  // vite.config.ts, which is the equivalent for the local dev server — the two are separate paths,
+  // and a binding added to only one of them silently does nothing on the other.
+  //
+  // Having this file at the repo root is also what lets `wrangler <command>` run from here at all;
+  // without it wrangler cannot resolve the worker name.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "jcooperkai-ai-lab",
+  "compatibility_date": "2026-07-29",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "./worker/index.ts",
+  "assets": {
+    "directory": "dist/client",
+    "not_found_handling": "none",
+    "binding": "ASSETS"
+  },
+  "images": {
+    "binding": "IMAGES"
+  },
+  // Edge rate limiting for the two routes that do work per request. These are Cloudflare Rate
+  // Limiting bindings rather than counters in the Worker: isolates do not share memory, so an
+  // in-process counter would limit nothing. namespace_id is a local label, not an account
+  // resource, so these need no dashboard step to become live.
+  "ratelimits": [
+    {
+      // Buddy calls a metered third-party model. Unlimited, one client can exhaust the free-tier
+      // quota and take Buddy down for every visitor.
+      "name": "BUDDY_LIMIT",
+      "namespace_id": "1001",
+      "simple": { "limit": 10, "period": 60 }
+    },
+    {
+      // Bounds KV write amplification against the free tier's 1,000 writes per day.
+      "name": "VISITS_LIMIT",
+      "namespace_id": "1002",
+      "simple": { "limit": 60, "period": 60 }
+    }
+  ]
+  // The visit counter's KV namespace is deliberately absent. Its id is an account resource that
+  // does not exist until `wrangler kv namespace create VISITS` has been run, and deploying with a
+  // wrong id fails. Add the block below once the real id exists — until then the counter reports
+  // the static figure with live:false, which is a supported state rather than a broken one.
+  //
+  // "kv_namespaces": [{ "binding": "VISITS", "id": "<id from wrangler kv namespace create VISITS>" }]
+}
