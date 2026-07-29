@@ -54,12 +54,9 @@ A WAF rate-limiting rule may still be layered on top, but is no longer a launch 
 npx wrangler kv namespace create VISITS
 ```
 
-Then build with the returned id in the environment, which is how it reaches the binding without
-being committed:
-
-```bash
-CF_KV_VISITS_ID=<id-from-the-command-above> npm run build
-``` Without it the counter reports the decorative figure and
+Then uncomment the `kv_namespaces` block at the bottom of `wrangler.jsonc`, paste the id in, and
+redeploy. wrangler.jsonc is the single source of truth for deploy bindings — declaring them in
+vite.config.ts as well put each one into the generated config twice. Without it the counter reports the decorative figure and
 `live: false`. See VISITS-SETUP.md.
 
 ## 4. Pre-flight checks

@@ -20,6 +20,8 @@ interface Env {
   BUDDY_LIMIT?: RateLimiter;
   /** 60 requests per minute per client. Absent under the local dev server. */
   VISITS_LIMIT?: RateLimiter;
+  /** 120 requests per minute per client, for the buffered read-back routes. */
+  ASSET_LIMIT?: RateLimiter;
 }
 
 /**
@@ -152,13 +154,20 @@ function applySecurityHeaders(response: Response, url: URL) {
     );
   }
 
-  // Papers and citations are plain text and should open in a tab rather than download. Because
-  // X-Content-Type-Options is nosniff, the browser will not infer this: an accurate Content-Type
-  // is required for inline rendering. Static hosting serves these as application/octet-stream,
-  // so correct it here (this also applies locally, where _headers is not honoured). The ZIP keeps
-  // its attachment disposition and is unaffected.
+  // Declare an accurate type for readable text, so a browser shows it instead of downloading it.
+  // With nosniff set, an inaccurate Content-Type means a download, and privacy.txt,
+  // security-policy.txt and the citation files are all linked as things to read.
+  //
+  // Honest caveat about where this actually takes effect: under the local dev server it does not.
+  // That layer re-derives Content-Type from the file extension after the Worker returns, which is
+  // the same override that forced the papers onto an extensionless route. Locally these still
+  // arrive as application/octet-stream no matter what is set here. In production the header applies,
+  // and public/_headers declares the same types as a second, independent guarantee.
+  //
+  // The ZIP is unaffected either way: neither extension matches, so it keeps its attachment
+  // disposition.
   const path = url.pathname.toLowerCase();
-  if (path.startsWith("/downloads/") && (path.endsWith(".txt") || path.endsWith(".bib"))) {
+  if (path.endsWith(".txt") || path.endsWith(".bib")) {
     headers.set("Content-Type", "text/plain; charset=utf-8");
   }
 
@@ -180,9 +189,11 @@ function applySecurityHeaders(response: Response, url: URL) {
  * Visitor counting.
  *
  * Counts unique visits without retaining personal data. The client address is never stored: it is
- * combined with a salt that rotates daily and hashed with SHA-256, and only that digest is written,
- * with a 24-hour expiry. The digest cannot be reversed to an address, and because the salt rotates,
- * today's digests cannot be correlated with yesterday's.
+ * combined with 32 random bytes generated per day and hashed with SHA-256, and only that digest is
+ * written, with a 24-hour expiry. Because the salt is random rather than derived from anything
+ * public, the digest cannot be reversed by hashing candidate addresses, and because it is replaced
+ * daily, today's digests cannot be correlated with yesterday's. See dailySalt for the full reasoning
+ * and the residual exposure.
  *
  * Recording happens on a GET so the Worker keeps accepting only GET and HEAD; no write method is
  * exposed. When no KV binding is present (local preview, or a host without KV) the endpoint reports
@@ -547,6 +558,11 @@ const worker = {
     // Experiment scripts and their raw output, read in a tab for the same reason as the papers.
     const textMatch = /^\/api\/experiment\/([a-z0-9-]+)$/.exec(decodedPathname);
     if (textMatch) {
+      if (await overLimit(env?.ASSET_LIMIT, request)) {
+        return textResponse(url, "Too many requests. Try again shortly.", 429, {
+          "Retry-After": "60",
+        });
+      }
       const assetPath = READABLE_TEXT[textMatch[1]];
       if (!assetPath) {
         return textResponse(url, "Not found.", 404);
@@ -567,6 +583,11 @@ const worker = {
     if (paperMatch) {
       if (!PAPER_NUMBERS.has(paperMatch[1])) {
         return textResponse(url, "Not found.", 404);
+      }
+      if (await overLimit(env?.ASSET_LIMIT, request)) {
+        return textResponse(url, "Too many requests. Try again shortly.", 429, {
+          "Retry-After": "60",
+        });
       }
       const assetUrl = new URL(`/papers/${paperMatch[1]}.pdf`, url.origin);
       // env.ASSETS is the direct binding in production. It is absent under the local dev server,

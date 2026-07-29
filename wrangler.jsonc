@@ -38,6 +38,13 @@
       "name": "VISITS_LIMIT",
       "namespace_id": "1002",
       "simple": { "limit": 60, "period": 60 }
+    },
+    {
+      // The paper and experiment routes re-read a file through the Worker and buffer it, so every
+      // request costs a subrequest and a few hundred KB, unlike a plain static asset.
+      "name": "ASSET_LIMIT",
+      "namespace_id": "1003",
+      "simple": { "limit": 120, "period": 60 }
     }
   ]
   // The visit counter's KV namespace is deliberately absent. Its id is an account resource that

@@ -377,3 +377,30 @@ test("the stored visit digest cannot be recomputed from public information", asy
     assert.doesNotMatch(String(v), /203\.0\.113\.7/, `address leaked into value at ${k}`);
   }
 });
+
+test("the generated deploy config declares each binding exactly once", async () => {
+  // Bindings are declared in wrangler.jsonc; vite.config.ts must not repeat them. When both files
+  // listed them, every rate limiter appeared twice in the generated config. This asserts on the
+  // build output rather than either source, so drift between the two is caught wherever it starts.
+  const generated = JSON.parse(
+    await readFile(new URL("../dist/server/wrangler.json", import.meta.url), "utf8"),
+  );
+
+  for (const field of ["ratelimits", "kv_namespaces", "d1_databases", "r2_buckets"]) {
+    const names = (generated[field] ?? []).map((b) => b.name ?? b.binding);
+    assert.deepEqual(
+      names,
+      [...new Set(names)],
+      `${field} contains a duplicate binding: ${names.join(", ")}`,
+    );
+  }
+
+  // The limiters the worker consults must actually be present, or production silently has no
+  // limits — the exact failure that shipped once already.
+  const limiters = (generated.ratelimits ?? []).map((b) => b.name);
+  for (const required of ["BUDDY_LIMIT", "VISITS_LIMIT", "ASSET_LIMIT"]) {
+    assert.ok(limiters.includes(required), `${required} is missing from the deploy config`);
+  }
+
+  assert.equal(generated.name, "jcooperkai-ai-lab");
+});
