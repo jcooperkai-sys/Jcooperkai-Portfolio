@@ -1,12 +1,52 @@
 /** Cloudflare Worker entry point for Cooper E.'s AI Lab. */
 import handler from "vinext/server/app-router-entry";
 
+/**
+ * Cloudflare Rate Limiting binding. Enforced at the edge across isolates, which is the reason it
+ * is a binding and not a counter in this file: isolates do not share memory, so an in-process
+ * counter would limit nothing.
+ */
+interface RateLimiter {
+  limit(options: { key: string }): Promise<{ success: boolean }>;
+}
+
 interface Env {
   ASSETS: Fetcher;
   /** Optional KV namespace for unique-visit counting. Absent locally and on hosts without KV. */
   VISITS?: KVNamespace;
   /** Server-side only. Set as a Cloudflare secret; never exposed to the browser. */
   GROQ_API_KEY?: string;
+  /** 10 requests per minute per client. Absent under the local dev server. */
+  BUDDY_LIMIT?: RateLimiter;
+  /** 60 requests per minute per client. Absent under the local dev server. */
+  VISITS_LIMIT?: RateLimiter;
+}
+
+/**
+ * The rate-limit key. CF-Connecting-IP is set by the edge and cannot be spoofed by the client;
+ * anything client-supplied (X-Forwarded-For) would make the limit trivially bypassable. The IP is
+ * used transiently for this decision and never stored — the visit counter still only ever persists
+ * a salted digest.
+ */
+function clientKey(request: Request) {
+  return request.headers.get("CF-Connecting-IP") ?? "unknown";
+}
+
+/**
+ * Returns true when the request should be refused. Fails open when the binding is absent, which is
+ * the local dev server and preview builds only; production always has both bindings.
+ */
+async function overLimit(limiter: RateLimiter | undefined, request: Request) {
+  if (!limiter) {
+    return false;
+  }
+  try {
+    const { success } = await limiter.limit({ key: clientKey(request) });
+    return !success;
+  } catch {
+    // A limiter failure must not take the route down with it.
+    return false;
+  }
 }
 
 interface ExecutionContext {
@@ -341,6 +381,11 @@ const worker = {
     // Every other path, and every other method on this path, is still refused.
     const isBuddyRoute = decodedPathname === "/api/buddy";
     if (isBuddyRoute && request.method === "POST") {
+      if (await overLimit(env?.BUDDY_LIMIT, request)) {
+        return textResponse(url, "Too many requests. Try again shortly.", 429, {
+          "Retry-After": "60",
+        });
+      }
       const replied = await buddyReply(request, env);
       return applySecurityHeaders(
         new Response(replied.body, {
@@ -376,6 +421,11 @@ const worker = {
     // Unique-visit counter. A GET, so the GET/HEAD-only rule above still holds and no write
     // method is exposed. Never cached, so each visit is actually seen.
     if (decodedPathname === "/api/visits") {
+      if (await overLimit(env?.VISITS_LIMIT, request)) {
+        return textResponse(url, "Too many requests. Try again shortly.", 429, {
+          "Retry-After": "60",
+        });
+      }
       const counted = await recordVisit(request, env);
       return applySecurityHeaders(
         new Response(counted.body, {
