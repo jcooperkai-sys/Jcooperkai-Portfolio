@@ -1,0 +1,43 @@
+COOPER E.
+Independent AI Researcher and Agentic System Builder
+San Diego, California
+jcooperkai@gmail.com
+https://jcooperkai.com/
+
+PROFILE
+
+Cooper E., known online as jcooperkai, researches and builds agentic AI
+systems. The work focuses on planning, tool use, memory, error recovery,
+human oversight, and the practical details that make autonomous systems
+understandable and useful.
+
+RESEARCH FOCUS
+
+Agentic systems · AI research · Tool use and memory
+Human-AI collaboration · Reliable workflows · Reversible automation
+
+INDEPENDENT RESEARCH NOTES
+
+1. Designing Reliable Agentic AI Workflows, 2026
+2. Memory and Tool Use in Small AI Agents, 2026
+3. Human-Centered Controls for Autonomous Systems, 2026
+
+SELECTED PROJECTS
+
+1. Kai Agent Lab
+   A sandbox for planning, tool use, memory, recovery, and visible checkpoints.
+
+2. Research Paper Navigator
+   An experimental reading companion for papers, questions, and citations.
+
+3. AI Experiment Archive
+   A record of prototypes, failures, prompts, and lessons from focused AI tests.
+
+PROFILES
+
+X: https://x.com/jcooperkai
+GitHub: https://github.com/jcooperkai-sys
+arXiv: https://arxiv.org/search/?query=jcooperkai&searchtype=author
+LinkedIn: https://www.linkedin.com/in/jcooperkai/
+
+Last updated: July 28, 2026

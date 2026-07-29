@@ -1,0 +1,42 @@
+MEMORY AND TOOL USE IN SMALL AI AGENTS
+
+Author: Cooper E.
+Venue: Experiment Log
+Year: 2026
+
+ABSTRACT
+
+This experiment log explores how compact agents decide what to remember,
+what to retrieve, and when to call an external tool. The work compares short
+working-memory summaries with structured event records and tests how each
+approach affects consistency across multi-step tasks. The emphasis is on
+clear, reproducible experiments rather than inflated benchmark claims.
+
+1. RESEARCH QUESTION
+
+How little memory structure does an agent need before its behavior becomes
+more consistent and easier to inspect? A second question is whether a better
+memory record can reduce unnecessary tool calls.
+
+2. PROTOTYPE
+
+The prototype records goals, completed actions, unresolved questions, tool
+results, and explicit reasons for retrieval. It deliberately avoids storing
+an unlimited transcript. The agent must choose what information remains
+active and what can be archived.
+
+3. MEASUREMENT
+
+Planned measurements include repeated-action rate, forgotten constraints,
+tool-call count, recovery after interruption, and the time a human needs to
+understand the current state.
+
+4. STATUS
+
+The system and evaluation set are under active development. This document is
+a transparent working record rather than a claim of completed publication.
+
+CONTACT
+
+jcooperkai@gmail.com
+https://jcooperkai.com/

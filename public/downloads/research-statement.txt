@@ -1,0 +1,44 @@
+COOPER E. — RESEARCH STATEMENT
+==============================
+
+OVERVIEW
+
+I research agentic AI systems: programs that plan, use tools, remember
+context, and take multi-step action toward a goal. My central question is how
+to make these systems capable without making their behavior mysterious or
+difficult to stop.
+
+RESEARCH APPROACH
+
+I prefer small, inspectable experiments. A useful prototype should expose its
+state, record why it used a tool, and make failures easy to reproduce. I treat
+interface design, permission boundaries, and recovery behavior as core
+research problems rather than polish added after a model works.
+
+CURRENT DIRECTION
+
+My current work examines three connected areas: reliable agent workflows,
+selective memory and retrieval, and human-centered controls for autonomous
+actions. The projects on jcooperkai.com are independent working notes and
+prototypes that document both the ideas and the unfinished edges.
+
+FUTURE AGENDA
+
+I want to build agents that can pursue longer tasks while remaining legible
+to the people who use them. That includes better checkpoints, reversible
+actions, useful uncertainty signals, and compact records that make an
+interrupted task easy to understand and resume.
+
+RESPONSIBLE DEVELOPMENT
+
+Powerful automation should not quietly expand its own authority. My approach
+emphasizes bounded access, explicit state changes, privacy-conscious data
+handling, and human confirmation when an action has meaningful external
+consequences.
+
+CONTACT
+
+Cooper E. / jcooperkai
+San Diego, California
+jcooperkai@gmail.com
+https://jcooperkai.com/

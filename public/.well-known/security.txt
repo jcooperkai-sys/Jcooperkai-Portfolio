@@ -1,0 +1,5 @@
+Contact: mailto:jcooperkai@gmail.com
+Expires: 2027-07-28T23:59:59Z
+Preferred-Languages: en
+Canonical: https://jcooperkai.com/.well-known/security.txt
+Policy: https://jcooperkai.com/security-policy.txt
