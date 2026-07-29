@@ -1,40 +1,65 @@
-COOPER E. — RESEARCH STATEMENT
-==============================
+COOPER E. - RESEARCH STATEMENT
+=============================
 
 OVERVIEW
 
-I research agentic AI systems: programs that plan, use tools, remember
-context, and take multi-step action toward a goal. My central question is how
-to make these systems capable without making their behavior mysterious or
-difficult to stop.
+I train neural networks and investigate what is hidden inside them. The question
+underneath most of my work is the same one in different clothes: what is this
+system actually doing, as opposed to what it appears to be doing? That question
+is easy to ask and unusually hard to answer honestly, because almost every
+convenient measurement answers a slightly different question than the intended
+one.
 
 RESEARCH APPROACH
 
-I prefer small, inspectable experiments. A useful prototype should expose its
-state, record why it used a tool, and make failures easy to reproduce. I treat
-interface design, permission boundaries, and recovery behavior as core
-research problems rather than polish added after a model works.
+I build the thing from first principles when the alternative is trusting a
+library convention I have not read. Logistic regression, mutual information,
+adjusted Rand index, expected calibration error, the Turing machine simulator,
+the pixel-art generator - written from scratch, so that when a number is
+surprising I can tell whether the surprise is in the world or in my code.
+
+I design experiments on systems whose ground truth is known analytically wherever
+possible. If a method cannot recover an answer I already have, its performance on
+an answer I do not have is not evidence.
+
+CONTROLS ARE THE WORK
+
+Every harness I build now contains a configuration in which the desired result is
+impossible, and that configuration is the first number I read. This is not a
+stylistic preference. Two defects in my own market harness produced returns of
+order 10^250 and turned fifty units into 535,827, and neither announced itself as
+an error; both were caught only because an efficient-quote control was required
+to return exactly zero and did not. A backward decider of mine silently certified
+a machine that halts after 3,932,964 steps as non-halting, because it treated an
+exhausted search window as a contradiction. Plausible output is not evidence of
+correct code.
 
 CURRENT DIRECTION
 
-My current work examines three connected areas: reliable agent workflows,
-selective memory and retrieval, and human-centered controls for autonomous
-actions. The projects on jcooperkai.com are independent working notes and
-prototypes that document both the ideas and the unfinished edges.
+Three connected threads. First, separating what a network encodes from what it
+uses - probing establishes presence, only intervention establishes use, and on a
+system engineered to divide them the two answers differ by roughly 1600x. Second,
+complete decision rather than sampling: closing small Turing machine classes with
+no undecided residue, where a single unresolved machine leaves the value unproven.
+Third, learning systems small enough to be read line by line, so that a claim
+about mechanism can be checked rather than believed.
 
-FUTURE AGENDA
+ON NEGATIVE RESULTS
 
-I want to build agents that can pursue longer tasks while remaining legible
-to the people who use them. That includes better checkpoints, reversible
-actions, useful uncertainty signals, and compact records that make an
-interrupted task easy to understand and resume.
+I publish results that did not work. Short-horizon price direction turned out to
+be unpredictable at the level of measurement available to me, and I wrote that up
+rather than quietly moving on, because nulls of that kind are rarely published and
+their absence is part of why the assumption persists. Where a question stayed open
+- selecting a state count without being told it - I say so rather than reporting
+the number a tuned criterion happened to produce.
 
 RESPONSIBLE DEVELOPMENT
 
-Powerful automation should not quietly expand its own authority. My approach
-emphasizes bounded access, explicit state changes, privacy-conscious data
-handling, and human confirmation when an action has meaningful external
-consequences.
+Powerful automation should not quietly expand its own authority. Bounded access,
+explicit state changes, privacy-conscious data handling, and human confirmation
+before an action with meaningful external consequences. This site is built the
+same way: no cookies, no analytics, no tracking, and a visit counter that stores a
+salted daily digest rather than an address.
 
 CONTACT
 

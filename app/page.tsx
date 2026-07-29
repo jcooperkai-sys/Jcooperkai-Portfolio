@@ -744,7 +744,7 @@ export default function Home() {
                 </div>
                 <div className="download-row">
                   <span>COOPER-E-CV</span>
-                  <span>TXT · 2 KB</span>
+                  <span>TXT · 4 KB</span>
                   <a
                     aria-label="Download Cooper E. CV"
                     className="art-action action-download"
@@ -756,7 +756,7 @@ export default function Home() {
                 </div>
                 <div className="download-row">
                   <span>RESEARCH-STATEMENT</span>
-                  <span>TXT · 2 KB</span>
+                  <span>TXT · 3 KB</span>
                   <a
                     aria-label="Download research statement"
                     className="art-action action-download"
@@ -768,7 +768,7 @@ export default function Home() {
                 </div>
                 <div className="download-row">
                   <span>SELECTED-WORK-BUNDLE</span>
-                  <span>ZIP · SMALL</span>
+                  <span>ZIP · 640 KB</span>
                   <a
                     aria-label="Download all selected work"
                     className="art-action action-download-all"
