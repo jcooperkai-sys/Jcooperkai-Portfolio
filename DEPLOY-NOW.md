@@ -41,16 +41,33 @@ its offline guide rather than erroring.
 
 ## 4. Set the Groq key
 
-The worker exists now, so the secret has somewhere to attach:
+The worker exists now, so the secret has somewhere to attach. Use the script — it finds the key
+where it already lives on this machine and pipes it into wrangler's stdin, so the value is never
+displayed, never typed, never put in shell history, and never passed as a command argument (those
+are readable by any other process via `ps`):
 
 ```bash
-npx wrangler secret put GROQ_API_KEY
+./set-groq-secret.sh
 ```
 
-Wrangler prompts on the next line; the key goes into that prompt. It is write-only afterwards and
-cannot be read back from the dashboard. Do not put it in a commit, a log, a screenshot, or a chat —
-if it ever lands in one, rotate it at console.groq.com and set it again. The copy in `.dev.vars` is
-for local preview only and is gitignored.
+To see which source it would use without setting anything:
+
+```bash
+./set-groq-secret.sh --check
+```
+
+It searches, in order: the `GROQ_API_KEY` environment variable, this project's `.dev.vars`, AIRN's
+env files, your shell profiles, and the macOS Keychain under service `groq-api-key`. It prints only
+the source and the key's length.
+
+Groq shows a key once and never again, so if none is found, create one at
+https://console.groq.com/keys and put it somewhere durable that both AIRN and this script read:
+
+```bash
+security add-generic-password -s groq-api-key -a "$USER" -w
+```
+
+That prompts for the value and stores it in the Keychain — no file, no history entry.
 
 The secret applies immediately. No redeploy needed.
 
