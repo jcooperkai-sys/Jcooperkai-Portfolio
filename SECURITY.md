@@ -2,24 +2,48 @@
 
 ## Current attack surface
 
-This release is intentionally read-only:
+This release is read-only with three exceptions, all listed here:
 
 - no account, login, session cookie, or privileged user role
-- no server-side form, guestbook, comment box, chat API, or AI API
-- no database or object-storage binding
+- no server-side form, guestbook, or comment box
+- `POST /api/buddy` is the single write-method route in the whole application.
+  Every other path still refuses anything but `GET`/`HEAD`. It calls a metered
+  third-party model server-side; the key lives in a Cloudflare secret and is
+  never sent to the browser, placed in a `NEXT_PUBLIC_` variable, or logged.
+- `GET /api/visits` writes to a KV namespace. It stores a salted daily digest of
+  the client address, never the address, with a 24-hour TTL.
+- `GET /api/paper/NNN` and `GET /api/experiment/<name>` read authored files back
+  out and re-serve them with a correct `Content-Type`. Both accept only an
+  allow-listed identifier — three paper numbers and four filenames — so neither
+  can be steered into reading an arbitrary path.
 - no remote upload endpoint
 - no third-party script, analytics tag, advertising pixel, iframe, or embedded
   media
 - no `next/image` use; the unused image-optimization route returns `404`
 
-Buddy runs only in the browser. React renders filenames, file excerpts, and
+Buddy's reply now comes from a server-side model call, but nothing else about it
+moved: attachments are still read and kept in the browser and are never uploaded.
+The request body is capped at 4 KB before parsing, the message at 1,500
+characters, the forwarded history at six turns of 800 characters, and the reply
+at 2,000. The upstream call is capped at 15 seconds so a hung connection cannot
+hold a request open. Upstream error bodies are never logged, because they can
+echo the request.
+
+One residual issue is recorded rather than hidden: the conversation history is
+supplied by the client, so a caller can forge prior assistant turns and try to
+steer Buddy's persona. The system prompt is sent first on every call and the
+route is capped and rate limited, so the worst outcome is Buddy saying something
+off-key in one visitor's own session. It does not widen access to anything.
+
+React renders filenames, file excerpts, and
 messages as escaped text. The file picker accepts a small allowlist, enforces a
 2 MB cap, removes control characters from displayed filenames, truncates text
 locally, and never sends a file to the server.
 
 ## Code-level defenses
 
-- only `GET` and `HEAD` requests are accepted by the Worker
+- only `GET` and `HEAD` are accepted, except `POST /api/buddy`, which is
+  allow-listed by exact path before the method gate and nowhere else
 - overlong URLs and source-like paths are rejected before application routing
 - production errors return a generic message rather than a stack trace
 - powered-by/server response headers are removed
@@ -41,23 +65,43 @@ locally, and never sends a file to the server.
 ## Rate limiting and DDoS
 
 Do not add an in-memory JavaScript `Map` and describe it as production rate
-limiting. Worker isolates and locations do not share that state, and blanket
-per-IP limits can block many legitimate visitors behind one carrier or privacy
-relay.
+limiting. Worker isolates and locations do not share that state, so a counter in
+this process limits nothing.
 
-Cloudflare's automatic network and HTTP DDoS protection should remain enabled.
-This static release has no expensive or mutating public route that needs a
-separate application quota. Before a future `/api/`, `/upload/`, `/auth/`, form
-handler, remote Buddy model, or database write is deployed:
+Both routes that do work per request are limited by a Cloudflare Rate Limiting
+binding, declared in `vite.config.ts` and enforced in `worker/index.ts`:
 
-1. add a Cloudflare WAF rate-limiting rule or a Workers Rate Limiting binding
-   scoped to that exact route;
-2. choose the key and quota for the authenticated user or API client where
-   possible, instead of a shared IP;
+| Route | Limit | Risk it closes |
+|---|---|---|
+| `POST /api/buddy` | 10 / min / IP | exhausting the model provider's free-tier quota, which takes Buddy down for every visitor |
+| `GET /api/visits` | 60 / min / IP | KV write amplification against a 1,000 writes/day allowance |
+
+Refusals return `429` with `Retry-After: 60`. The key is `CF-Connecting-IP`,
+which the edge sets and a client cannot spoof; keying on a client-supplied
+header such as `X-Forwarded-For` would make the limit bypassable by anyone who
+sets it. The address is used for that decision only and is never stored.
+
+The binding fails open when it errors or is absent, so a limiter fault cannot
+take a route offline. Absent means the local dev server; production has both.
+
+A known trade-off, stated because it is a real cost: a per-IP limit can affect
+several legitimate visitors sharing one carrier NAT or privacy relay. The quotas
+are set well above ordinary browsing for that reason, and neither route is
+needed to read the site — Buddy falls back to its offline guide and the counter
+falls back to a static figure.
+
+Cloudflare's automatic network and HTTP DDoS protection should remain enabled. A
+WAF rate-limiting rule may be layered on top but is not required.
+
+Before any future `/upload/`, `/auth/`, form handler, or database write is
+deployed:
+
+1. add a rate-limiting rule or binding scoped to that exact route;
+2. key on the authenticated user or API client where possible, not a shared IP;
 3. return `429` with `Retry-After`;
 4. cap body size and execution time before parsing;
 5. authenticate and authorize before reading private data or performing work;
-6. record rate-limit events without logging message/file contents.
+6. record rate-limit events without logging message or file contents.
 
 Official references:
 
