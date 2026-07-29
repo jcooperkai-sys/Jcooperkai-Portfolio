@@ -290,3 +290,90 @@ test("metered routes are rate limited by the edge binding", async () => {
   });
   assert.equal(open.status, 200);
 });
+
+test("HEAD is answered without doing the route's work", async () => {
+  // HEAD is legal here and monitors use it, but the HTTP layer discards the body, so any work
+  // spent building one is wasted. Before this, HEAD /api/paper/001 buffered 196 KB per request and
+  // HEAD /api/visits performed two KV writes — inflating the count and spending the free tier's
+  // daily write budget on requests nobody read.
+  let assetReads = 0;
+  const kvWrites = [];
+  const env = {
+    ASSETS: {
+      fetch: async () => {
+        assetReads += 1;
+        return new Response(new Uint8Array(4096), { status: 200 });
+      },
+    },
+    VISITS: { get: async () => null, put: async (k) => { kvWrites.push(k); } },
+  };
+
+  const paper = await renderWithEnv("https://portfolio.example/api/paper/001", env, { method: "HEAD" });
+  assert.equal(paper.status, 200);
+  assert.equal(paper.headers.get("content-type"), "application/pdf");
+  assert.equal((await paper.arrayBuffer()).byteLength, 0);
+  assert.equal(assetReads, 0, "HEAD must not read the asset");
+
+  const visits = await renderWithEnv("https://portfolio.example/api/visits", env, { method: "HEAD" });
+  assert.equal(visits.status, 200);
+  assert.deepEqual(kvWrites, [], "HEAD must not write to KV");
+
+  // HEAD must agree with GET about what exists, or a monitor reports a paper as present that GET
+  // returns 404 for.
+  for (const path of ["/api/paper/999", "/api/experiment/nope"]) {
+    const get = await renderWithEnv(`https://portfolio.example${path}`, env);
+    const head = await renderWithEnv(`https://portfolio.example${path}`, env, { method: "HEAD" });
+    assert.equal(get.status, 404);
+    assert.equal(head.status, get.status, `${path}: HEAD and GET disagree`);
+  }
+});
+
+test("the stored visit digest cannot be recomputed from public information", async () => {
+  // The earlier implementation used the calendar date as its "salt", so the stored key was
+  // SHA-256("YYYY-MM-DD:<ip>") — recoverable by hashing 2^32 candidates, which takes seconds. The
+  // privacy notice's claim of an irreversible digest was false as written. A random per-day salt
+  // makes it true: there is no longer anything to guess.
+  const ip = "203.0.113.7";
+  const day = new Date().toISOString().slice(0, 10);
+  const store = new Map();
+  const written = [];
+  const env = {
+    ASSETS: { fetch: async () => new Response("", { status: 404 }) },
+    VISITS: {
+      get: async (k) => store.get(k) ?? null,
+      put: async (k, v) => { written.push(k); store.set(k, v); },
+    },
+  };
+
+  const res = await renderWithEnv("https://portfolio.example/api/visits", env, {
+    headers: { "CF-Connecting-IP": ip },
+  });
+  assert.equal(res.status, 200);
+
+  const storedKey = written.find((k) => k.startsWith("v:"));
+  assert.ok(storedKey, "a visit key should have been written");
+
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(`${day}:${ip}`),
+  );
+  const publicGuess =
+    "v:" +
+    [...new Uint8Array(digest)]
+      .slice(0, 16)
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+  assert.notEqual(storedKey, publicGuess, "digest is brute-forceable from date and address alone");
+
+  // The salt must be real randomness kept server-side, and never part of the response.
+  const salt = store.get(`salt:${day}`);
+  assert.equal(typeof salt, "string");
+  assert.equal(salt.length, 64, "expected 32 random bytes as hex");
+  assert.doesNotMatch(await res.text(), new RegExp(salt), "the salt must never reach the client");
+
+  // The address itself must never be stored, under any key.
+  for (const [k, v] of store) {
+    assert.doesNotMatch(k, /203\.0\.113\.7/, `address leaked into key ${k}`);
+    assert.doesNotMatch(String(v), /203\.0\.113\.7/, `address leaked into value at ${k}`);
+  }
+});
