@@ -56,6 +56,23 @@ interface ExecutionContext {
 
 const MAX_URL_LENGTH = 4_096;
 
+/**
+ * The papers and text files reachable through the read-back routes.
+ *
+ * Both are allow-lists rather than patterns, so neither route can be steered into reading an
+ * arbitrary file out of the assets directory. They live at module scope because HEAD and GET both
+ * consult them: HEAD must agree with GET about what exists, or a monitor sees 200 for a paper that
+ * GET reports as missing.
+ */
+const PAPER_NUMBERS = new Set(["001", "002", "003"]);
+
+const READABLE_TEXT: Record<string, string> = {
+  "exp1-xor": "/downloads/experiments/exp1_xor.py.txt",
+  "exp2-auc-null": "/downloads/experiments/exp2_auc_null.py.txt",
+  "exp3-bb22": "/downloads/experiments/exp3_bb22.py.txt",
+  results: "/downloads/experiments/results.txt",
+};
+
 const BLOCKED_SOURCE_PATH =
   /^\/(?:\.env(?:\.|\/|$)|\.git(?:\/|$)|\.openai(?:\/|$)|app(?:\/|$)|build(?:\/|$)|db(?:\/|$)|node_modules(?:\/|$)|work(?:\/|$)|worker(?:\/|$)|package(?:-lock)?\.json$)/i;
 
@@ -177,9 +194,36 @@ function applySecurityHeaders(response: Response, url: URL) {
  */
 const DECORATIVE_VISITS = 13581;
 
-async function dailyDigest(ip: string): Promise<string> {
-  const day = new Date().toISOString().slice(0, 10);
-  const bytes = new TextEncoder().encode(`${day}:${ip}`);
+/**
+ * The per-day salt, and the reason it exists.
+ *
+ * An earlier version used the calendar date as the "salt". That is not a salt — it is public,
+ * predictable input, so the stored digest was SHA-256("2026-07-29:1.2.3.4") and anyone holding the
+ * stored keys could recover the addresses by hashing all 2^32 IPv4 candidates, which takes seconds.
+ * The privacy notice's claim of an irreversible digest was false as written.
+ *
+ * This generates 32 random bytes per day instead, keeps them in the counting store, and never sends
+ * them anywhere. Without the salt the digest cannot be reversed by brute force, because there is
+ * nothing to guess. The residual exposure is honest and worth stating: anyone who can read the
+ * counting store can read the salt too, so this protects a leak of the visit keys alone, not a full
+ * compromise of the namespace.
+ *
+ * The 48-hour expiry is deliberately longer than the day the salt is used for, so a visit arriving
+ * either side of midnight still finds the salt its digest was built with.
+ */
+async function dailySalt(store: KVNamespace, day: string): Promise<string> {
+  const key = `salt:${day}`;
+  const existing = await store.get(key);
+  if (existing) return existing;
+  const fresh = [...crypto.getRandomValues(new Uint8Array(32))]
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+  await store.put(key, fresh, { expirationTtl: 172_800 });
+  return fresh;
+}
+
+async function dailyDigest(ip: string, salt: string, day: string): Promise<string> {
+  const bytes = new TextEncoder().encode(`${salt}:${day}:${ip}`);
   const digest = await crypto.subtle.digest("SHA-256", bytes);
   return [...new Uint8Array(digest)]
     .slice(0, 16)
@@ -195,7 +239,8 @@ async function recordVisit(request: Request, env: Env): Promise<Response> {
   }
   try {
     const ip = request.headers.get("CF-Connecting-IP") ?? "unknown";
-    const key = `v:${await dailyDigest(ip)}`;
+    const day = new Date().toISOString().slice(0, 10);
+    const key = `v:${await dailyDigest(ip, await dailySalt(store, day), day)}`;
     const seen = await store.get(key);
     let total = Number.parseInt((await store.get("total")) ?? "", 10);
     if (!Number.isFinite(total)) total = DECORATIVE_VISITS;
@@ -418,6 +463,45 @@ const worker = {
       return textResponse(url, "Not found.", 404);
     }
 
+    /**
+     * HEAD on the routes below is answered without doing their work.
+     *
+     * HEAD is a legal method here and monitors and crawlers use it, but the HTTP layer discards the
+     * body afterwards, so any work spent producing one is wasted. Two concrete consequences before
+     * this existed: HEAD /api/paper/001 made the Worker fetch and buffer 196 KB per request purely
+     * to throw it away, and HEAD /api/visits performed two KV writes — inflating the count and
+     * spending the free tier's 1,000 daily writes on requests nobody was reading.
+     *
+     * The declared Content-Type is still accurate, which is the part of a HEAD response that
+     * matters. Content-Length is omitted rather than guessed, since knowing it would mean doing
+     * exactly the work this avoids.
+     */
+    if (request.method === "HEAD") {
+      const headOnly = (type: string) =>
+        applySecurityHeaders(
+          new Response(null, {
+            status: 200,
+            headers: { "Content-Type": type, "Cache-Control": "no-store" },
+          }),
+          url,
+        );
+      if (decodedPathname === "/api/visits") {
+        return headOnly("application/json; charset=utf-8");
+      }
+      const headPaper = /^\/api\/paper\/(\d{3})$/.exec(decodedPathname);
+      if (headPaper) {
+        return PAPER_NUMBERS.has(headPaper[1])
+          ? headOnly("application/pdf")
+          : textResponse(url, "Not found.", 404);
+      }
+      const headText = /^\/api\/experiment\/([a-z0-9-]+)$/.exec(decodedPathname);
+      if (headText) {
+        return READABLE_TEXT[headText[1]]
+          ? headOnly("text/plain; charset=utf-8")
+          : textResponse(url, "Not found.", 404);
+      }
+    }
+
     // This portfolio uses native local images. Closing the unused optimization
     // endpoint removes a resource-amplification and remote-fetch attack surface.
     if (
@@ -453,14 +537,6 @@ const worker = {
     // set on /papers/001.pdf and made the browser download the file instead of opening it. With no
     // extension to derive from, the Content-Type set here survives, so VIEW PAPER opens in a tab.
     // Experiment scripts and their raw output, read in a tab for the same reason as the papers.
-    // The allowed names are listed rather than pattern-matched so the route cannot be used to read
-    // an arbitrary file out of the downloads directory.
-    const READABLE_TEXT: Record<string, string> = {
-      "exp1-xor": "/downloads/experiments/exp1_xor.py.txt",
-      "exp2-auc-null": "/downloads/experiments/exp2_auc_null.py.txt",
-      "exp3-bb22": "/downloads/experiments/exp3_bb22.py.txt",
-      results: "/downloads/experiments/results.txt",
-    };
     const textMatch = /^\/api\/experiment\/([a-z0-9-]+)$/.exec(decodedPathname);
     if (textMatch) {
       const assetPath = READABLE_TEXT[textMatch[1]];
@@ -481,6 +557,9 @@ const worker = {
 
     const paperMatch = /^\/api\/paper\/(\d{3})$/.exec(decodedPathname);
     if (paperMatch) {
+      if (!PAPER_NUMBERS.has(paperMatch[1])) {
+        return textResponse(url, "Not found.", 404);
+      }
       const assetUrl = new URL(`/papers/${paperMatch[1]}.pdf`, url.origin);
       // env.ASSETS is the direct binding in production. It is absent under the local dev server,
       // whose handler returns an empty placeholder for static files and fills the body in

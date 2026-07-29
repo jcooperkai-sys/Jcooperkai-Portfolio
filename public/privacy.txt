@@ -38,8 +38,16 @@ Privacy or security questions: jcooperkai@gmail.com
 VISIT COUNTING
 --------------
 The visitor number on this page reflects unique visits per day. Your network address is never
-stored. It is combined with a salt that changes every day and hashed with SHA-256, and only that
-irreversible digest is kept, expiring automatically after 24 hours. Because the salt rotates, a
-digest from one day cannot be matched against another. No cookie or browser storage is used, and
-nothing about a visit is shared with any third party. Where no counting store is configured the
-number shown is decorative.
+stored. It is combined with 32 random bytes generated fresh each day, hashed with SHA-256, and only
+that digest is kept, expiring automatically after 24 hours.
+
+The random value is the reason the digest cannot be worked backwards. There are only about four
+billion possible addresses, so a digest of an address plus a predictable value -- a date, for
+instance -- could be reversed by simply trying all of them. Against an unknown random value there is
+nothing to try. That value is never sent to your browser and is never included in any response.
+
+Stated plainly, because a privacy claim should be checkable: this protects the stored digests if they
+alone were ever exposed. Someone with full read access to the counting store would also be able to
+read the random value. No cookie or browser storage is used, nothing about a visit is shared with any
+third party, and because the random value is replaced daily, a digest from one day cannot be matched
+against another. Where no counting store is configured the number shown is decorative.

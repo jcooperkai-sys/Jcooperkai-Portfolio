@@ -10,8 +10,12 @@ This release is read-only with three exceptions, all listed here:
   Every other path still refuses anything but `GET`/`HEAD`. It calls a metered
   third-party model server-side; the key lives in a Cloudflare secret and is
   never sent to the browser, placed in a `NEXT_PUBLIC_` variable, or logged.
-- `GET /api/visits` writes to a KV namespace. It stores a salted daily digest of
-  the client address, never the address, with a 24-hour TTL.
+- `GET /api/visits` writes to a KV namespace. It stores a digest of the client address, never the
+  address, with a 24-hour TTL. The digest is salted with 32 random bytes generated per day and held
+  server-side. An earlier version used the calendar date as the salt, which is public and
+  predictable, so the digest was recoverable by hashing all ~2^32 IPv4 candidates — the notice's
+  claim of irreversibility was false as written. The residual, stated rather than implied: full read
+  access to the namespace also exposes the salt, so this protects a leak of the digests alone.
 - `GET /api/paper/NNN` and `GET /api/experiment/<name>` read authored files back
   out and re-serve them with a correct `Content-Type`. Both accept only an
   allow-listed identifier — three paper numbers and four filenames — so neither
