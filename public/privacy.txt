@@ -34,3 +34,12 @@ message is handled by your email provider and the recipient's email provider.
 CONTACT
 
 Privacy or security questions: jcooperkai@gmail.com
+
+VISIT COUNTING
+--------------
+The visitor number on this page reflects unique visits per day. Your network address is never
+stored. It is combined with a salt that changes every day and hashed with SHA-256, and only that
+irreversible digest is kept, expiring automatically after 24 hours. Because the salt rotates, a
+digest from one day cannot be matched against another. No cookie or browser storage is used, and
+nothing about a visit is shared with any third party. Where no counting store is configured the
+number shown is decorative.

@@ -1,42 +1,116 @@
-HUMAN-CENTERED CONTROLS FOR AUTONOMOUS SYSTEMS
+DECODABILITY IS NOT MECHANISM: SEPARATING WHAT A NETWORK ENCODES
+FROM WHAT IT USES
 
-Author: Cooper E.
-Venue: Technical Memo
+Author: Cooper E. (jcooperkai)
+Venue: Independent research note
 Year: 2026
 
 ABSTRACT
 
-This technical memo examines controls that help people supervise agentic
-systems without needing to inspect every internal step. It focuses on
-permission boundaries, reversible actions, visible checkpoints, and useful
-failure messages. The central question is how to preserve creative autonomy
-while keeping consequential actions legible and easy to stop.
+Interpretability commonly establishes that a network "represents" something by
+training a probe and reporting its accuracy. This note demonstrates, in a
+controlled setting where ground truth is known analytically, that decodability
+and causal mechanism are different quantities and can be made to disagree almost
+completely. A channel decodable from the hidden layer at 100 percent accuracy
+contributes 0.9998 bits to a correlational description of that layer and 0.0006
+bits to an interventional one -- a separation of roughly 1600x, stable across
+five seeds. The interventional description simultaneously recovers the true
+generating structure with adjusted Rand index 0.9957, where the correlational one
+reaches 0.1243.
 
-1. CONTROL WITHOUT MICROMANAGEMENT
+1. THE CONFOUND
 
-A useful control surface should expose decisions that change risk, authority,
-or external state. It should not force a person to approve every harmless
-intermediate calculation.
+If a variable can be decoded from a network's activations, it is present. It does
+not follow that the network uses it. A probe measures what an external classifier
+can extract; it does not measure what the downstream computation depends on. The
+two coincide often enough that the distinction is easy to lose, and a probe
+result is easy to report as though it were mechanistic.
 
-2. PRACTICAL PATTERNS
+2. A SYSTEM WHERE THE ANSWER IS KNOWN
 
-The memo develops four patterns: scoped permission envelopes, action previews,
-recovery checkpoints, and compact event logs. Each pattern aims to make the
-system easier to interrupt, audit, and resume.
+The generating process is a unifilar, synchronising source with three causal
+states known analytically. Unifilarity matters: the emitted symbol determines the
+next state, so the process synchronises and a finite observation window pins the
+state exactly. Recovery is therefore well posed.
 
-3. OPEN QUESTIONS
+An earlier version of this experiment used a generic hidden Markov model. That
+was a mis-specification. Observing a generic HMM through noisy emissions makes
+the optimal predictor's causal states BELIEF states, which form a continuum -- so
+"recover three clusters" was never the correct target.
 
-Future experiments will study when checkpoints help or distract, which
-explanations make failures actionable, and how interfaces should communicate
-uncertainty without becoming noisy.
+A network is trained on next-symbol prediction. Its input carries an additional
+channel of pure noise, amplified so that it dominates the variance of the hidden
+layer. That channel is fully decodable and causally inert by construction: the
+target depends only on the state.
 
-4. STATUS
+3. TWO EQUIVALENCE RELATIONS
 
-This is an independent technical memo and active research direction. It is
-shared to invite careful discussion, not to present a completed empirical
-result.
+Correlational: group activations by proximity in activation space, which is what
+probing and similarity-based analysis effectively measure.
 
-CONTACT
+Interventional: group activations a, a' together exactly when they induce the
+same distribution over outputs under intervention,
 
-jcooperkai@gmail.com
-https://jcooperkai.com/
+  a ~ a'  iff  P(Y | do(h = a)) = P(Y | do(h = a'))
+
+For a feedforward network the interventional distribution is computed exactly by
+pushing an activation through the remaining layers, so this tests the definition
+with no estimator error in the way.
+
+4. RESULT (five seeds)
+
+  Measurement                          Correlational      Interventional
+  Mutual information with the
+  inert channel                        0.9998 +/- 0.0002  0.0006 +/- 0.0003
+  Adjusted Rand index against
+  the true causal states               0.1243 +/- 0.0305  0.9957 +/- 0.0054
+
+The channel is decodable at 100 percent throughout. The correlational grouping
+captures essentially all of it -- one full bit, the entire content of a fair coin
+-- while recovering about a tenth of the real structure. The interventional
+grouping discards it and reconstructs the generating machine almost exactly.
+
+The mechanism is straightforward once stated: intervening asks what the network
+USES, and information that is present but unused collapses into a single class.
+
+5. WHAT ONLY THE INTERVENTIONAL VIEW GIVES
+
+Grouping states is not an account of a computation. Estimating transitions
+between recovered states reconstructs the generating machine's transition matrix
+to a maximum absolute error of 0.0154, read off a trained network with no access
+to the generator. A feature dictionary cannot express this object at all, having
+no notion of what follows what.
+
+6. AN OPEN PROBLEM, STATED HONESTLY
+
+Selecting the number of states blindly failed by two independent principled
+methods. A BIC criterion saturated at the maximum of its search range on every
+seed. A merge-until-prediction-degrades criterion found no plateau: the count
+slid continuously from about 155 down to 3 as tolerance widened.
+
+This is a finding rather than a tuning failure. A trained network's causal states
+are APPROXIMATE, not exact -- the interventional signatures form a continuum with
+a few dominant modes. Consequently "this model has N features" is undefined
+without a stated tolerance, and the honest output of such an analysis is a
+rate-distortion curve rather than a number.
+
+7. SCOPE
+
+This is a controlled demonstration, not a claim of novelty. Interventional
+methods in interpretability are established, and the surrounding ideas overlap
+existing literature on causal abstraction and on computational mechanics applied
+to neural networks. What is offered here is a clean, reproducible measurement of
+how far the two quantities can diverge, on a system where the correct answer is
+known in advance.
+
+REPRODUCIBILITY
+
+NumPy only, no frameworks; metrics implemented from scratch. Five seeds.
+
+REFERENCES
+
+[1] C. Shalizi, J. Crutchfield. Computational mechanics: pattern and
+    prediction, structure and simplicity, 2001.
+[2] A. Geiger et al. Causal abstractions of neural networks, 2021.
+[3] A. Shai et al. Transformers represent belief state geometry in their
+    residual stream, 2024.

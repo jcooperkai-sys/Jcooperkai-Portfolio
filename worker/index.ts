@@ -3,6 +3,10 @@ import handler from "vinext/server/app-router-entry";
 
 interface Env {
   ASSETS: Fetcher;
+  /** Optional KV namespace for unique-visit counting. Absent locally and on hosts without KV. */
+  VISITS?: KVNamespace;
+  /** Server-side only. Set as a Cloudflare secret; never exposed to the browser. */
+  GROQ_API_KEY?: string;
 }
 
 interface ExecutionContext {
@@ -91,6 +95,16 @@ function applySecurityHeaders(response: Response, url: URL) {
     );
   }
 
+  // Papers and citations are plain text and should open in a tab rather than download. Because
+  // X-Content-Type-Options is nosniff, the browser will not infer this: an accurate Content-Type
+  // is required for inline rendering. Static hosting serves these as application/octet-stream,
+  // so correct it here (this also applies locally, where _headers is not honoured). The ZIP keeps
+  // its attachment disposition and is unaffected.
+  const path = url.pathname.toLowerCase();
+  if (path.startsWith("/downloads/") && (path.endsWith(".txt") || path.endsWith(".bib"))) {
+    headers.set("Content-Type", "text/plain; charset=utf-8");
+  }
+
   const contentType = headers.get("content-type") ?? "";
   if (!response.ok) {
     headers.set("Cache-Control", "no-store");
@@ -103,6 +117,176 @@ function applySecurityHeaders(response: Response, url: URL) {
     statusText: response.statusText,
     headers,
   });
+}
+
+/**
+ * Visitor counting.
+ *
+ * Counts unique visits without retaining personal data. The client address is never stored: it is
+ * combined with a salt that rotates daily and hashed with SHA-256, and only that digest is written,
+ * with a 24-hour expiry. The digest cannot be reversed to an address, and because the salt rotates,
+ * today's digests cannot be correlated with yesterday's.
+ *
+ * Recording happens on a GET so the Worker keeps accepting only GET and HEAD; no write method is
+ * exposed. When no KV binding is present (local preview, or a host without KV) the endpoint reports
+ * the decorative figure and says so, rather than pretending to be live.
+ *
+ * KV is eventually consistent and the increment is a read-modify-write, so simultaneous first-time
+ * visits can occasionally coalesce into one. For a personal site that is an acceptable trade against
+ * the cost and complexity of a strongly consistent counter.
+ */
+const DECORATIVE_VISITS = 13581;
+
+async function dailyDigest(ip: string): Promise<string> {
+  const day = new Date().toISOString().slice(0, 10);
+  const bytes = new TextEncoder().encode(`${day}:${ip}`);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return [...new Uint8Array(digest)]
+    .slice(0, 16)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+async function recordVisit(request: Request, env: Env): Promise<Response> {
+  // env itself is absent under some local runtimes, not merely the binding.
+  const store = env?.VISITS;
+  if (!store) {
+    return Response.json({ count: DECORATIVE_VISITS, live: false });
+  }
+  try {
+    const ip = request.headers.get("CF-Connecting-IP") ?? "unknown";
+    const key = `v:${await dailyDigest(ip)}`;
+    const seen = await store.get(key);
+    let total = Number.parseInt((await store.get("total")) ?? "", 10);
+    if (!Number.isFinite(total)) total = DECORATIVE_VISITS;
+    if (!seen) {
+      total += 1;
+      await store.put(key, "1", { expirationTtl: 86_400 });
+      await store.put("total", String(total));
+    }
+    return Response.json({ count: total, live: true });
+  } catch {
+    // Counting must never take the page down.
+    return Response.json({ count: DECORATIVE_VISITS, live: false });
+  }
+}
+
+/**
+ * Buddy's model-backed reply.
+ *
+ * The API key is read from a server-side binding only. It is never sent to the browser, never
+ * placed in a NEXT_PUBLIC_ variable, and never logged. The request body is capped before parsing,
+ * the conversation sent upstream is truncated, and the reply length is bounded. If no key is
+ * configured the route reports that plainly and the page falls back to its offline guide.
+ *
+ * This is the only route accepting POST; every other path still rejects non-GET/HEAD.
+ */
+const BUDDY_MAX_BODY = 4_096;
+const BUDDY_SYSTEM = [
+  "You are Buddy, the research guide on Cooper E.'s personal site (handle: jcooperkai).",
+  "Answer as a knowledgeable assistant about Cooper's work. Be concise, concrete and friendly.",
+  "Never invent results, metrics, publications or affiliations. If you do not know, say so.",
+  "",
+  "Cooper's work:",
+  "- HisokaOS: a 32-bit x86 operating system written from scratch in C and assembly. Boots on its",
+  "  own kernel in QEMU to an interactive shell. Paging, GDT/IDT, remapped PIC, PIT, PS/2 keyboard",
+  "  and mouse, VGA console, ATA disk, RTL8139 networking, RAM filesystem, preemptive task",
+  "  switching, and 27 bundled applications including Tetris, Snake, 2048 and a text editor.",
+  "- The Lazy Driver: an autonomous-driving perception stack over ordinary dashcam footage.",
+  "  YOLO11m detection with cross-frame tracking and metric distances, YOLOPv2 drivable-surface and",
+  "  lane segmentation, openpilot supercombo path prediction, monocular metric depth. The predicted",
+  "  path is clamped to the segmented road.",
+  "- Bill: a local-first conversational system. A local language model wrapped in durable memory,",
+  "  retrieval, planning, grounding and verification. Paired with bill2, a from-scratch predictive",
+  "  concept graph built without ML frameworks. Cooper is explicit that the fluent prose comes from",
+  "  the local model, not from bill2.",
+  "- Oneiro: a continuously running generative art system. A local model free-associates concepts",
+  "  that train a from-scratch NumPy pixel-art generator online.",
+  "- Busy Beaver research: an enumeration and decision pipeline that completely decides BB(2,2)=6,",
+  "  BB(3,2)=21, BB(2,3)=38 and BB(4,2)=107, proving every machine halts or never halts. These",
+  "  reproduce known values; Cooper claims no new Busy Beaver value.",
+  "- Market microstructure: on 258,737 real minute bars, short-horizon direction was shown to be",
+  "  unpredictable (AUC 0.5105). Cooper publishes negative results deliberately.",
+  "",
+  "Cooper is at jcooperkai@gmail.com, on GitHub as jcooperkai-sys, and on X as @jcooperkai.",
+  "Keep replies under about 130 words unless asked for more.",
+].join("\n");
+
+function readApiKey(env: Env): string {
+  const fromBinding = env?.GROQ_API_KEY;
+  if (fromBinding) return fromBinding;
+  // Local preview convenience only; absent in the Workers runtime.
+  const proc = (globalThis as { process?: { env?: Record<string, string> } }).process;
+  return proc?.env?.GROQ_API_KEY ?? "";
+}
+
+async function buddyReply(request: Request, env: Env): Promise<Response> {
+  const key = readApiKey(env);
+  if (!key) {
+    return Response.json({ ok: false, reason: "unconfigured" }, { status: 503 });
+  }
+  const raw = await request.text();
+  if (raw.length > BUDDY_MAX_BODY) {
+    return Response.json({ ok: false, reason: "too_large" }, { status: 413 });
+  }
+  let message = "";
+  let history: { role: string; content: string }[] = [];
+  try {
+    const parsed = JSON.parse(raw) as {
+      message?: unknown;
+      history?: unknown;
+    };
+    message = typeof parsed.message === "string" ? parsed.message.slice(0, 1_500) : "";
+    if (Array.isArray(parsed.history)) {
+      history = parsed.history
+        .slice(-6)
+        .filter(
+          (m): m is { role: string; content: string } =>
+            typeof (m as { role?: unknown })?.role === "string" &&
+            typeof (m as { content?: unknown })?.content === "string",
+        )
+        .map((m) => ({ role: m.role === "user" ? "user" : "assistant", content: m.content.slice(0, 800) }));
+    }
+  } catch {
+    return Response.json({ ok: false, reason: "bad_request" }, { status: 400 });
+  }
+  if (!message.trim()) {
+    return Response.json({ ok: false, reason: "empty" }, { status: 400 });
+  }
+
+  try {
+    const upstream = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${key}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "llama-3.3-70b-versatile",
+        messages: [
+          { role: "system", content: BUDDY_SYSTEM },
+          ...history,
+          { role: "user", content: message },
+        ],
+        temperature: 0.6,
+        max_tokens: 320,
+      }),
+    });
+    if (!upstream.ok) {
+      // Status only. Upstream bodies can echo the request and must not be logged.
+      console.error(JSON.stringify({ event: "buddy_upstream_error", status: upstream.status }));
+      return Response.json({ ok: false, reason: "upstream" }, { status: 502 });
+    }
+    const data = (await upstream.json()) as {
+      choices?: { message?: { content?: string } }[];
+    };
+    const reply = data.choices?.[0]?.message?.content?.trim() ?? "";
+    if (!reply) return Response.json({ ok: false, reason: "empty_reply" }, { status: 502 });
+    return Response.json({ ok: true, reply: reply.slice(0, 2_000) });
+  } catch {
+    console.error(JSON.stringify({ event: "buddy_request_failed" }));
+    return Response.json({ ok: false, reason: "unavailable" }, { status: 502 });
+  }
 }
 
 function textResponse(
@@ -153,9 +337,26 @@ const worker = {
       return textResponse(url, "Invalid request path.", 400);
     }
 
+    // Buddy's model route is the single exception to the read-only rule, and only for POST.
+    // Every other path, and every other method on this path, is still refused.
+    const isBuddyRoute = decodedPathname === "/api/buddy";
+    if (isBuddyRoute && request.method === "POST") {
+      const replied = await buddyReply(request, env);
+      return applySecurityHeaders(
+        new Response(replied.body, {
+          status: replied.status,
+          headers: {
+            "Content-Type": "application/json; charset=utf-8",
+            "Cache-Control": "no-store",
+          },
+        }),
+        url,
+      );
+    }
+
     if (request.method !== "GET" && request.method !== "HEAD") {
       return textResponse(url, "Method not allowed.", 405, {
-        Allow: "GET, HEAD",
+        Allow: isBuddyRoute ? "POST" : "GET, HEAD",
       });
     }
 
@@ -170,6 +371,55 @@ const worker = {
       decodedPathname === "/_next/image"
     ) {
       return textResponse(url, "Not found.", 404);
+    }
+
+    // Unique-visit counter. A GET, so the GET/HEAD-only rule above still holds and no write
+    // method is exposed. Never cached, so each visit is actually seen.
+    if (decodedPathname === "/api/visits") {
+      const counted = await recordVisit(request, env);
+      return applySecurityHeaders(
+        new Response(counted.body, {
+          status: counted.status,
+          headers: {
+            "Content-Type": "application/json; charset=utf-8",
+            "Cache-Control": "no-store",
+          },
+        }),
+        url,
+      );
+    }
+
+    // Papers are served through an extensionless route on purpose. The local dev server derives a
+    // Content-Type from the file extension after the Worker returns, which overrode every header
+    // set on /papers/001.pdf and made the browser download the file instead of opening it. With no
+    // extension to derive from, the Content-Type set here survives, so VIEW PAPER opens in a tab.
+    const paperMatch = /^\/api\/paper\/(\d{3})$/.exec(decodedPathname);
+    if (paperMatch) {
+      const assetUrl = new URL(`/papers/${paperMatch[1]}.pdf`, url.origin);
+      // env.ASSETS is the direct binding in production. It is absent under the local dev server,
+      // whose handler returns an empty placeholder for static files and fills the body in
+      // afterwards, so locally we re-request the file over the loopback origin instead.
+      const asset = env?.ASSETS
+        ? await env.ASSETS.fetch(new Request(assetUrl, { method: "GET" }))
+        : await fetch(new Request(assetUrl, { method: "GET" }));
+      if (!asset.ok) {
+        return textResponse(url, "Not found.", 404);
+      }
+      // Buffered rather than streamed: passing the sub-request's body straight through yields an
+      // empty response here, and a paper is a few hundred KB, so holding it is cheap.
+      const bytes = await asset.arrayBuffer();
+      return applySecurityHeaders(
+        new Response(bytes, {
+          status: 200,
+          headers: {
+            "Content-Type": "application/pdf",
+            "Content-Disposition": "inline",
+            "Content-Length": String(bytes.byteLength),
+            "Cache-Control": "public, max-age=3600, must-revalidate",
+          },
+        }),
+        url,
+      );
     }
 
     let response: Response;
