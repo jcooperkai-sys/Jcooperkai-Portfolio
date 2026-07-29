@@ -334,6 +334,8 @@ export default function Home() {
     "FILES STAY LOCAL TO THIS BROWSER",
   );
   const buddyIdRef = useRef(2);
+  /** Synchronous in-flight guard. See the note in sendBuddyMessage on why state is not enough. */
+  const buddySendingRef = useRef(false);
   const buddyLogRef = useRef<HTMLDivElement>(null);
   const starsRef = useRef<HTMLDivElement>(null);
 
@@ -380,7 +382,11 @@ export default function Home() {
 
   const sendBuddyMessage = async (rawMessage: string) => {
     const message = rawMessage.trim();
-    if (!message || buddyThinking) return;
+    // Guarded by a ref, not by the buddyThinking state. Two Enter presses in the same React batch
+    // both read the pre-update state value and both send; a ref updates synchronously, so the
+    // second returns immediately. The state is still what renders the thinking indicator.
+    if (!message || buddySendingRef.current) return;
+    buddySendingRef.current = true;
 
     const visitorId = buddyIdRef.current;
     buddyIdRef.current += 2;
@@ -408,13 +414,22 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message, history }),
       });
+      // A rate-limit refusal is plain text, not JSON, so parsing it threw and the visitor silently
+      // received a canned reply as though it were a real answer. Say what actually happened.
+      if (res.status === 429) {
+        settle(
+          "You're sending messages faster than I can keep up with — give it a minute and ask me again. Everything else on the page still works.",
+        );
+        return;
+      }
       const data = (await res.json()) as { ok?: boolean; reply?: string };
-      // Any failure falls back to the offline guide rather than showing an error.
+      // Any other failure falls back to the offline guide rather than showing an error.
       settle(data?.ok && data.reply ? data.reply : getBuddyReply(message, buddyAttachment));
     } catch {
       settle(getBuddyReply(message, buddyAttachment));
     } finally {
       setBuddyThinking(false);
+      buddySendingRef.current = false;
     }
   };
 
@@ -435,7 +450,8 @@ export default function Home() {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    const safeFileName =
+    // Strip control characters and collapse whitespace before the name is shown anywhere.
+    const cleanedName =
       [...file.name]
         .filter((character) => {
           const code = character.charCodeAt(0);
@@ -443,11 +459,19 @@ export default function Home() {
         })
         .join("")
         .replace(/\s+/g, " ")
-        .trim()
-        .slice(0, 120) || "attachment";
-    const supported = /\.(txt|md|csv|json|log|pdf|png|jpe?g)$/i.test(
-      safeFileName,
-    );
+        .trim() || "attachment";
+
+    // Both extension tests run against this one string, and against the untruncated form.
+    // Previously the support test used the cleaned name while the readable test used the raw one, so
+    // "notes.txt " (trailing space) passed as supported and then failed the readable test, giving a
+    // text file that was attached but never read. Truncating first also meant a name longer than
+    // 120 characters lost its extension and was rejected outright.
+    const EXTENSION = /\.(txt|md|csv|json|log|pdf|png|jpe?g)$/i;
+    const READABLE = /\.(txt|md|csv|json|log)$/i;
+    const supported = EXTENSION.test(cleanedName);
+
+    // Truncate for display only, after the decisions above.
+    const safeFileName = cleanedName.slice(0, 120);
     if (!supported) {
       setBuddyAttachment(null);
       setBuddyNotice(
@@ -463,7 +487,7 @@ export default function Home() {
       return;
     }
 
-    const readableText = /\.(txt|md|csv|json|log)$/i.test(file.name);
+    const readableText = READABLE.test(cleanedName);
     let text = "";
     if (readableText) {
       try {
