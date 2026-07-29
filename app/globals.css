@@ -374,6 +374,10 @@ textarea:focus-visible {
   background-image: url("/assets/buttons/nav-downloads.png");
 }
 
+.nav-experiments {
+  background-image: url("/assets/buttons/nav-experiments.png");
+}
+
 .nav-field-notes {
   background-image: url("/assets/buttons/nav-field-notes.png");
 }
@@ -1953,4 +1957,71 @@ blockquote {
     margin-bottom: 12px;
     box-shadow: none;
   }
+}
+
+/* Experiments -- same bevelled card language as the field notes, with a
+   monospaced results block so figures line up the way terminal output does. */
+.experiment-list {
+  display: grid;
+  gap: 18px;
+}
+
+.experiment {
+  background: #fffbe8;
+  border: 2px solid #000;
+  box-shadow: 4px 4px 0 #7a6a2f;
+  padding: 14px 16px 16px;
+}
+
+.experiment-number {
+  background: #000080;
+  color: #ffe97f;
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  margin: 0 0 8px;
+  padding: 2px 8px;
+}
+
+.experiment h3 {
+  font-size: 15px;
+  letter-spacing: 0.5px;
+  margin: 0 0 8px;
+}
+
+.experiment-question {
+  margin: 0 0 12px;
+}
+
+.experiment-result {
+  background: #f4f0dc;
+  border: 1px solid #8a7c46;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 12px;
+  margin: 0 0 12px;
+  padding: 8px 10px;
+}
+
+.experiment-result > div {
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  padding: 2px 0;
+}
+
+.experiment-result > div + div {
+  border-top: 1px dotted #b3a86a;
+}
+
+.experiment-result span:last-child {
+  font-weight: 700;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.experiment-reading {
+  border-left: 4px solid #000080;
+  margin: 0 0 12px;
+  padding-left: 10px;
 }

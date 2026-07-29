@@ -1,0 +1,30 @@
+EXPERIMENT 1 -- XOR CONVERGENCE
+==============================
+
+initialisations tried      : 200
+converged                  : 153  (76.5%)
+stuck at 20,000 steps      : 47
+steps to converge  median  : 1264
+                   min-max : 737 - 5329
+
+EXPERIMENT 3 -- BB(2,2) COMPLETE DECISION
+========================================
+
+machines enumerated        : 20736
+proven to halt             : 9784
+proven never to halt       : 10952
+undecided                  : 0
+BB(2,2) steps  = 6   (published value: 6)
+BB(2,2) marks  = 4   (published value: 4)
+
+EXPERIMENT 2 -- AUC NULL DISTRIBUTION
+====================================
+
+trials                     : 20000
+samples per trial          : 11497
+null AUC mean              : 0.50002
+null AUC std dev           : 0.00534
+null 95% range             : 0.4896 - 0.5105
+largest AUC pure noise gave: 0.5207
+observed 0.5105 is         : 1.97 sd from chance
+two-sided p                : 0.0492

@@ -1,0 +1,46 @@
+"""Experiment 2 -- how big is an AUC of 0.5105, really?
+
+Paper 002 reports walk-forward AUC 0.5105 over 11,497 windows and calls it no
+skill. That claim is only honest if 0.5105 is inside the range pure noise
+produces at that sample size. This measures the null distribution directly
+rather than asserting it: labels are a fair coin, scores are independent noise,
+so the true AUC is exactly 0.5 by construction.
+"""
+import numpy as np
+
+N, TRIALS = 11_497, 20_000
+OBSERVED = 0.5105
+
+def auc(scores, labels):
+    # Mann-Whitney U via ranks, ties averaged. Written out so no library
+    # convention is assumed -- the same reason the paper implements its own.
+    order = np.argsort(scores, kind="mergesort")
+    s = scores[order]
+    ranks = np.empty(len(s), float)
+    i = 0
+    while i < len(s):
+        j = i
+        while j + 1 < len(s) and s[j + 1] == s[i]:
+            j += 1
+        ranks[i:j + 1] = 0.5 * (i + j) + 1.0
+        i = j + 1
+    lab = labels[order]
+    n1 = lab.sum(); n0 = len(lab) - n1
+    return (ranks[lab == 1].sum() - n1 * (n1 + 1) / 2) / (n1 * n0)
+
+rng = np.random.default_rng(0)
+vals = np.empty(TRIALS)
+for t in range(TRIALS):
+    lab = rng.integers(0, 2, N)
+    vals[t] = auc(rng.normal(size=N), lab)
+
+sd = vals.std(ddof=1)
+p = float((np.abs(vals - 0.5) >= abs(OBSERVED - 0.5)).mean())
+print(f"trials                     : {TRIALS}")
+print(f"samples per trial          : {N}")
+print(f"null AUC mean              : {vals.mean():.5f}")
+print(f"null AUC std dev           : {sd:.5f}")
+print(f"null 95% range             : {np.quantile(vals,0.025):.4f} - {np.quantile(vals,0.975):.4f}")
+print(f"largest AUC pure noise gave: {vals.max():.4f}")
+print(f"observed 0.5105 is         : {abs(OBSERVED-0.5)/sd:.2f} sd from chance")
+print(f"two-sided p                : {p:.4f}")

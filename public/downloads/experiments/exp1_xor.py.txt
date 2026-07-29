@@ -1,0 +1,38 @@
+"""Experiment 1 -- how often does XOR actually converge?
+
+A 2-2-1 network trained from scratch on XOR, 200 random initialisations, no
+frameworks. The textbook claim is that XOR is the toy problem a hidden layer
+solves. The measurement is how often it solves it, which is not the same claim.
+"""
+import numpy as np
+
+X = np.array([[0.,0.],[0.,1.],[1.,0.],[1.,1.]])
+Y = np.array([[0.],[1.],[1.],[0.]])
+
+def sig(z): return 1.0/(1.0+np.exp(-z))
+
+def run(seed, steps=20_000, lr=0.5):
+    rng = np.random.default_rng(seed)
+    W1 = rng.normal(0, 1, (2, 2)); b1 = np.zeros((1, 2))
+    W2 = rng.normal(0, 1, (2, 1)); b2 = np.zeros((1, 1))
+    for step in range(steps):
+        h = sig(X @ W1 + b1)
+        o = sig(h @ W2 + b2)
+        d2 = (o - Y) * o * (1 - o)
+        d1 = (d2 @ W2.T) * h * (1 - h)
+        W2 -= lr * h.T @ d2; b2 -= lr * d2.sum(0, keepdims=True)
+        W1 -= lr * X.T @ d1; b1 -= lr * d1.sum(0, keepdims=True)
+        if np.all((o > 0.5) == (Y > 0.5)) and np.abs(o - Y).max() < 0.1:
+            return step + 1
+    return None
+
+SEEDS = 200
+res = [run(s) for s in range(SEEDS)]
+ok = [r for r in res if r is not None]
+print(f"initialisations tried      : {SEEDS}")
+print(f"converged                  : {len(ok)}  ({100*len(ok)/SEEDS:.1f}%)")
+print(f"stuck at 20,000 steps      : {SEEDS-len(ok)}")
+if ok:
+    a = np.array(ok)
+    print(f"steps to converge  median  : {int(np.median(a))}")
+    print(f"                   min-max : {a.min()} - {a.max()}")
