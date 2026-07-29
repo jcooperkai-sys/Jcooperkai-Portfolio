@@ -1,0 +1,42 @@
+HUMAN-CENTERED CONTROLS FOR AUTONOMOUS SYSTEMS
+
+Author: Cooper E.
+Venue: Technical Memo
+Year: 2026
+
+ABSTRACT
+
+This technical memo examines controls that help people supervise agentic
+systems without needing to inspect every internal step. It focuses on
+permission boundaries, reversible actions, visible checkpoints, and useful
+failure messages. The central question is how to preserve creative autonomy
+while keeping consequential actions legible and easy to stop.
+
+1. CONTROL WITHOUT MICROMANAGEMENT
+
+A useful control surface should expose decisions that change risk, authority,
+or external state. It should not force a person to approve every harmless
+intermediate calculation.
+
+2. PRACTICAL PATTERNS
+
+The memo develops four patterns: scoped permission envelopes, action previews,
+recovery checkpoints, and compact event logs. Each pattern aims to make the
+system easier to interrupt, audit, and resume.
+
+3. OPEN QUESTIONS
+
+Future experiments will study when checkpoints help or distract, which
+explanations make failures actionable, and how interfaces should communicate
+uncertainty without becoming noisy.
+
+4. STATUS
+
+This is an independent technical memo and active research direction. It is
+shared to invite careful discussion, not to present a completed empirical
+result.
+
+CONTACT
+
+jcooperkai@gmail.com
+https://jcooperkai.com/

@@ -1,0 +1,47 @@
+DESIGNING RELIABLE AGENTIC AI WORKFLOWS
+
+Author: Cooper E.
+Venue: Independent Research Note
+Year: 2026
+
+ABSTRACT
+
+This ongoing research note studies how AI agents can plan, use tools, recover
+from errors, and explain what they are doing without becoming brittle. It
+outlines a practical architecture built around explicit state, small
+verifiable steps, bounded tool access, and human-readable traces. The goal is
+to turn capable prototypes into systems that remain understandable when a
+task becomes long, ambiguous, or surprising.
+
+1. MOTIVATION
+
+Many agent demos optimize for finishing a task once. Reliable systems also
+need to explain their current state, stop safely, and recover when a tool or
+assumption fails. Reliability is therefore treated here as an interaction
+design problem as much as a model-quality problem.
+
+2. WORKFLOW DESIGN
+
+The proposed workflow separates intent, plan, action, observation, and
+verification. Each step records what changed and what evidence supports the
+next step. Tools receive only the authority required for the current action,
+and consequential operations are designed to be reversible or explicitly
+confirmed.
+
+3. EVALUATION PLAN
+
+Experiments will compare completion quality, error recovery, trace clarity,
+and unnecessary tool calls across increasingly long tasks. The current
+document describes a research direction and evaluation plan; it does not
+claim a finished benchmark result.
+
+4. CONCLUSION
+
+The core hypothesis is simple: agents become more useful when their work is
+broken into inspectable state transitions and when failure is treated as a
+normal event to recover from, not something to hide.
+
+CONTACT
+
+jcooperkai@gmail.com
+https://jcooperkai.com/

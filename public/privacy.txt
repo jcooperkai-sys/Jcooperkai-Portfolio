@@ -1,0 +1,36 @@
+COOPER E.'S AI LAB — PRIVACY AND LOCAL FILE NOTICE
+==================================================
+
+Last updated: July 28, 2026
+
+This portfolio does not operate user accounts, a server-side chat service,
+advertising trackers, analytics tags, or a remote file-upload endpoint.
+
+LOCAL BROWSER STORAGE
+
+The retro visitor counter is decorative and does not write a tracking cookie,
+localStorage value, or sessionStorage value.
+
+BUDDY FILES AND MESSAGES
+
+Buddy runs in your browser. A file selected for Buddy is read only in that
+browser tab, limited to 2 MB, and is not transmitted to or stored by this
+website. Text files are truncated to a small local preview. Buddy messages are
+not sent to a server and disappear when the page is reloaded.
+
+HOSTING AND SECURITY
+
+Like nearly every public website, the hosting and network providers may process
+ordinary request metadata such as IP address, browser details, requested path,
+and time of access to deliver the page, prevent abuse, and operate the service.
+This site does not add its own persistent visitor log or sell personal data.
+
+EXTERNAL LINKS AND EMAIL
+
+External profile links are governed by their destination's privacy policy.
+Choosing an electronic-mail link opens your mail application; the resulting
+message is handled by your email provider and the recipient's email provider.
+
+CONTACT
+
+Privacy or security questions: jcooperkai@gmail.com
