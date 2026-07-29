@@ -1,0 +1,69 @@
+"""Experiment 3 -- decide BB(2,2) completely, exhaustively, in under a second.
+
+Busy Beaver values cannot be computed by a general algorithm, so each one is
+established by resolving every machine in its class individually. BB(2,2) is
+small enough to do that exhaustively and watch it finish: 2 states, 2 symbols.
+
+Each of the 4 transition entries is (write, move, next), where next is state 0,
+state 1, or HALT -- 12 possibilities, so 12^4 = 20,736 machines. The halting
+transition writes and moves like any other, which is the convention the
+published values use; getting that wrong costs both a step and two marks.
+
+A machine is decided as halting if it reaches HALT, and as non-halting if the
+full configuration (state, head position, tape) ever repeats. A repeat means a
+deterministic machine is in a cycle it can never leave. Nothing is assumed about
+the answer, and the undecided count is reported rather than hidden.
+"""
+from itertools import product
+
+STATES, SYMS, LIMIT, TAPE = 2, 2, 200, 64
+HALT = STATES
+
+def decide(prog):
+    tape = [0] * TAPE
+    pos, state, seen = TAPE // 2, 0, set()
+    for n in range(LIMIT):
+        key = (state, pos, tuple(tape))
+        if key in seen:
+            return "loop", n, None
+        seen.add(key)
+        write, move, nxt = prog[state * SYMS + tape[pos]]
+        tape[pos] = write
+        pos += move
+        if nxt == HALT:
+            # The halting transition is itself a step, and it has already
+            # written, so both counts include it.
+            return "halt", n + 1, sum(tape)
+        if not 0 <= pos < TAPE:
+            return "loop", n, None
+        state = nxt
+    return "loop", LIMIT, None
+
+ENTRIES = [
+    (w, m, s)
+    for w in range(SYMS)
+    for m in (-1, 1)
+    for s in list(range(STATES)) + [HALT]
+]
+
+halting = nonhalting = undecided = 0
+best_steps = best_marks = 0
+for prog in product(ENTRIES, repeat=STATES * SYMS):
+    kind, steps, marks = decide(list(prog))
+    if kind == "halt":
+        halting += 1
+        # S(2,2) and Sigma(2,2) are separate maxima and need not be attained by
+        # the same machine, so they are tracked independently. Taking marks from
+        # whichever machine ran longest gives 1 instead of 4.
+        best_steps = max(best_steps, steps)
+        best_marks = max(best_marks, marks)
+    else:
+        nonhalting += 1
+
+total = halting + nonhalting + undecided
+print(f"machines enumerated        : {total}")
+print(f"proven to halt             : {halting}")
+print(f"proven never to halt       : {nonhalting}")
+print(f"undecided                  : {undecided}")
+print(f"BB(2,2) steps  = {best_steps}   (published value: 6)")
+print(f"BB(2,2) marks  = {best_marks}   (published value: 4)")

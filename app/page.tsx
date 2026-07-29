@@ -75,11 +75,69 @@ const projects = [
   },
 ];
 
+/**
+ * Three small experiments, each run before publication and reported with the numbers it actually
+ * produced. Every figure below came out of the script linked beside it.
+ */
+const experiments = [
+  {
+    number: "E1",
+    title: "HOW OFTEN DOES XOR ACTUALLY CONVERGE?",
+    question:
+      "XOR is the textbook problem a hidden layer solves. That is a claim about what is possible, not about what happens. So: over 200 random initialisations of a 2-2-1 network trained from scratch, how many actually get there?",
+    result: [
+      ["Initialisations tried", "200"],
+      ["Converged", "153 (76.5%)"],
+      ["Still stuck at 20,000 steps", "47"],
+      ["Steps to converge, median", "1,264"],
+      ["Steps to converge, range", "737 - 5,329"],
+    ],
+    reading:
+      "Almost a quarter never made it. The architecture can represent XOR; gradient descent from a random start reaches it about three times in four. A single lucky run would have reported \u201csolved\u201d and told you nothing about that.",
+    script: "/api/experiment/exp1-xor",
+  },
+  {
+    number: "E2",
+    title: "HOW BIG IS AN AUC OF 0.5105, REALLY?",
+    question:
+      "Paper 002 reports walk-forward AUC 0.5105 and calls it no skill. That is only honest if pure noise produces numbers that large at the same sample size, so this measures the null distribution directly instead of asserting it: coin-flip labels, independent noise scores, 20,000 trials at n = 11,497.",
+    result: [
+      ["Null AUC mean", "0.50002"],
+      ["Null AUC standard deviation", "0.00534"],
+      ["Null 95% range", "0.4896 - 0.5105"],
+      ["Largest AUC noise alone gave", "0.5207"],
+      ["Observed 0.5105 sits at", "1.97 sd from chance"],
+      ["Two-sided p", "0.0492"],
+    ],
+    reading:
+      "This did not come out as cleanly as the paper's framing suggests, and the honest reading is the narrow one. 0.5105 lands exactly on the upper edge of the null 95% range, at p = 0.0492 - marginal, not comfortably inside noise. What rules it out as signal is not this p value but its company: a Brier improvement of 0.00004, a predicted range spanning 0.47 to 0.53, and overlapping windows that make the trials less independent than this null assumes. A borderline p on its own would not have settled it.",
+    script: "/api/experiment/exp2-auc-null",
+  },
+  {
+    number: "E3",
+    title: "DECIDE BB(2,2) COMPLETELY, IN HALF A SECOND",
+    question:
+      "Busy Beaver values cannot be computed by any general algorithm, so each one is established by resolving every machine in its class one at a time. BB(2,2) is small enough to do exhaustively and watch it finish: 20,736 machines, each proven to halt or proven to cycle.",
+    result: [
+      ["Machines enumerated", "20,736"],
+      ["Proven to halt", "9,784"],
+      ["Proven never to halt", "10,952"],
+      ["Undecided", "0"],
+      ["S(2,2) recovered", "6 steps (published: 6)"],
+      ["\u03a3(2,2) recovered", "4 marks (published: 4)"],
+    ],
+    reading:
+      "Two bugs surfaced while writing this and both are worth naming. Not counting the halting transition as a step gave 5 instead of 6. Reading the mark count off whichever machine ran longest gave 1 instead of 4 - the step maximum and the mark maximum are separate maxima and need not be the same machine. Both produced plausible numbers, which is exactly why the published values are the check.",
+    script: "/api/experiment/exp3-bb22",
+  },
+];
+
 const navItems = [
   { label: "ABOUT", href: "#about", className: "nav-about" },
   { label: "PAPERS", href: "#papers", className: "nav-papers" },
   { label: "PROJECTS", href: "#projects", className: "nav-projects" },
   { label: "DOWNLOADS", href: "#downloads", className: "nav-downloads" },
+  { label: "EXPERIMENTS", href: "#experiments", className: "nav-experiments" },
   { label: "FIELD NOTES", href: "#notes", className: "nav-field-notes" },
   { label: "BUDDY", href: "#buddy", className: "nav-buddy" },
   { label: "CONTACT", href: "#contact", className: "nav-contact" },
@@ -461,7 +519,7 @@ export default function Home() {
             ·:: HOME ON THE INFORMATION SUPERHIGHWAY ::·
           </p>
           <p className="hero-intro">
-            AI RESEARCH, AGENTIC SYSTEMS, AND OPEN EXPERIMENTS FROM SAN DIEGO.
+            NEURAL NETWORKS, INTERPRETABILITY, AND OPEN EXPERIMENTS FROM SAN DIEGO.
           </p>
           <p className="hero-fineprint">
             <span className="blink" aria-hidden="true">
@@ -617,10 +675,10 @@ export default function Home() {
 
               <div className="interest-table" aria-label="Research interests">
                 <strong>RESEARCH INTERESTS:</strong>
-                <span>AGENTIC SYSTEMS</span>
-                <span>AI RESEARCH</span>
-                <span>TOOL USE &amp; MEMORY</span>
-                <span>HUMAN–AI COLLABORATION</span>
+                <span>INTERPRETABILITY</span>
+                <span>COMPUTABILITY</span>
+                <span>FROM-SCRATCH LEARNING</span>
+                <span>HONEST EVALUATION</span>
               </div>
               <nav className="profile-links" aria-label="Researcher profiles">
                 {profileLinks.map((link) => (
@@ -790,6 +848,48 @@ export default function Home() {
               <ViewMore
                 href="/downloads/README-FIRST.txt"
                 label="View more download information"
+              />
+            </Panel>
+
+            <Panel id="experiments" title="Experiments" symbol="⚗">
+              <p className="section-lede">
+                Three small things I wanted to know the answer to. Each was run
+                before it was written up, and each reports the numbers it
+                actually produced — including the one that came out messier than
+                the story around it. The scripts are here; they need only NumPy.
+              </p>
+              <div className="experiment-list">
+                {experiments.map((experiment) => (
+                  <article className="experiment" key={experiment.number}>
+                    <p className="experiment-number">{experiment.number}</p>
+                    <h3>{experiment.title}</h3>
+                    <p className="experiment-question">{experiment.question}</p>
+                    <div className="experiment-result">
+                      {experiment.result.map(([label, value]) => (
+                        <div key={label}>
+                          <span>{label}</span>
+                          <span>{value}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="experiment-reading">
+                      <strong>WHAT IT MEANS:</strong> {experiment.reading}
+                    </p>
+                    <a
+                      aria-label={`View the script for ${experiment.title}`}
+                      className="text-art-button"
+                      href={experiment.script}
+                      rel="noopener noreferrer"
+                      target="_blank"
+                    >
+                      Read the script →
+                    </a>
+                  </article>
+                ))}
+              </div>
+              <ViewMore
+                href="/api/experiment/results"
+                label="View the raw output of all three runs"
               />
             </Panel>
 

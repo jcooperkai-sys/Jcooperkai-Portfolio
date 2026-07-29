@@ -452,6 +452,33 @@ const worker = {
     // Content-Type from the file extension after the Worker returns, which overrode every header
     // set on /papers/001.pdf and made the browser download the file instead of opening it. With no
     // extension to derive from, the Content-Type set here survives, so VIEW PAPER opens in a tab.
+    // Experiment scripts and their raw output, read in a tab for the same reason as the papers.
+    // The allowed names are listed rather than pattern-matched so the route cannot be used to read
+    // an arbitrary file out of the downloads directory.
+    const READABLE_TEXT: Record<string, string> = {
+      "exp1-xor": "/downloads/experiments/exp1_xor.py.txt",
+      "exp2-auc-null": "/downloads/experiments/exp2_auc_null.py.txt",
+      "exp3-bb22": "/downloads/experiments/exp3_bb22.py.txt",
+      results: "/downloads/experiments/results.txt",
+    };
+    const textMatch = /^\/api\/experiment\/([a-z0-9-]+)$/.exec(decodedPathname);
+    if (textMatch) {
+      const assetPath = READABLE_TEXT[textMatch[1]];
+      if (!assetPath) {
+        return textResponse(url, "Not found.", 404);
+      }
+      const assetUrl = new URL(assetPath, url.origin);
+      const asset = env?.ASSETS
+        ? await env.ASSETS.fetch(new Request(assetUrl, { method: "GET" }))
+        : await fetch(new Request(assetUrl, { method: "GET" }));
+      if (!asset.ok) {
+        return textResponse(url, "Not found.", 404);
+      }
+      return textResponse(url, await asset.text(), 200, {
+        "Cache-Control": "public, max-age=3600, must-revalidate",
+      });
+    }
+
     const paperMatch = /^\/api\/paper\/(\d{3})$/.exec(decodedPathname);
     if (paperMatch) {
       const assetUrl = new URL(`/papers/${paperMatch[1]}.pdf`, url.origin);
