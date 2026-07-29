@@ -200,6 +200,12 @@ async function recordVisit(request: Request, env: Env): Promise<Response> {
     let total = Number.parseInt((await store.get("total")) ?? "", 10);
     if (!Number.isFinite(total)) total = DECORATIVE_VISITS;
     if (!seen) {
+      // Read-modify-write on a single key, so simultaneous first-time visitors can both read the
+      // same total and one increment is lost. KV is also eventually consistent, so a fresh visitor
+      // may briefly read a stale figure. Both are accepted here: this is a visit counter, an
+      // undercount of a few is harmless, and the alternative is a Durable Object for a number in
+      // the page footer. Two writes per new visitor also bound usage against the free tier's
+      // 1,000 writes per day — roughly 500 unique visitors before it stops incrementing.
       total += 1;
       await store.put(key, "1", { expirationTtl: 86_400 });
       await store.put("total", String(total));
@@ -311,6 +317,9 @@ async function buddyReply(request: Request, env: Env): Promise<Response> {
         temperature: 0.6,
         max_tokens: 320,
       }),
+      // Without this a hung upstream connection holds the request open until the platform kills
+      // it, burning wall-clock on every stalled call. 15s is well past a normal completion.
+      signal: AbortSignal.timeout(15_000),
     });
     if (!upstream.ok) {
       // Status only. Upstream bodies can echo the request and must not be logged.
