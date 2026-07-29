@@ -4,6 +4,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import {
+  type KeyboardEvent,
   useEffect,
   useRef,
   useState,
@@ -15,33 +16,36 @@ const papers = [
   {
     number: "001",
     year: "2026",
-    title: "DESIGNING RELIABLE AGENTIC AI WORKFLOWS",
+    title: "COMPLETE DECISION OF SMALL TURING MACHINE CLASSES",
     venue: "INDEPENDENT RESEARCH NOTE",
     authors: "COOPER E.",
     abstract:
-      "This ongoing research note studies how AI agents can plan, use tools, recover from errors, and explain what they are doing without becoming brittle. It outlines a practical architecture built around explicit state, small verifiable steps, bounded tool access, and human-readable traces. The goal is to turn capable prototypes into systems that remain understandable when a task becomes long, ambiguous, or surprising.",
+      "The Busy Beaver function is uncomputable, so each value must be established by deciding every machine in its class individually. This note presents an independently written enumeration and decision pipeline and uses it to completely decide four classical classes: every machine in BB(2,2), BB(3,2), BB(2,3) and BB(4,2) is proven either to halt or never to halt, with no residue. The maxima recovered are 6, 21, 38 and 107 steps, the last with 13 marks, matching the published values. No parameter was tuned against those answers. A soundness defect found in the author's own backward decider is reported in full, because it produced a confident false result rather than a visible failure.",
+    view: "/api/paper/001",
     paper: "/downloads/paper-001.txt",
     citation: "/downloads/paper-001.bib",
   },
   {
     number: "002",
     year: "2026",
-    title: "MEMORY AND TOOL USE IN SMALL AI AGENTS",
-    venue: "EXPERIMENT LOG",
+    title: "SHORT-HORIZON PRICE DIRECTION IS NOT PREDICTABLE",
+    venue: "NEGATIVE RESULT",
     authors: "COOPER E.",
     abstract:
-      "This experiment log explores how compact agents decide what to remember, what to retrieve, and when to call an external tool. The work compares short working-memory summaries with structured event records and tests how each approach affects consistency across multi-step tasks. The emphasis is on clear, reproducible experiments rather than inflated benchmark claims.",
+      "A common assumption among retail traders is that short-horizon price direction carries exploitable signal. This note tests that assumption on 258,737 real one-minute bars spanning roughly 180 days, using walk-forward validation with no lookahead and metrics implemented from scratch. Direction over a fifteen-minute horizon is not predictable: walk-forward AUC is 0.5105 against a 0.5 baseline. The model is well calibrated, but calibrated at a coin flip, and calibration without discrimination is not signal. The result is reported because it rules out an entire strategy class.",
+    view: "/api/paper/002",
     paper: "/downloads/paper-002.txt",
     citation: "/downloads/paper-002.bib",
   },
   {
     number: "003",
     year: "2026",
-    title: "HUMAN-CENTERED CONTROLS FOR AUTONOMOUS SYSTEMS",
-    venue: "TECHNICAL MEMO",
+    title: "DECODABILITY IS NOT MECHANISM",
+    venue: "INDEPENDENT RESEARCH NOTE",
     authors: "COOPER E.",
     abstract:
-      "This technical memo examines controls that help people supervise agentic systems without needing to inspect every internal step. It focuses on permission boundaries, reversible actions, visible checkpoints, and useful failure messages. The central question is how to preserve creative autonomy while keeping consequential actions legible and easy to stop.",
+      "Interpretability commonly establishes that a network represents something by training a probe and reporting its accuracy. This note demonstrates, on a system whose ground truth is known analytically, that decodability and causal mechanism are different quantities and can be made to disagree almost completely. A channel decodable at 100 percent contributes 0.9998 bits to a correlational description of a hidden layer and 0.0006 bits to an interventional one, a separation of roughly 1600x across five seeds, while the interventional description recovers the true generating structure at ARI 0.9957 against 0.1243.",
+    view: "/api/paper/003",
     paper: "/downloads/paper-003.txt",
     citation: "/downloads/paper-003.bib",
   },
@@ -50,23 +54,23 @@ const papers = [
 const projects = [
   {
     status: "ACTIVE",
-    title: "KAI AGENT LAB",
+    title: "HISOKAOS",
     copy:
-      "A hands-on sandbox for testing planning, tool use, memory, recovery, and visible checkpoints in agentic AI workflows.",
+      "A 32-bit x86 operating system written from scratch in C and assembly. Boots on its own kernel in QEMU to an interactive shell: paging, preemptive task switching, PCI, an RTL8139 driver, a RAM filesystem, and 27 bundled applications.",
     file: "/downloads/project-01-readme.txt",
   },
   {
-    status: "BETA",
-    title: "RESEARCH PAPER NAVIGATOR",
+    status: "ACTIVE",
+    title: "THE LAZY DRIVER",
     copy:
-      "An experimental reading companion that organizes papers, surfaces open questions, and keeps citations attached to every research note.",
+      "An autonomous-driving perception stack over ordinary dashcam footage. Drivable-surface and lane segmentation, tracked vehicles with metric distances, and a predicted driving line clamped to the segmented road.",
     file: "/downloads/project-02-readme.txt",
   },
   {
-    status: "ARCHIVE",
-    title: "AI EXPERIMENT ARCHIVE",
+    status: "ACTIVE",
+    title: "BILL & ONEIRO",
     copy:
-      "A growing record of prompts, prototypes, failures, and lessons from small AI systems built to answer one focused question at a time.",
+      "Two local-first systems: a conversational runtime wrapping a local model in memory, retrieval and verification alongside a from-scratch predictor, and a generative art system that teaches a NumPy pixel-art model continuously.",
     file: "/downloads/project-03-readme.txt",
   },
 ];
@@ -94,19 +98,9 @@ const profileLinks = [
     href: "https://arxiv.org/search/?query=jcooperkai&searchtype=author",
   },
   {
-    label: "GOOGLE SCHOLAR",
-    detail: "jcooperkai",
-    href: "https://scholar.google.com/scholar?q=author%3Ajcooperkai",
-  },
-  {
     label: "ORCID",
     detail: "jcooperkai",
     href: "https://orcid.org/orcid-search/search?searchQuery=jcooperkai",
-  },
-  {
-    label: "LINKEDIN",
-    detail: "jcooperkai",
-    href: "https://www.linkedin.com/in/jcooperkai/",
   },
   {
     label: "PERSONAL SITE",
@@ -162,13 +156,13 @@ function getBuddyReply(message: string, attachment: BuddyAttachment | null) {
   }
 
   if (/(paper|research|publication|arxiv)/.test(question)) {
-    return "Cooper’s current independent notes cover reliable agentic workflows, memory and tool use, and human-centered controls for autonomous systems. Open any abstract in the Papers section, view the full text, or download the citation file.";
+    return "Three notes are up: a Busy Beaver pipeline that completely decides BB(2,2), BB(3,2), BB(2,3) and BB(4,2) with zero undecided machines; a negative result showing short-horizon price direction is unpredictable across 258,737 real minute bars (AUC 0.5105); and a demonstration that decodability and causal mechanism diverge by roughly 1600x. Open any abstract, view the full text, or download the citation.";
   }
   if (/(project|code|github|build)/.test(question)) {
-    return "The project shelf includes Kai Agent Lab, Research Paper Navigator, and the AI Experiment Archive. The README buttons explain each project, and the View More control opens Cooper’s GitHub profile.";
+    return "HisokaOS is a 32-bit x86 operating system that boots on its own kernel with 27 bundled applications. The Lazy Driver is an autonomous-driving perception stack over dashcam footage. Bill and Oneiro are local-first systems: a conversational runtime with a from-scratch core, and a continuously learning pixel-art generator. Every project has a README download and a public repository.";
   }
   if (/(agent|agentic|memory|tool)/.test(question)) {
-    return "Cooper studies how AI agents plan, remember context, call tools, recover from errors, and keep consequential actions visible to people. The recurring design rule is: small steps, explicit state, bounded permissions, and reversible actions.";
+    return "Cooper trains neural networks and studies what happens inside them: the structure that emerges in the weights, and the failures that reveal how these systems actually work. A recurring theme is separating what a network encodes from what it uses -- probes measure the former, interventions the latter, and they can disagree almost entirely.";
   }
   if (/(download|cv|statement|file)/.test(question)) {
     return "Visit Download My Work for Cooper’s CV, research statement, and selected-work bundle. Every listed file is a real download, and each paper also has a plain-text version plus a BibTeX citation.";
@@ -180,7 +174,7 @@ function getBuddyReply(message: string, attachment: BuddyAttachment | null) {
     return "Cooper is based in San Diego, California, and works online as jcooperkai.";
   }
   if (/(who|cooper|jcooperkai|about)/.test(question)) {
-    return "Cooper E., known online as jcooperkai, is an independent AI researcher and agentic-system builder in San Diego. This site is the public lab notebook for that work.";
+    return "Cooper E., known online as jcooperkai, is an independent AI researcher who trains neural networks and investigates what is hidden inside them. This site is the public lab notebook: papers, experiments, and working systems, including the results that came out negative.";
   }
   if (/(hello|hi|hey|buddy)/.test(question)) {
     return "Hello from the information superhighway! I can guide you to Cooper’s research, projects, downloads, profiles, or contact details. What would you like to explore?";
@@ -245,14 +239,37 @@ function ViewMore({
   );
 }
 
+/** Shape returned by /api/visits. `live` is false when no counting store is bound. */
+type VisitCount = { count: number; live: boolean };
+
 export default function Home() {
-  const visitorCount = "013581";
+  // Rendered server-side as the decorative figure so the counter is never blank or shifting on
+  // first paint; replaced once /api/visits answers. That endpoint counts unique visits per day
+  // from a salted, expiring hash of the address -- the address itself is never stored. Where no
+  // KV binding exists it reports live:false and the decorative figure stands.
+  const [visitorCount, setVisitorCount] = useState("013581");
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/visits")
+      .then((r) => (r.ok ? (r.json() as Promise<VisitCount>) : null))
+      .then((data) => {
+        if (cancelled || !data?.live || typeof data.count !== "number") return;
+        setVisitorCount(String(data.count).padStart(6, "0"));
+      })
+      .catch(() => {
+        /* the counter is ornamental; a failure here must never surface to the visitor */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const [secretMode, setSecretMode] = useState(false);
   const [motionPaused, setMotionPaused] = useState(false);
   const [buddyMessages, setBuddyMessages] = useState<BuddyMessage[]>([
     buddyWelcome,
   ]);
   const [buddyInput, setBuddyInput] = useState("");
+  const [buddyThinking, setBuddyThinking] = useState(false);
   const [buddyAttachment, setBuddyAttachment] =
     useState<BuddyAttachment | null>(null);
   const [buddyNotice, setBuddyNotice] = useState(
@@ -303,24 +320,57 @@ export default function Home() {
     buddyLogRef.current.scrollTop = buddyLogRef.current.scrollHeight;
   }, [buddyMessages]);
 
-  const sendBuddyMessage = (rawMessage: string) => {
+  const sendBuddyMessage = async (rawMessage: string) => {
     const message = rawMessage.trim();
-    if (!message) return;
+    if (!message || buddyThinking) return;
 
     const visitorId = buddyIdRef.current;
     buddyIdRef.current += 2;
-    const reply = getBuddyReply(message, buddyAttachment);
+    // Show the visitor's line immediately, then replace the placeholder once a reply lands.
     setBuddyMessages((current) => [
       ...current,
       { id: visitorId, speaker: "visitor", text: message },
-      { id: visitorId + 1, speaker: "buddy", text: reply },
+      { id: visitorId + 1, speaker: "buddy", text: "..." },
     ]);
     setBuddyInput("");
+    setBuddyThinking(true);
+
+    const settle = (text: string) =>
+      setBuddyMessages((current) =>
+        current.map((m) => (m.id === visitorId + 1 ? { ...m, text } : m)),
+      );
+
+    try {
+      const history = buddyMessages.slice(-6).map((m) => ({
+        role: m.speaker === "visitor" ? "user" : "assistant",
+        content: m.text,
+      }));
+      const res = await fetch("/api/buddy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message, history }),
+      });
+      const data = (await res.json()) as { ok?: boolean; reply?: string };
+      // Any failure falls back to the offline guide rather than showing an error.
+      settle(data?.ok && data.reply ? data.reply : getBuddyReply(message, buddyAttachment));
+    } catch {
+      settle(getBuddyReply(message, buddyAttachment));
+    } finally {
+      setBuddyThinking(false);
+    }
   };
 
   const handleBuddySubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    sendBuddyMessage(buddyInput);
+    void sendBuddyMessage(buddyInput);
+  };
+
+  // A textarea swallows Enter, so the form never submitted. Enter sends; Shift+Enter newlines.
+  const handleBuddyKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      void sendBuddyMessage(buddyInput);
+    }
   };
 
   const handleBuddyFile = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -529,26 +579,31 @@ export default function Home() {
                 <div className="bio-copy">
                   <h3>COOPER E.</h3>
                   <p className="role-line">
-                    INDEPENDENT AI RESEARCHER &amp; AGENTIC SYSTEM BUILDER
+                    INDEPENDENT AI RESEARCHER &amp; NEURAL SYSTEMS SCIENTIST
                   </p>
                   <p className="red-line">
-                    I STUDY HOW AI AGENTS PLAN, USE TOOLS, REMEMBER CONTEXT, AND
-                    FAIL SAFELY.
+                    I TRAIN LARGE NEURAL NETWORKS AND CHASE THE MYSTERIES HIDDEN
+                    INSIDE THEM.
                   </p>
                   <p>
-                    I&apos;m Cooper E., also known online as jcooperkai. I do AI
-                    research and build agentic projects that turn ambitious ideas
-                    into small, inspectable systems. My work is especially
-                    interested in planning, tool use, memory, human oversight, and
-                    the practical details that make an AI agent useful outside a
-                    perfect demo.
+                    I&apos;m Cooper E., known online as jcooperkai. I train neural
+                    networks and study what happens inside them — the structure
+                    that emerges in the weights, the reasoning that appears without
+                    ever being taught, and the strange failures that reveal how
+                    these systems actually think.
                   </p>
                   <p>
-                    I like experiments that reveal how a system thinks, where it
-                    breaks, and how a person can stay meaningfully in control. This
-                    lab collects my research notes, independent papers, prototypes,
-                    downloads, and ongoing attempts to build agents that are more
-                    reliable, understandable, and genuinely helpful.
+                    Modern models are the most capable artifacts we have built and
+                    the least understood. I am drawn to that gap. My work runs from
+                    architectures written from first principles to experiments that
+                    pry open a trained network and ask it what it knows — pursuing
+                    the quiet, difficult questions rather than the easy
+                    demonstrations.
+                  </p>
+                  <p>
+                    This lab is the record of that pursuit: independent papers,
+                    original experiments, working prototypes, and every result
+                    worth keeping — including the ones that proved me wrong.
                   </p>
                   <p className="location-line">
                     📍 <strong>Location:</strong> San Diego, California
@@ -611,7 +666,7 @@ export default function Home() {
                         <a
                           aria-label={`View ${paper.title}`}
                           className="art-action action-view-paper"
-                          href={paper.paper}
+                          href={paper.view}
                           rel="noopener noreferrer"
                           target="_blank"
                         >
@@ -862,6 +917,7 @@ export default function Home() {
                     id="buddy-message"
                     maxLength={600}
                     onChange={(event) => setBuddyInput(event.target.value)}
+                    onKeyDown={handleBuddyKeyDown}
                     rows={3}
                     value={buddyInput}
                   />
@@ -869,7 +925,7 @@ export default function Home() {
                     <button
                       aria-label="Ask Buddy"
                       className="art-action action-ask-buddy buddy-submit"
-                      disabled={!buddyInput.trim()}
+                      disabled={!buddyInput.trim() || buddyThinking}
                       type="submit"
                     >
                       <span className="sr-only">ASK BUDDY</span>

@@ -1,42 +1,91 @@
-MEMORY AND TOOL USE IN SMALL AI AGENTS
+SHORT-HORIZON PRICE DIRECTION IS NOT PREDICTABLE: A NEGATIVE RESULT
 
-Author: Cooper E.
-Venue: Experiment Log
+Author: Cooper E. (jcooperkai)
+Venue: Independent research note
 Year: 2026
 
 ABSTRACT
 
-This experiment log explores how compact agents decide what to remember,
-what to retrieve, and when to call an external tool. The work compares short
-working-memory summaries with structured event records and tests how each
-approach affects consistency across multi-step tasks. The emphasis is on
-clear, reproducible experiments rather than inflated benchmark claims.
+A common assumption among retail traders is that short-horizon price direction
+carries exploitable signal. This note tests that assumption directly on 258,737
+real one-minute bars spanning roughly 180 days, using walk-forward validation
+with no lookahead, and metrics implemented from scratch rather than taken from a
+library. Direction over a fifteen-minute horizon is not predictable: walk-forward
+AUC is 0.5105 against a 0.5 baseline, and the Brier score improves on a
+coin-flip by 0.00004. The result is reported because it rules out an entire
+strategy class, and because negative results of this kind are rarely published.
 
-1. RESEARCH QUESTION
+1. SETUP
 
-How little memory structure does an agent need before its behavior becomes
-more consistent and easier to inspect? A second question is whether a better
-memory record can reduce unnecessary tool calls.
+Data: 258,737 one-minute bars of real market data, roughly 180 days. Windows are
+non-overlapping and fifteen minutes long. Each window's label is simply whether
+the close exceeded the open.
 
-2. PROTOTYPE
+Features, computed strictly from history before the window opens: multi-scale
+momentum over 1, 5, 15, 30 and 60 minutes; realised volatility over two scales;
+sign persistence; a volume trend ratio; time-of-day encoded as sine and cosine;
+and a sixty-minute drift term. Thirteen features in total.
 
-The prototype records goals, completed actions, unresolved questions, tool
-results, and explicit reasons for retrieval. It deliberately avoids storing
-an unlimited transcript. The agent must choose what information remains
-active and what can be archived.
+Validation is expanding-window walk-forward across six folds, purged by one
+window so no training sample overlaps a test window. The model is logistic
+regression written from scratch. Brier score, AUC and expected calibration error
+are also implemented from scratch, so no library convention is silently assumed.
 
-3. MEASUREMENT
+2. RESULT
 
-Planned measurements include repeated-action rate, forgotten constraints,
-tool-call count, recovery after interruption, and the time a human needs to
-understand the current state.
+  Metric   Model     Baseline    Verdict
+  Brier    0.24996   0.25000     +0.00004 improvement
+  AUC      0.5105    0.5         essentially no skill
+  ECE      0.0096    --          well calibrated, but calibrated at ~0.5
 
-4. STATUS
+11,497 out-of-sample windows were tested. The model is well calibrated in the
+sense that its confidence matches its accuracy -- but the value it is confident
+about is a coin flip. Calibration without discrimination is not signal.
 
-The system and evaluation set are under active development. This document is
-a transparent working record rather than a claim of completed publication.
+3. WHAT SURVIVES
 
-CONTACT
+The instrument is a binary option struck at the window-open price. At minute t
+inside the window, its driftless fair value is
 
-jcooperkai@gmail.com
-https://jcooperkai.com/
+  f(t) = Phi( ln(S_t / K) / (sigma * sqrt(tau)) )
+
+with sigma a trailing one-minute realised volatility estimate and tau the time
+remaining. Measured against realised settlement, this fair value is calibrated
+(ECE ~= 0.02) and increasingly decisive as tau falls: AUC 0.603 at 14 minutes
+remaining, 0.759 at 10, 0.883 at 5, 0.953 at 2, and 0.977 at 1.
+
+This is not alpha. It is the option's delta, and any efficient quote observes the
+same spot and prices it identically. The only tradeable residual is the extent to
+which a quoted mid LAGS this fair value, or misprices volatility.
+
+4. BOUNDING THE RESIDUAL
+
+Modelling a mid as the fair value lagged by L and shrunk toward 0.5 by a
+favourite discount d, and trading only when the disagreement exceeds the
+half-spread, produces a measurable edge surface. With no lag and no discount --
+an efficient mid -- the edge is zero and no trade fires. That control matters:
+it demonstrates the measurement cannot manufacture profit from an efficient
+quote.
+
+Both L and d are live-measurable quantities, not free parameters. Establishing
+them requires recording quotes against spot over real elapsed time, and cannot
+be obtained from historical bars.
+
+5. WHY PUBLISH A NULL
+
+Two harness defects were found and fixed before these numbers were trusted. A
+clamp asymmetry, in which fair value was left unclamped while the modelled mid
+was clamped, manufactured a spurious one-to-two cent gap on near-certain
+contracts and turned an efficient-mid control into a large fictitious profit.
+Unbounded Kelly reinvestment across tens of thousands of sequential windows
+produced figures with no economic meaning. Both were caught by insisting that the
+zero-edge control return exactly zero.
+
+The discipline generalises: any backtest should contain a configuration in which
+profit is impossible, and that configuration should be checked first.
+
+REFERENCES
+
+[1] G. Brier. Verification of forecasts expressed in terms of probability, 1950.
+[2] F. Black, M. Scholes. The pricing of options and corporate liabilities, 1973.
+[3] M. Lopez de Prado. Advances in Financial Machine Learning, 2018.

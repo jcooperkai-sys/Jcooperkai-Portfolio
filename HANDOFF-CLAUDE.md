@@ -28,11 +28,12 @@ homepages without copying another site's layout, copy, or identity.
 - X: `https://x.com/jcooperkai`
 - GitHub: `https://github.com/jcooperkai-sys`
 - arXiv search: `https://arxiv.org/search/?query=jcooperkai&searchtype=author`
-- Google Scholar search: `https://scholar.google.com/scholar?q=author%3Ajcooperkai`
 - ORCID search: `https://orcid.org/orcid-search/search?searchQuery=jcooperkai`
-- LinkedIn: `https://www.linkedin.com/in/jcooperkai/`
 - Personal domain/canonical URL: `https://jcooperkai.com/`
 - Coauthors: none
+
+Removed profile links (owner decision, 29 Jul 2026): Google Scholar and LinkedIn.
+Do not reinstate either without an explicit request.
 
 ## Non-negotiable visual decisions
 

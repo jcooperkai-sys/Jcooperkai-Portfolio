@@ -1,47 +1,114 @@
-DESIGNING RELIABLE AGENTIC AI WORKFLOWS
+COMPLETE DECISION OF SMALL TURING MACHINE CLASSES
 
-Author: Cooper E.
-Venue: Independent Research Note
+Author: Cooper E. (jcooperkai)
+Venue: Independent research note
 Year: 2026
 
 ABSTRACT
 
-This ongoing research note studies how AI agents can plan, use tools, recover
-from errors, and explain what they are doing without becoming brittle. It
-outlines a practical architecture built around explicit state, small
-verifiable steps, bounded tool access, and human-readable traces. The goal is
-to turn capable prototypes into systems that remain understandable when a
-task becomes long, ambiguous, or surprising.
+The Busy Beaver function is uncomputable, so each value must be established by
+deciding every machine in its class individually. This note presents an
+independently written enumeration and decision pipeline and uses it to
+completely decide four classical classes: every machine in BB(2,2), BB(3,2),
+BB(2,3) and BB(4,2) is proven either to halt or never to halt, with no residue.
+The maxima recovered are 6, 21, 38 and 107 steps, the last with 13 marks,
+matching the published values. No parameter was tuned against those answers.
 
-1. MOTIVATION
+1. WHY A MAXIMUM IS NOT A VALUE
 
-Many agent demos optimize for finishing a task once. Reliable systems also
-need to explain their current state, stop safely, and recover when a tool or
-assumption fails. Reliability is therefore treated here as an interaction
-design problem as much as a model-quality problem.
+Finding the machine that runs longest is easy: simulate the class under a step
+limit and record the maximum. Establishing that this maximum IS the maximum
+requires proving that every machine which did not halt within the limit never
+halts at all. One unresolved machine leaves the value unproven, because that
+machine might run a very long time and then stop.
 
-2. WORKFLOW DESIGN
+2. ENUMERATION
 
-The proposed workflow separates intent, plan, action, observation, and
-verification. Each step records what changed and what evidence supports the
-next step. Tools receive only the authority required for the current action,
-and consequential operations are designed to be reversible or explicitly
-confirmed.
+Machines are enumerated in Tree Normal Form. A machine begins with a single
+defined transition and is simulated. When the head reads a state/symbol pair
+whose transition is undefined, the search branches over every canonical way of
+defining it, introducing at most one new state per branch. Transitions are never
+written down speculatively -- only at the moment the machine reaches them. The
+full tree for BB(4,2) contains 2,943,669 machines, against 6.98e9 for a naive
+enumeration.
 
-3. EVALUATION PLAN
+3. DECIDERS
 
-Experiments will compare completion quality, error recovery, trace clarity,
-and unnecessary tool calls across increasingly long tasks. The current
-document describes a research direction and evaluation plan; it does not
-claim a finished benchmark result.
+Simulation proves halting. It can never prove non-halting. Three arguments are
+applied in sequence, cheapest first.
 
-4. CONCLUSION
+  Cyclers. A machine that returns to an identical configuration repeats forever.
 
-The core hypothesis is simple: agents become more useful when their work is
-broken into inspectable state transitions and when failure is treated as a
-normal event to recover from, not something to hide.
+  Translated cycles. Far more machines repeat a configuration SHIFTED in space
+  while marching along the tape, and so never revisit a configuration exactly.
+  Criterion: at two record steps (the head first visiting a virgin cell, so all
+  tape beyond is blank) in the same state, at positions p1 < p2 with d = p2-p1,
+  and L the leftmost cell touched between them, if the tape window [L..p2] at the
+  later step equals [L-d..p1] at the earlier one, the machine replays that
+  interval forever, translated by d.
 
-CONTACT
+  Backward reasoning. For the remainder, search backwards from the halt
+  condition. A predecessor requiring a cell to hold two different symbols is
+  contradictory and dies. If every branch dies within a bounded depth, the halt
+  is unreachable.
 
-jcooperkai@gmail.com
-https://jcooperkai.com/
+4. RESULTS
+
+  Class     Halting   Non-halting   Undecided   Maximum        Published
+  BB(2,2)   15        106           0           6              6
+  BB(3,2)   1,379     15,170        0           21             21
+  BB(2,3)   866       9,527         0           38             38
+  BB(4,2)   183,983   2,759,686     0           107 (13 marks) 107 (13)
+
+Undecided machines remaining after each decider:
+
+  Class     After cyclers   After translated cycles   After backward reasoning
+  BB(2,2)   92              20                        0
+  BB(3,2)   13,187          3,065                     0
+  BB(2,3)   8,492           2,779                     0
+  BB(4,2)   --              589,107                   0
+
+The two cycle deciders carry the volume; backward reasoning decides whether the
+class closes. A pipeline with only the first two would report a correct maximum
+for every class above while proving nothing.
+
+5. A SOUNDNESS DEFECT, REPORTED
+
+An earlier version of the backward decider discarded a branch when expansion
+moved outside its tracked window, then read an empty frontier as "every branch
+died". Two situations shared one code path: a branch that died because it was
+CONTRADICTORY, and a branch that vanished because the search RAN OUT OF ROOM.
+The first is a proof; the second is an absence of information.
+
+The consequence was a confident false certificate. Run against BB(2,4) under a
+100,000-step limit, the pipeline reported zero undecided machines -- while the
+champion of that class halts after 3,932,964 steps and had been certified
+non-halting.
+
+The fix tracks truncation and concludes non-halting only when nothing was
+discarded. All four classes were re-run and produced byte-identical output,
+confirming their proofs never depended on truncation.
+
+Two general points follow. An unsound decider still produces correct maxima,
+because maxima come from forward simulation; only the non-halting claims are
+corrupted, and those are invisible without an independent check. And the guard
+that caught it was validation against a known value.
+
+6. LIMITS
+
+No new Busy Beaver value is claimed. Open classes need deciders not implemented
+here, champions far past any reachable step limit (BB(3,3) exceeds 1.19e17), and
+contain machines whose halting is equivalent to open problems in number theory.
+
+REPRODUCIBILITY
+
+Single C++ file, no dependencies:
+  clang++ -O3 -march=native -std=c++20 -o dec dec.cpp
+  ./dec <states> <symbols> <step-limit> <backward-depth>
+
+REFERENCES
+
+[1] T. Rado. On non-computable functions. Bell System Technical Journal, 1962.
+[2] S. Lin, T. Rado. Computer studies of Turing machine problems. JACM, 1965.
+[3] A. H. Brady. The determination of Sigma(k) for k=4. Math. Comp., 1983.
+[4] The bbchallenge Collaboration. Determination of BB(5), machine-checked, 2024.

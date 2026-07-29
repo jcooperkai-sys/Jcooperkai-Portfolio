@@ -12,6 +12,16 @@
   X-Content-Type-Options: nosniff
   X-Permitted-Cross-Domain-Policies: none
 
+# Papers and citations are text. Declare the real type so "VIEW PAPER" renders in a new tab
+# instead of downloading. nosniff stays on, so an accurate Content-Type is required for inline
+# display; without it these are served as application/octet-stream and the browser must download.
+/downloads/*.txt
+  Content-Type: text/plain; charset=utf-8
+
+/downloads/*.bib
+  Content-Type: text/plain; charset=utf-8
+
+# The bundle is the one file that should always download.
 /downloads/selected-work.zip
   Content-Disposition: attachment; filename="cooper-e-selected-work.zip"
 
