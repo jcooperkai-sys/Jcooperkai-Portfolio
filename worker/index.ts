@@ -316,6 +316,14 @@ async function buddyReply(request: Request, env: Env): Promise<Response> {
   if (!key) {
     return Response.json({ ok: false, reason: "unconfigured" }, { status: 503 });
   }
+  // Refuse on the declared length before reading anything. Checking only after `text()` still
+  // returns 413, but the body has been buffered in full by then — a 100 MB request (the platform
+  // ceiling) was being held in memory purely to reject it. The post-read check below stays, because
+  // Content-Length is absent on a chunked request and a client can understate it.
+  const declared = Number(request.headers.get("Content-Length") ?? "");
+  if (Number.isFinite(declared) && declared > BUDDY_MAX_BODY) {
+    return Response.json({ ok: false, reason: "too_large" }, { status: 413 });
+  }
   const raw = await request.text();
   if (raw.length > BUDDY_MAX_BODY) {
     return Response.json({ ok: false, reason: "too_large" }, { status: 413 });
