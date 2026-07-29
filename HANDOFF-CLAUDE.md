@@ -1,5 +1,13 @@
 # Claude Code handoff: Cooper E.'s AI Lab
 
+## Deployment state
+
+The owner explicitly wants this handoff kept on localhost. Do not deploy it
+through OpenAI Sites, Cloudflare, Vercel, GitHub Pages, or any other public
+host. There is no live public deployment. Cooper will use Claude Code to connect
+the finished site to `jcooperkai.com` later and must explicitly approve that
+separate publication step.
+
 ## Release intent
 
 This is Cooper E.'s (`jcooperkai`) finished 1996-style AI research
@@ -83,14 +91,16 @@ an updated privacy/retention notice. Never put an API key in browser code or a
 - No D1, R2, auth, session, analytics, third-party script, iframe, remote
   upload, contact-form backend, or AI backend
 
-Sites project:
+An unused private Sites project was prepared during development but never
+deployed:
 
 - Project ID: `appgprj_6a6997c4277481918861e7761a2f8f0a`
 - Slug: `jcooperkai-1996-ai-lab`
 - Source branch: `main`
 
-Never invent or rewrite opaque Sites IDs. Never save source-repository
-credentials in a file, command history, documentation, or Git configuration.
+Do not deploy that project. Never invent or rewrite opaque Sites IDs. Never save
+source-repository credentials in a file, command history, documentation, or Git
+configuration.
 
 ## Local commands
 
@@ -156,7 +166,7 @@ These are owner/account operations and cannot be guaranteed by this repository:
 
 ## Release verification
 
-The final live release must be checked for:
+Before any owner-approved future live release, check:
 
 - desktop and mobile layout, especially 980 px, 610 px, and 500 px widths;
 - visible keyboard focus on the Buddy file plate;
