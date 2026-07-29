@@ -210,3 +210,83 @@ test("privacy and responsible-disclosure files are present", async () => {
   assert.match(security, /Contact: mailto:jcooperkai@gmail\.com/);
   assert.match(robots, /Sitemap: https:\/\/jcooperkai\.com\/sitemap\.xml/);
 });
+
+/** Like render(), but with a caller-supplied env so bindings can be exercised. */
+async function renderWithEnv(url, env, init = {}) {
+  const workerUrl = new URL("../dist/server/index.js", import.meta.url);
+  workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}-${Math.random()}`);
+  const { default: worker } = await import(workerUrl.href);
+  return worker.fetch(new Request(url, init), env, {
+    waitUntil() {},
+    passThroughOnException() {},
+  });
+}
+
+test("papers are served for reading, not downloading", async () => {
+  // A PDF served with the extension in the URL is retyped as application/octet-stream by the
+  // hosting layer, and nosniff then forces a download. The extensionless route exists so the
+  // Content-Type set by the Worker survives and the browser opens the file in a tab.
+  const pdf = Uint8Array.from([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x34]);
+  const requested = [];
+  const env = {
+    ASSETS: {
+      fetch: async (request) => {
+        requested.push(new URL(request.url).pathname);
+        return new Response(pdf, { status: 200 });
+      },
+    },
+  };
+
+  const paper = await renderWithEnv("https://portfolio.example/api/paper/002", env);
+  assert.equal(paper.status, 200);
+  assert.equal(paper.headers.get("content-type"), "application/pdf");
+  assert.equal(paper.headers.get("content-disposition"), "inline");
+  assert.deepEqual(requested, ["/papers/002.pdf"]);
+  // The body must actually arrive: streaming the sub-request through produced zero bytes.
+  assert.equal((await paper.arrayBuffer()).byteLength, pdf.byteLength);
+
+  // Only the three published papers resolve, and the id cannot be used to reach other assets.
+  for (const path of ["/api/paper/9", "/api/paper/abc", "/api/paper/../worker/index.ts"]) {
+    const rejected = await renderWithEnv(`https://portfolio.example${path}`, env);
+    assert.notEqual(rejected.status, 200);
+  }
+});
+
+test("metered routes are rate limited by the edge binding", async () => {
+  // The limiter must be a binding, not a counter in the Worker: isolates do not share memory.
+  // These assertions prove the binding is consulted and that a refusal is honoured.
+  const seenKeys = [];
+  const denying = {
+    limit: async ({ key }) => {
+      seenKeys.push(key);
+      return { success: false };
+    },
+  };
+  const env = {
+    ASSETS: { fetch: async () => new Response("Not found", { status: 404 }) },
+    BUDDY_LIMIT: denying,
+    VISITS_LIMIT: denying,
+  };
+
+  const buddy = await renderWithEnv("https://portfolio.example/api/buddy", env, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "CF-Connecting-IP": "203.0.113.7" },
+    body: JSON.stringify({ message: "hello" }),
+  });
+  assert.equal(buddy.status, 429);
+  assert.equal(buddy.headers.get("retry-after"), "60");
+
+  const visits = await renderWithEnv("https://portfolio.example/api/visits", env, {
+    headers: { "CF-Connecting-IP": "203.0.113.7" },
+  });
+  assert.equal(visits.status, 429);
+
+  // Keyed on the edge-set client address, never on a client-supplied forwarding header.
+  assert.deepEqual(seenKeys, ["203.0.113.7", "203.0.113.7"]);
+
+  // Absent binding (local preview) must fail open rather than take the route down.
+  const open = await renderWithEnv("https://portfolio.example/api/visits", {
+    ASSETS: env.ASSETS,
+  });
+  assert.equal(open.status, 200);
+});

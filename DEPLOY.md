@@ -26,21 +26,27 @@ Secrets are write-only once set; they cannot be read back from the dashboard. If
 pasted into a chat, a log, a commit, or a screenshot, rotate it at console.groq.com and set it
 again.
 
-## 2. Rate limiting — required before public launch
+## 2. Rate limiting — done in code
 
-Two routes now do work on request. Neither existed when the original threat model was written.
+Both routes that do work per request are limited by a Cloudflare Rate Limiting binding, declared
+in `vite.config.ts` and enforced in `worker/index.ts`. No dashboard step is required.
 
-| Route | Method | Risk if unlimited |
-|---|---|---|
-| `/api/buddy` | POST | exhausts the Groq free-tier quota; Buddy stops answering for everyone |
-| `/api/visits` | GET | KV write amplification |
+| Route | Method | Limit | Risk it closes |
+|---|---|---|---|
+| `/api/buddy` | POST | 10 / min / IP | exhausts the Groq free-tier quota; Buddy stops answering for everyone |
+| `/api/visits` | GET | 60 / min / IP | KV write amplification against the 1,000/day free tier |
 
-Add a Cloudflare WAF rate-limiting rule, or a Workers Rate Limiting binding, scoped to each path.
-Suggested starting point: 10 requests per minute per IP on `/api/buddy`, 60 per minute on
-`/api/visits`, returning 429 with `Retry-After`.
+Refusals return 429 with `Retry-After: 60`. The key is `CF-Connecting-IP`, which the edge sets and
+a client cannot spoof; using a client-supplied header such as `X-Forwarded-For` would make the
+limit trivially bypassable. The address is used for that decision only and is never stored.
 
-Do not implement an in-memory counter in the Worker and call it rate limiting. Isolates do not
-share memory, so it would not limit anything. SECURITY.md is explicit about this.
+The binding fails open if it errors or is absent, so a limiter fault cannot take the route down.
+Absent is the local dev server only — production always has both.
+
+This is deliberately not an in-Worker counter. Isolates do not share memory, so a counter in that
+process would not limit anything. SECURITY.md is explicit about this.
+
+A WAF rate-limiting rule may still be layered on top, but is no longer a launch blocker.
 
 ## 3. Visitor counting (optional, free)
 
@@ -48,7 +54,12 @@ share memory, so it would not limit anything. SECURITY.md is explicit about this
 npx wrangler kv namespace create VISITS
 ```
 
-Bind the returned namespace as `VISITS`. Without it the counter reports the decorative figure and
+Then build with the returned id in the environment, which is how it reaches the binding without
+being committed:
+
+```bash
+CF_KV_VISITS_ID=<id-from-the-command-above> npm run build
+``` Without it the counter reports the decorative figure and
 `live: false`. See VISITS-SETUP.md.
 
 ## 4. Pre-flight checks
@@ -68,7 +79,9 @@ Then verify against the running deployment:
 - source-like paths and `/.vite/manifest.json` return 404
 - `/_vinext/image` returns 404
 - no `Set-Cookie` on any response
-- papers open in a tab rather than downloading (`Content-Type: text/plain`)
+- `GET /api/paper/001` returns `Content-Type: application/pdf` with a non-zero body, and the
+  browser opens it in a tab; `/api/paper/9` and `/api/paper/abc` do not return 200
+- `POST /api/buddy` eleven times within a minute returns 429 with `Retry-After` on the last call
 - `selected-work.zip` downloads and passes an integrity check
 - the archive contains the rocket portrait only — no retired imagery, source maps, environment
   files, credentials, machine paths or build residue
