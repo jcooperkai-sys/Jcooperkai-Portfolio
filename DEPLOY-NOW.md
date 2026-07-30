@@ -123,7 +123,7 @@ Expect ten `200`s, then `429`s.
 Then in a browser: Buddy answers, VIEW PAPER opens a PDF in a tab, and the layout holds at 980, 610
 and 500 px.
 
-## 8. Attach the domain (whenever you have it)
+## 7. Attach the domain (whenever you have it)
 
 Cloudflare dashboard → Workers & Pages → `jcooperkai-ai-lab` → Settings → Domains & Routes → add
 `jcooperkai.com` and `www.jcooperkai.com`.
@@ -135,7 +135,7 @@ Cloudflare Registrar requires a card. If a card is not an option, Namecheap and 
 PayPal, and the domain works the same — you point its nameservers at Cloudflare afterwards either
 way. Nothing about the deployment changes.
 
-## 9. Account hardening
+## 8. Account hardening
 
 Full list in SECURITY.md's hosting checklist. The short version: keep DDoS protection and the
 managed WAF on, require TLS 1.2 minimum, enable DNSSEC once the domain is attached, protect the
