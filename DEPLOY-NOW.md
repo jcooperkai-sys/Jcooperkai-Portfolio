@@ -125,15 +125,78 @@ and 500 px.
 
 ## 7. Attach the domain (whenever you have it)
 
-Cloudflare dashboard → Workers & Pages → `jcooperkai-ai-lab` → Settings → Domains & Routes → add
-`jcooperkai.com` and `www.jcooperkai.com`.
+Nothing here touches code and no redeploy is needed. The worker keeps running on its `workers.dev`
+address throughout; the domain is added alongside it, so there is no cutover and no downtime.
 
-If the domain's nameservers are not already pointed at Cloudflare, do that at your registrar first.
-That is the one step with a propagation delay.
+### If you bought it through Cloudflare Registrar
 
-Cloudflare Registrar requires a card. If a card is not an option, Namecheap and Porkbun both accept
-PayPal, and the domain works the same — you point its nameservers at Cloudflare afterwards either
-way. Nothing about the deployment changes.
+This is the short path. Registering there creates the zone in your account and points the
+nameservers at Cloudflare already, so both of the slow steps are done. Go straight to *Attach it*.
+
+### If you bought it anywhere else
+
+The domain has to be a zone in the **same Cloudflare account** as the worker before it can be
+attached.
+
+1. Dashboard → **Add a site** → enter `jcooperkai.com` → pick the Free plan.
+2. Cloudflare shows two nameservers, something like `xyz.ns.cloudflare.com`. Set those at the
+   registrar, replacing whatever it gave you. This is the step with a real delay — usually under an
+   hour, occasionally up to 24, because it depends on the registry publishing the change.
+3. Wait until the zone reads **Active**. It will not attach while it is still Pending.
+
+### Attach it
+
+Workers & Pages → **jcooperkai-ai-lab** → Settings → **Domains & Routes** → Add → **Custom Domain**.
+
+Enter `jcooperkai.com`. Then repeat for `www.jcooperkai.com`.
+
+Choose **Custom Domain**, not Route. A Custom Domain creates the DNS record and provisions the TLS
+certificate for you. A Route only matches a pattern and expects a proxied DNS record to already
+exist — it is for putting a worker in front of part of an existing site, which is not this.
+
+Do not add an A or CNAME record by hand. The Custom Domain creates the record itself, and a
+conflicting manual record is the usual reason this appears to silently fail.
+
+Certificate issuance is normally under a minute for a Registrar domain. Cloudflare documents up to
+15 minutes, and a browser may show a certificate warning until it completes — that resolves itself,
+so give it a few minutes before assuming something is wrong.
+
+### Apex and www
+
+Adding both as Custom Domains serves the site on both addresses, which is the simplest outcome and
+what the steps above do.
+
+If you would rather `www` redirect to the bare domain, attach only `jcooperkai.com`, then add a
+Redirect Rule (Rules → Redirect Rules) from `www.jcooperkai.com/*` to `https://jcooperkai.com/$1`
+with a 301. Do not attach `www` as a Custom Domain *and* redirect it; the Custom Domain wins and the
+rule never fires.
+
+### Verify
+
+```bash
+curl -sI https://jcooperkai.com/ | head -1                              # 200
+curl -sI https://www.jcooperkai.com/ | head -1                          # 200, or 301 if redirecting
+curl -sI https://jcooperkai.com/api/paper/001 | grep -i content-type    # application/pdf
+curl -sI -X POST https://jcooperkai.com/ | head -1                      # 405
+curl -sI https://jcooperkai.com/ | grep -i strict-transport-security    # max-age=31536000
+```
+
+The HSTS header is the one worth confirming, because it only appears off localhost — seeing it is
+proof the request reached the worker over the real hostname rather than a cached edge response.
+
+### What becomes correct on its own
+
+Five files name the domain directly, and they are wrong only while the site is on `workers.dev`:
+
+```
+public/robots.txt                  Sitemap: https://jcooperkai.com/sitemap.xml
+public/sitemap.xml                 <loc>https://jcooperkai.com/</loc>
+public/.well-known/security.txt    Canonical and Policy URLs
+public/security-policy.txt         "files served from jcooperkai.com"
+```
+
+They need no edit. Attaching the domain makes every one of them accurate. They matter to crawlers
+and security researchers, neither of which will find the `workers.dev` address unless it is shared.
 
 ## 8. Account hardening
 
