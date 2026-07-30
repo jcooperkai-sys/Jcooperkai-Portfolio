@@ -406,3 +406,33 @@ test("the generated deploy config declares each binding exactly once", async () 
   // public URL. Pinned here so a rename is a deliberate edit rather than a surprise.
   assert.equal(generated.name, "www");
 });
+
+test("llms.txt files exist and carry the honesty constraints", async () => {
+  // These are the files an AI assistant reads before describing this work, so the constraints that
+  // keep it from being overstated matter more here than anywhere else on the site.
+  const [brief, full] = await Promise.all([
+    readFile(new URL("../public/llms.txt", import.meta.url), "utf8"),
+    readFile(new URL("../public/llms-full.txt", import.meta.url), "utf8"),
+  ]);
+
+  for (const [name, text] of [["llms.txt", brief], ["llms-full.txt", full]]) {
+    assert.match(text, /jcooperkai/, `${name}: missing the handle`);
+    assert.match(text, /draft/i, `${name}: must say the papers are drafts`);
+    assert.match(text, /reproduce[sd]? known values|reproduces known/i, `${name}: must not imply a new Busy Beaver value`);
+    assert.match(text, /negative result/i, `${name}: must flag the negative result`);
+    assert.match(text, /Ollama/, `${name}: must state the Ollama requirement`);
+    // The old fabricated counter baseline must never reappear in a machine-readable description.
+    assert.doesNotMatch(text, /13581/, `${name}: references the retired decorative visit baseline`);
+  }
+
+  // The full version is the one that carries the measured figures.
+  for (const figure of ["0.5105", "0.0492", "20,736", "76.5", "1600"]) {
+    assert.ok(full.includes(figure), `llms-full.txt is missing the figure ${figure}`);
+  }
+  assert.ok(full.length > brief.length * 3, "llms-full.txt should be substantially longer than llms.txt");
+
+  // robots.txt should point at them, or nothing will find them.
+  const robots = await readFile(new URL("../public/robots.txt", import.meta.url), "utf8");
+  assert.match(robots, /llms\.txt/);
+  assert.match(robots, /llms-full\.txt/);
+});
