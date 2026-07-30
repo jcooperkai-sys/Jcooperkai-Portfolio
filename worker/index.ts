@@ -38,14 +38,39 @@ function clientKey(request: Request) {
  * Returns true when the request should be refused. Fails open when the binding is absent, which is
  * the local dev server and preview builds only; production always has both bindings.
  */
-async function overLimit(limiter: RateLimiter | undefined, request: Request) {
+async function overLimit(
+  limiter: RateLimiter | undefined,
+  request: Request,
+  route: string,
+) {
+  // Each outcome is logged by name. Failing open is deliberate, but a silently unbound or throwing
+  // limiter is indistinguishable from a working one at the HTTP layer, which is exactly how an
+  // unlimited /api/buddy would go unnoticed. `wrangler tail` now shows which case occurred. No
+  // request content is logged.
   if (!limiter) {
+    console.error(JSON.stringify({ event: "ratelimit_binding_absent", route }));
     return false;
   }
   try {
-    const { success } = await limiter.limit({ key: clientKey(request) });
-    return !success;
-  } catch {
+    const outcome = await limiter.limit({ key: clientKey(request) });
+    if (!outcome || typeof outcome.success !== "boolean") {
+      console.error(
+        JSON.stringify({ event: "ratelimit_unexpected_shape", route, keys: Object.keys(outcome ?? {}).join(",") }),
+      );
+      return false;
+    }
+    if (!outcome.success) {
+      console.error(JSON.stringify({ event: "ratelimit_refused", route }));
+    }
+    return !outcome.success;
+  } catch (err) {
+    console.error(
+      JSON.stringify({
+        event: "ratelimit_call_failed",
+        route,
+        reason: String((err as { message?: string })?.message ?? err).slice(0, 160),
+      }),
+    );
     // A limiter failure must not take the route down with it.
     return false;
   }
@@ -454,7 +479,7 @@ const worker = {
     // Every other path, and every other method on this path, is still refused.
     const isBuddyRoute = decodedPathname === "/api/buddy";
     if (isBuddyRoute && request.method === "POST") {
-      if (await overLimit(env?.BUDDY_LIMIT, request)) {
+      if (await overLimit(env?.BUDDY_LIMIT, request, "buddy")) {
         return textResponse(url, "Too many requests. Try again shortly.", 429, {
           "Retry-After": "60",
         });
@@ -533,7 +558,7 @@ const worker = {
     // Unique-visit counter. A GET, so the GET/HEAD-only rule above still holds and no write
     // method is exposed. Never cached, so each visit is actually seen.
     if (decodedPathname === "/api/visits") {
-      if (await overLimit(env?.VISITS_LIMIT, request)) {
+      if (await overLimit(env?.VISITS_LIMIT, request, "visits")) {
         return textResponse(url, "Too many requests. Try again shortly.", 429, {
           "Retry-After": "60",
         });
@@ -558,7 +583,7 @@ const worker = {
     // Experiment scripts and their raw output, read in a tab for the same reason as the papers.
     const textMatch = /^\/api\/experiment\/([a-z0-9-]+)$/.exec(decodedPathname);
     if (textMatch) {
-      if (await overLimit(env?.ASSET_LIMIT, request)) {
+      if (await overLimit(env?.ASSET_LIMIT, request, "asset")) {
         return textResponse(url, "Too many requests. Try again shortly.", 429, {
           "Retry-After": "60",
         });
@@ -584,7 +609,7 @@ const worker = {
       if (!PAPER_NUMBERS.has(paperMatch[1])) {
         return textResponse(url, "Not found.", 404);
       }
-      if (await overLimit(env?.ASSET_LIMIT, request)) {
+      if (await overLimit(env?.ASSET_LIMIT, request, "asset")) {
         return textResponse(url, "Too many requests. Try again shortly.", 429, {
           "Retry-After": "60",
         });
