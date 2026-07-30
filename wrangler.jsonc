@@ -9,7 +9,7 @@
   // Having this file at the repo root is also what lets `wrangler <command>` run from here at all;
   // without it wrangler cannot resolve the worker name.
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "jcooperkai-ai-lab",
+  "name": "www",
   "compatibility_date": "2026-07-29",
   "compatibility_flags": ["nodejs_compat"],
   "main": "./worker/index.ts",

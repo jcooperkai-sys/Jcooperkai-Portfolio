@@ -42,7 +42,7 @@ You need to register a workers.dev subdomain before publishing to workers.dev
 
 There is no `wrangler subdomain` command. Register it in the dashboard — Workers & Pages →
 Onboarding — and pick `jcooperkai`, which makes the site
-`jcooperkai-ai-lab.jcooperkai.workers.dev`.
+`www.jcooperkai.workers.dev`.
 
 Free, one time, account-wide. Every later deploy skips this.
 
@@ -116,7 +116,7 @@ not a broken one.
 
 ```bash
 # Substitute your workers.dev host until the domain is attached, e.g.
-#   https://jcooperkai-ai-lab.<your-subdomain>.workers.dev
+#   https://www.<your-subdomain>.workers.dev
 curl -sI https://jcooperkai.com/api/paper/001 | grep -i content-type   # application/pdf
 curl -sI -X POST https://jcooperkai.com/ | head -1                     # 405
 curl -s  https://jcooperkai.com/api/visits                             # live:true once KV is bound
@@ -146,7 +146,7 @@ account — nothing to configure, no nameservers to change, no waiting.
 
 Three clicks:
 
-1. Workers & Pages → **jcooperkai-ai-lab** → Settings → **Domains & Routes**
+1. Workers & Pages → **www** → Settings → **Domains & Routes**
 2. Add → **Custom Domain** → `jcooperkai.com`
 3. Add → **Custom Domain** → `www.jcooperkai.com`
 

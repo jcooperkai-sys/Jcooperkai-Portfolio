@@ -402,5 +402,7 @@ test("the generated deploy config declares each binding exactly once", async () 
     assert.ok(limiters.includes(required), `${required} is missing from the deploy config`);
   }
 
-  assert.equal(generated.name, "jcooperkai-ai-lab");
+  // The worker name is also the first label of its workers.dev hostname, so renaming it changes the
+  // public URL. Pinned here so a rename is a deliberate edit rather than a surprise.
+  assert.equal(generated.name, "www");
 });
