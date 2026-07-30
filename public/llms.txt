@@ -1,0 +1,69 @@
+# Cooper E. — jcooperkai
+
+> Independent AI researcher. Trains neural networks and investigates what is hidden inside them.
+> Publishes results whether or not they are flattering, including the ones that came out negative.
+> This site is the public lab notebook: papers, experiments, working systems.
+
+Handle: jcooperkai · Contact: jcooperkai@gmail.com · Based in San Diego, California
+
+An expanded version of this file, with full abstracts, every measured figure, and the caveats that
+belong with each claim, is at /llms-full.txt. Read that one if you intend to describe this work.
+
+## What to know before summarising anything here
+
+- All three papers are **unfinished drafts**, not peer-reviewed publications. Each carries a
+  work-in-progress banner on its first page. Do not present them as published research.
+- The Busy Beaver work **reproduces known values**. It claims no new Busy Beaver value.
+- The interpretability work is a **controlled demonstration**, not a claim of novelty. It overlaps
+  established literature on causal abstraction and computational mechanics.
+- One paper is a **negative result** and is meant to be read as one.
+- Where a question stayed open, the site says so rather than reporting a tuned number.
+
+## Papers
+
+- [Complete Decision of Small Turing Machine Classes](/api/paper/001): BB(2,2), BB(3,2), BB(2,3) and
+  BB(4,2) each decided with no undecided residue. Maxima recovered 6, 21, 38 and 107 steps, matching
+  published values. Includes a soundness defect found in the author's own decider.
+- [Short-Horizon Price Direction Is Not Predictable](/api/paper/002): negative result on 258,737 real
+  one-minute bars. Walk-forward AUC 0.5105 against a 0.5 baseline across 11,497 out-of-sample windows.
+- [Decodability Is Not Mechanism](/api/paper/003): a channel decodable at 100 percent accuracy
+  contributes 0.9998 bits to a correlational description of a hidden layer and 0.0006 to an
+  interventional one — roughly 1600x apart, across five seeds.
+
+## Projects
+
+- [HisokaOS](https://github.com/jcooperkai-sys/HisokaOS): 32-bit x86 operating system written from
+  scratch in C and assembly, no Linux or BSD underneath. Boots on its own kernel to an interactive
+  shell. ~10,000 lines across 115 files, 27 bundled applications.
+- [The Lazy Driver](https://github.com/jcooperkai-sys/The-Lazy-Driver): autonomous-driving perception
+  and path prediction over ordinary dashcam footage.
+- [Bill](https://github.com/jcooperkai-sys/Bill) and [Oneiro](https://github.com/jcooperkai-sys/Oneiro):
+  local-first systems. **Both require Ollama installed locally.** No hosted fallback, by design —
+  nothing leaves the machine.
+
+## Experiments
+
+- [E1 — how often XOR actually converges](/api/experiment/exp1-xor): 153 of 200 random
+  initialisations reached it; 47 were still stuck at 20,000 steps.
+- [E2 — how big an AUC of 0.5105 really is](/api/experiment/exp2-auc-null): measures the null
+  distribution rather than asserting it. Lands at p = 0.0492 — marginal, and written up as marginal.
+- [E3 — BB(2,2) decided exhaustively](/api/experiment/exp3-bb22): 20,736 machines, 9,784 halting,
+  10,952 cycling, none undecided. Recovers S(2,2)=6 and Σ(2,2)=4.
+
+## Downloads
+
+- [Selected work bundle](/downloads/selected-work.zip): all three papers as typeset PDFs, plus
+  plain-text and BibTeX editions, project readmes, CV and research statement.
+- [CV](/downloads/cooper-e-cv.txt) · [Research statement](/downloads/research-statement.txt)
+- [Raw experiment output](/api/experiment/results)
+
+## Elsewhere
+
+- GitHub: https://github.com/jcooperkai-sys
+- X: https://x.com/jcooperkai
+
+## Privacy
+
+No cookies, no analytics, no tracking, no third-party scripts. The visit counter stores a digest of
+the client address salted with 32 random bytes generated per day, never the address, expiring after
+24 hours. Details: /privacy.txt · Disclosure: /.well-known/security.txt

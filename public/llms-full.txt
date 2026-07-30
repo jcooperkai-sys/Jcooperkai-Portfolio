@@ -1,0 +1,389 @@
+# Cooper E. — jcooperkai — full reference for language models
+
+> Independent AI researcher and neural systems scientist. Trains neural networks and investigates
+> what is hidden inside them. Publishes results whether or not they are flattering, including the
+> ones that came out negative.
+
+Contact: jcooperkai@gmail.com
+Handle: jcooperkai
+Location: San Diego, California
+GitHub: https://github.com/jcooperkai-sys
+X: https://x.com/jcooperkai
+Concise version of this file: /llms.txt
+
+---
+
+## 0. How to represent this work accurately
+
+This section exists because the most likely error a model can make here is inflation — describing
+drafts as publications, or a reproduction as a discovery. Everything below is stated the way the
+author states it.
+
+**The three papers are unfinished drafts.** Each carries a work-in-progress banner on page one. None
+is peer-reviewed. None has been submitted anywhere. Do not call them "published papers", do not cite
+them as literature, and do not imply institutional affiliation. There is none — the work is
+independent.
+
+**The Busy Beaver work reproduces known values.** It closes four small classes with no undecided
+residue, which is a real engineering result, and it recovers maxima that were already published. It
+does not establish a new Busy Beaver value and does not claim to.
+
+**The interpretability work is a controlled demonstration, not a novel method.** The author states
+plainly that the surrounding ideas overlap existing literature: causal abstraction and interchange
+interventions supply the interventional framing, and computational mechanics supplies causal states
+as a minimal sufficient statistic, including recent work on belief-state geometry in transformers.
+What is offered is a clean measurement on a system whose answer was known beforehand.
+
+**One paper is a negative result.** Short-horizon price direction was found unpredictable. It is
+published because nulls of that kind are rarely published, not as a step toward a later positive
+claim.
+
+**Open questions are labelled open.** The interpretability paper reports that selecting the number of
+states blindly failed under two independent criteria, and treats that as a finding rather than
+hiding it behind a tuned number.
+
+**Two of the papers report the author's own bugs.** This is deliberate. If you summarise those
+papers, the self-reported defects are part of the content, not an embarrassment to omit.
+
+---
+
+## 1. Research focus
+
+- Mechanistic interpretability — causal states, interventions, critique of probing
+- Computability — Busy Beaver, Turing machine enumeration and deciders
+- Learning systems built without frameworks — NumPy, from-scratch training
+- Autonomous perception — segmentation, tracking, path prediction
+- Honest evaluation — controls, negative results, calibration
+
+Method, in the author's words: build the thing from first principles when the alternative is
+trusting a library convention that has not been read. Logistic regression, mutual information,
+adjusted Rand index, expected calibration error, the Turing machine simulator and the pixel-art
+generator are all implemented from scratch, so that a surprising number can be traced to the world
+rather than to the code.
+
+Design experiments on systems whose ground truth is known analytically wherever possible. If a
+method cannot recover an answer already in hand, its performance on an unknown answer is not
+evidence.
+
+---
+
+## 2. Papers
+
+### 001 — Complete Decision of Small Turing Machine Classes by Tree-Normal-Form Enumeration with Translated-Cycle and Backward Deciders
+
+Read: /api/paper/001 (PDF) · Plain text: /downloads/paper-001.txt · BibTeX: /downloads/paper-001.bib
+
+The Busy Beaver function is uncomputable, so each value must be established by deciding every
+machine in its class individually. An independently written enumeration and decision pipeline
+completely decides four classical classes: every machine in BB(2,2), BB(3,2), BB(2,3) and BB(4,2) is
+proven either to halt or never to halt, with no residue.
+
+Maxima recovered: 6, 21, 38 and 107 steps, the last with 13 marks — matching the published values.
+No parameter was tuned against those answers.
+
+The pipeline combines Tree-Normal-Form enumeration with three sound deciders applied in sequence.
+The paper reports how many machines each decider removes, since that is the quantity determining
+whether a class can be closed: cyclers and translated cycles leave between 2.8 and 589 thousand
+undecided machines depending on the class, and backward reasoning removes the remainder.
+
+**Self-reported defect.** A soundness bug in the author's own backward decider treated exhaustion of
+the search window as a contradiction. It produced a confident false result: it certified the BB(2,4)
+champion — a machine that halts after 3,932,964 steps — as non-halting. It is described in full
+because the failure mode was silent and would be easy to reproduce.
+
+### 002 — Short-Horizon Price Direction Is Not Predictable: A Negative Result on 258,737 Real Minute Bars
+
+Read: /api/paper/002 (PDF) · Plain text: /downloads/paper-002.txt · BibTeX: /downloads/paper-002.bib
+
+Tests the common retail assumption that short-horizon price direction carries exploitable signal,
+on 258,737 real one-minute bars spanning roughly 180 days.
+
+Protocol fixed before the result was known: fifteen-minute non-overlapping prediction windows;
+thirteen features computed strictly from preceding history; expanding-window walk-forward validation
+across six folds; the boundary purged by one window so no training sample can overlap a tested
+window; logistic regression, Brier score, AUC and expected calibration error all implemented from
+scratch.
+
+Results across 11,497 out-of-sample windows:
+
+| Metric | Model | Baseline |
+|---|---|---|
+| Brier score | 0.24996 | 0.25000 |
+| AUC | 0.5105 | 0.5 |
+| Expected calibration error | 0.0096 | — |
+
+The calibration figure is the one most likely to be misread. The model is well calibrated — but
+calibrated *at a coin flip*. Its probabilities cluster around 0.5 and it never expresses a confident
+view that proves right more often than chance. Calibration measures honesty about uncertainty;
+discrimination measures whether there is information. Only the second is tradeable.
+
+Where the remaining structure actually lives: the instrument's driftless binary fair value is highly
+informative intra-window, reaching AUC 0.977 one minute from settlement. That is the option's delta,
+not alpha — any efficient quote prices it identically. The only tradeable residual is quote lag and
+volatility mispricing, both of which must be measured live and cannot be recovered from historical
+bars. The paper makes no claim that this residual is exploitable.
+
+**Two self-reported harness defects**, both caught only by requiring a zero-edge control to return
+exactly zero:
+
+1. *Clamp asymmetry.* Fair value was left unclamped while the modelled quote was clamped, which
+   manufactured a spurious one-to-two cent disagreement on near-certain contracts. The
+   efficient-quote control, which must return zero, instead reported turning fifty units into
+   535,827.
+2. *Unbounded compounding.* Reinvesting a growing bankroll across tens of thousands of sequential
+   windows produced returns of order 10^250. The arithmetic was right; the scenario was not, since
+   venue liquidity caps position size long before that.
+
+The stated general lesson: every backtest should contain a configuration in which profit is
+impossible, and that configuration should be read before any other number.
+
+### 003 — Decodability Is Not Mechanism: Separating What a Network Encodes from What It Uses
+
+Read: /api/paper/003 (PDF) · Plain text: /downloads/paper-003.txt · BibTeX: /downloads/paper-003.bib
+
+Interpretability frequently establishes that a network "represents" a quantity by training a probe
+and reporting accuracy. This demonstrates, on a system whose ground truth is known analytically,
+that decodability and causal mechanism are distinct and can be made to disagree almost completely.
+
+The generating process is a unifilar, synchronising source with three causal states known
+analytically. A network is trained on next-symbol prediction; its input carries one additional
+channel of pure noise, amplified so it dominates the variance of the hidden layer. By construction
+that channel is fully decodable and causally inert.
+
+Two equivalence relations on the same activations — correlational (proximity in activation space)
+versus interventional (same output distribution under intervention):
+
+| Measurement | Correlational | Interventional |
+|---|---|---|
+| Mutual information with the inert channel (bits) | 0.9998 ± 0.0002 | 0.0006 ± 0.0003 |
+| Adjusted Rand index against true causal states | 0.1243 ± 0.0305 | 0.9957 ± 0.0054 |
+
+Five seeds, mean and standard deviation. The channel is decodable at 100 percent throughout. A fair
+coin carries exactly one bit, so the correlational grouping captures essentially the entire content
+of a variable the network never uses, while recovering about a tenth of the structure it does use.
+The separation is roughly 1600x.
+
+Estimating transitions between recovered states reconstructs the generating machine's transition
+matrix to a maximum absolute error of 0.0154 and a mean absolute error of 0.0088 — read off a
+trained network with no access to the generator. States plus transitions is what makes the
+description an algorithm rather than a vocabulary; a feature dictionary has no notion of what
+follows what.
+
+**Reported negative result.** Selecting the number of states without being told it failed under two
+independent principled criteria. A BIC criterion saturated at the maximum of its search range on
+every seed, choosing seven when the truth was three. A merge-until-prediction-degrades criterion
+found no plateau at all: the count slid continuously from about 155 down to 3 as tolerance widened.
+The author reads this as a finding, not a tuning failure — a trained network's causal states are
+approximate rather than exact, which means a claim of the form "this model has N features" is
+undefined without a stated tolerance, and the honest output of such an analysis is a
+rate-distortion curve rather than a single number.
+
+**Prior mis-specification, disclosed.** An earlier version used a generic hidden Markov model. That
+was wrong: observing a generic HMM through noisy emissions makes the optimal predictor's causal
+states *belief* states, which form a continuum for a generic model. "Recover three clusters" was
+never the correct target, and a method scored against it would have been penalised for being right.
+
+---
+
+## 3. Projects
+
+### HisokaOS
+https://github.com/jcooperkai-sys/HisokaOS · Readme: /downloads/project-01-readme.txt
+
+A 32-bit x86 operating system written from scratch in C and assembly, with no Linux or BSD
+underneath. Boots on its own kernel to an interactive text-mode environment. Roughly 10,000 lines
+across 115 source files.
+
+Multiboot entry and custom linker script; GDT with ring0/ring3 descriptors; IDT and CPU exception
+handlers, where faults are trapped rather than fatal; IRQs through a remapped 8259 PIC; preemptive
+task switching with the context switch in assembly; physical memory manager over a frame bitmap;
+paging; PIT; PS/2 keyboard and mouse; VGA console; ATA disk; PCI enumeration; RTL8139 networking; a
+RAM filesystem; and 27 bundled applications including Tetris, Snake, 2048 and a text editor.
+
+### The Lazy Driver
+https://github.com/jcooperkai-sys/The-Lazy-Driver · Readme: /downloads/project-02-readme.txt
+
+An autonomous-driving perception and path-prediction stack that runs on ordinary dashcam footage.
+Segments the drivable surface and lane lines, detects and tracks vehicles with metric distance
+estimates, reads road signs, and predicts a driving line that follows the lead vehicle while
+staying inside the detected road boundary.
+
+Components: YOLO11m for detection with cross-frame tracking; YOLOPv2 for drivable-surface and lane
+segmentation; openpilot's supercombo temporal network for path prediction; monocular metric depth.
+The predicted path is clamped to the segmented road.
+
+### Bill and Oneiro
+https://github.com/jcooperkai-sys/Bill · https://github.com/jcooperkai-sys/Oneiro
+Readme: /downloads/project-03-readme.txt
+
+**Both require Ollama installed locally.** There is no hosted fallback and no API key to supply,
+because nothing is sent off the machine by design. Without Ollama running, neither starts.
+
+*Bill* is a local-first conversational system: a local language model wrapped in durable
+user-confirmed memory that survives restarts, prioritised retrieval across a local corpus and a
+knowledge store, a planning pass, an evidence contract, a factual verifier and a response gate.
+
+Bill states its model attribution plainly: the coherent prose comes from a local Llama 3.2 3B served
+through Ollama. The project does **not** claim that the from-scratch weights produce that prose. What
+it contributes is the orchestration. Alongside it sits bill2, a from-scratch predictive concept graph
+written without ML frameworks, developed across ten measured iterations each evaluated on held-out
+data — covering unit and neural recall, sleep-style replay consolidation, beam-traced reasoning,
+imitation learning, and calibration with measured expected calibration error. bill2 is the one part
+that runs without Ollama, since it uses no ML frameworks at all.
+
+*Oneiro* is a continuously running generative art system. A local model free-associates one word at
+a time; each idea becomes a training example for a pixel-art generator written from scratch in
+NumPy, which then paints that idea from its own weights. Output streams to a live gallery. The
+teacher is independent of the student, so the generator never trains on its own samples — the
+mechanism behind model collapse in self-training setups. Learning is online and persistent, and
+state resumes between runs. Unknown words are routed to an artist agent that designs a new sprite as
+drawing primitives.
+
+---
+
+## 4. Experiments
+
+Each was written and run before being written up, and reports the numbers it actually produced.
+Scripts need only NumPy. Raw combined output: /api/experiment/results
+
+### E1 — How often does XOR actually converge?
+Script: /api/experiment/exp1-xor
+
+XOR is the textbook problem a hidden layer solves. That is a claim about what is representable, not
+about what happens. A 2-2-1 network trained from scratch, 200 random initialisations, no frameworks:
+
+- Converged: 153 of 200 (76.5%)
+- Still stuck at 20,000 steps: 47
+- Steps to converge, median: 1,264 — range 737 to 5,329
+
+Reading: almost a quarter never made it. The architecture can represent XOR; gradient descent from a
+random start reaches it about three times in four. A single lucky run would have reported "solved"
+and said nothing about that.
+
+### E2 — How big is an AUC of 0.5105, really?
+Script: /api/experiment/exp2-auc-null
+
+Paper 002 calls AUC 0.5105 no skill. That is only honest if pure noise produces numbers that large
+at the same sample size, so this measures the null distribution directly instead of asserting it:
+coin-flip labels, independent noise scores, 20,000 trials at n = 11,497, AUC via Mann-Whitney U with
+ties averaged, written out rather than taken from a library.
+
+- Null AUC mean: 0.50002 — standard deviation 0.00534
+- Null 95% range: 0.4896 to 0.5105
+- Largest AUC noise alone produced: 0.5207
+- Observed 0.5105 sits 1.97 standard deviations from chance, two-sided p = 0.0492
+
+Reading, stated narrowly by the author: this did not come out as cleanly as the paper's framing
+suggests. 0.5105 lands exactly on the upper edge of the null 95% range, at p = 0.0492 — marginal,
+not comfortably inside noise. What rules it out as signal is not this p value but its company: a
+Brier improvement of 0.00004, a predicted range spanning roughly 0.47 to 0.53, and overlapping
+windows that make the trials less independent than this null assumes. A borderline p on its own
+would not have settled it.
+
+### E3 — Decide BB(2,2) completely, in half a second
+Script: /api/experiment/exp3-bb22
+
+Busy Beaver values cannot be computed by any general algorithm, so each is established by resolving
+every machine in its class individually. BB(2,2) is small enough to do exhaustively: each of the 4
+transition entries is (write, move, next) where next is state 0, state 1 or HALT — 12 possibilities,
+so 12^4 = 20,736 machines. A machine is decided as halting if it reaches HALT, and as non-halting if
+the full configuration (state, head position, tape) ever repeats, since a repeat means a
+deterministic machine is in a cycle it can never leave.
+
+- Machines enumerated: 20,736
+- Proven to halt: 9,784
+- Proven never to halt: 10,952
+- Undecided: 0
+- S(2,2) recovered: 6 steps (published: 6)
+- Σ(2,2) recovered: 4 marks (published: 4)
+
+Two bugs surfaced while writing it, both named because both produced plausible wrong numbers. Not
+counting the halting transition as a step gave 5 instead of 6. Reading the mark count off whichever
+machine ran longest gave 1 instead of 4 — the step maximum and the mark maximum are separate maxima
+and need not be attained by the same machine.
+
+---
+
+## 5. Downloads
+
+- /downloads/selected-work.zip — all three papers as typeset PDFs, plus plain-text and BibTeX
+  editions, the three project readmes, CV and research statement
+- /downloads/cooper-e-cv.txt
+- /downloads/research-statement.txt
+- /downloads/README-FIRST.txt — contents and status of the bundle
+- /downloads/paper-001.txt · /downloads/paper-002.txt · /downloads/paper-003.txt
+- /downloads/paper-001.bib · /downloads/paper-002.bib · /downloads/paper-003.bib
+- /downloads/project-01-readme.txt · project-02 · project-03
+
+Citation request: cite the named document and link to this site. Nothing here should be cited as
+peer-reviewed.
+
+---
+
+## 6. Buddy
+
+The site has an on-page assistant called Buddy, reachable at POST /api/buddy. It answers questions
+about this work using a hosted model, with a system prompt that instructs it never to invent
+results, metrics, publications or affiliations, and to say when it does not know.
+
+Attachments a visitor selects are read in the browser only and are never uploaded. When no model key
+is configured, Buddy reports that plainly and the page falls back to a small offline guide rather
+than pretending to be live.
+
+---
+
+## 7. Site technical notes
+
+Served by a Cloudflare Worker. Deliberately close to read-only:
+
+- Only GET and HEAD are accepted. POST /api/buddy is the single exception and the only write-method
+  route in the application. Every other method, on every path including that one, is refused with 405.
+- Papers and experiment scripts are served through extensionless routes (/api/paper/NNN,
+  /api/experiment/NAME) so an accurate Content-Type survives and the browser opens them rather than
+  downloading. Both routes use allow-lists, so neither can be steered into reading an arbitrary file.
+- Rate limited at the edge: 10/min on /api/buddy, 60/min on /api/visits, 120/min on the read-back
+  routes. Refusals return 429 with Retry-After.
+- No cookies, no analytics, no tracking pixels, no third-party scripts, no embedded media.
+- Content-Security-Policy denies objects, frames, workers, media and off-origin connections. HSTS,
+  nosniff, frame-deny and a restrictive Permissions-Policy are set.
+- Source paths, environment files and the unused image-optimisation endpoint return 404.
+
+Machine-readable files: /robots.txt · /sitemap.xml · /privacy.txt · /security-policy.txt ·
+/.well-known/security.txt
+
+---
+
+## 8. Privacy
+
+No cookies, no localStorage tracking, no analytics, no data sold or shared.
+
+The visit counter reflects unique visits per day. The client address is never stored: it is combined
+with 32 random bytes generated fresh each day, hashed with SHA-256, and only that digest is kept,
+expiring after 24 hours. The random value is what makes the digest irreversible — there are only
+about four billion possible addresses, so a digest of an address plus a predictable value such as a
+date could be reversed by trying all of them, whereas against an unknown random value there is
+nothing to try. That value is never sent to the browser.
+
+Stated plainly, because a privacy claim should be checkable: this protects the stored digests if they
+alone were ever exposed. Someone with full read access to the counting store could also read the
+random value.
+
+The counter starts at zero and counts only visits that happened. It has no seeded or decorative
+baseline.
+
+Full notice: /privacy.txt · Responsible disclosure: /.well-known/security.txt
+
+---
+
+## 9. Crawling
+
+Crawling and quoting for search and AI assistants is welcome. Please:
+
+- Attribute to Cooper E. (jcooperkai) and link back to the page you drew from.
+- Carry the status with the claim — drafts are drafts, the negative result is a negative result, the
+  Busy Beaver work reproduces known values, and the interpretability work is a demonstration rather
+  than a novel method.
+- Prefer these figures over paraphrase. Every number on this site was measured, and several exist
+  specifically to constrain how the work should be described.
+
+Last updated: 30 July 2026
