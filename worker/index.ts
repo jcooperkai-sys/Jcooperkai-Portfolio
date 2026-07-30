@@ -222,13 +222,20 @@ function applySecurityHeaders(response: Response, url: URL) {
  *
  * Recording happens on a GET so the Worker keeps accepting only GET and HEAD; no write method is
  * exposed. When no KV binding is present (local preview, or a host without KV) the endpoint reports
- * the decorative figure and says so, rather than pretending to be live.
+ * zero with live:false, rather than inventing a figure.
  *
  * KV is eventually consistent and the increment is a read-modify-write, so simultaneous first-time
  * visits can occasionally coalesce into one. For a personal site that is an acceptable trade against
  * the cost and complexity of a strongly consistent counter.
  */
-const DECORATIVE_VISITS = 13581;
+/**
+ * The counter starts at zero and only ever reports visits that actually happened.
+ *
+ * It used to seed from a decorative 13,581, so the first real visitor was displayed as 13,582 —
+ * a real count stacked on top of an invented baseline, which is just a fake number that moves.
+ * If there is nothing to report, it reports nothing.
+ */
+const NO_VISITS = 0;
 
 /**
  * The per-day salt, and the reason it exists.
@@ -271,7 +278,7 @@ async function recordVisit(request: Request, env: Env): Promise<Response> {
   // env itself is absent under some local runtimes, not merely the binding.
   const store = env?.VISITS;
   if (!store) {
-    return Response.json({ count: DECORATIVE_VISITS, live: false });
+    return Response.json({ count: NO_VISITS, live: false });
   }
   try {
     const ip = request.headers.get("CF-Connecting-IP") ?? "unknown";
@@ -279,7 +286,7 @@ async function recordVisit(request: Request, env: Env): Promise<Response> {
     const key = `v:${await dailyDigest(ip, await dailySalt(store, day), day)}`;
     const seen = await store.get(key);
     let total = Number.parseInt((await store.get("total")) ?? "", 10);
-    if (!Number.isFinite(total)) total = DECORATIVE_VISITS;
+    if (!Number.isFinite(total)) total = NO_VISITS;
     if (!seen) {
       // Read-modify-write on a single key, so simultaneous first-time visitors can both read the
       // same total and one increment is lost. KV is also eventually consistent, so a fresh visitor
@@ -294,7 +301,7 @@ async function recordVisit(request: Request, env: Env): Promise<Response> {
     return Response.json({ count: total, live: true });
   } catch {
     // Counting must never take the page down.
-    return Response.json({ count: DECORATIVE_VISITS, live: false });
+    return Response.json({ count: NO_VISITS, live: false });
   }
 }
 
