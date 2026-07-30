@@ -18,9 +18,13 @@ const isCodexSeatbeltSandbox = process.env.CODEX_SANDBOX === "seatbelt";
 //
 // This object is only what the local dev server needs. The rate limiters are deliberately absent
 // locally, which is why worker/index.ts fails open when a limiter binding is missing.
+//
+// compatibility_flags is not repeated here either. The build merges this object with wrangler.jsonc
+// without deduplicating, and Cloudflare rejects a repeated flag outright:
+//   Compatibility flag specified multiple times: nodejs_compat [code: 10021]
+// The deploy failed on that after uploading every asset.
 const localBindingConfig = {
   main: "./worker/index.ts",
-  compatibility_flags: ["nodejs_compat"],
   d1_databases: d1
     ? [
         {
