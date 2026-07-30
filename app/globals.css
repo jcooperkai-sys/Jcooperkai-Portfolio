@@ -401,18 +401,20 @@ textarea:focus-visible {
   text-align: center;
 }
 
+/* The counter is digits only now. Centring both axes keeps them from sitting high in the box,
+   which is how they looked once the heading and caption above and below them were removed. */
+.counter-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 61px;
+}
+
 .counter-box p,
 .webring-box p {
   margin: 0 0 8px;
   font: 800 13px Arial, Helvetica, sans-serif;
   letter-spacing: 0.12em;
-}
-
-.counter-box small {
-  display: block;
-  margin-top: 7px;
-  color: #bfbfbf;
-  font: 700 9px "Courier New", monospace;
 }
 
 .counter-digits {
