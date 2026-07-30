@@ -301,11 +301,13 @@ function ViewMore({
 type VisitCount = { count: number; live: boolean };
 
 export default function Home() {
-  // Rendered server-side as the decorative figure so the counter is never blank or shifting on
-  // first paint; replaced once /api/visits answers. That endpoint counts unique visits per day
-  // from a salted, expiring hash of the address -- the address itself is never stored. Where no
-  // KV binding exists it reports live:false and the decorative figure stands.
-  const [visitorCount, setVisitorCount] = useState("013581");
+  // Rendered server-side as zero, then replaced once /api/visits answers. That endpoint counts
+  // unique visits per day from a salted, expiring hash of the address -- the address itself is
+  // never stored. Where no KV binding exists it reports zero with live:false rather than a
+  // made-up number.
+  // Zero until /api/visits answers. This was a hardcoded 013581, which meant the first paint showed
+  // an invented figure that the real count then continued from.
+  const [visitorCount, setVisitorCount] = useState("000000");
   useEffect(() => {
     let cancelled = false;
     fetch("/api/visits")

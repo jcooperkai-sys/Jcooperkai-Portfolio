@@ -50,4 +50,4 @@ Stated plainly, because a privacy claim should be checkable: this protects the s
 alone were ever exposed. Someone with full read access to the counting store would also be able to
 read the random value. No cookie or browser storage is used, nothing about a visit is shared with any
 third party, and because the random value is replaced daily, a digest from one day cannot be matched
-against another. Where no counting store is configured the number shown is decorative.
+against another. Where no counting store is configured the number shown is zero.
