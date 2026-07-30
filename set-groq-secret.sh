@@ -92,12 +92,12 @@ if [ "$CHECK_ONLY" -eq 1 ]; then
   exit 0
 fi
 
-echo "Setting Cloudflare secret $SECRET_NAME on worker jcooperkai-ai-lab..."
+echo "Setting Cloudflare secret $SECRET_NAME (worker name comes from wrangler.jsonc)..."
 # printf, not echo, and piped rather than passed as an argument: process arguments are readable by
 # any other process on the machine via `ps`, and a here-string would land in history.
-printf '%s' "$KEY" | npx wrangler secret put "$SECRET_NAME" --name jcooperkai-ai-lab
+printf '%s' "$KEY" | npx wrangler secret put "$SECRET_NAME"
 
 echo
 echo "Done. The secret is write-only from here on and cannot be read back."
 echo "Verify Buddy end to end:"
-echo "  curl -s -X POST https://jcooperkai.com/api/buddy -H 'Content-Type: application/json' -d '{\"message\":\"hi\"}'"
+echo "  curl -s -X POST https://www.jcooperkai.workers.dev/api/buddy -H 'Content-Type: application/json' -d '{\"message\":\"hi\"}'"
