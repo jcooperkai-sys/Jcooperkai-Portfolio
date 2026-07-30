@@ -30,7 +30,23 @@ cd ~/Documents/Codex/2026-07-28/sites-plugin-sites-openai-bundled-create \
 
 A dry run: deploys nothing, and confirms the config resolves.
 
-## 3. Deploy
+## 3. Register a workers.dev subdomain (first deploy only)
+
+A brand-new Cloudflare account has no `workers.dev` subdomain, and a worker cannot publish without
+either that or a custom domain. Wrangler does ask, but `vinext deploy` runs it non-interactively so
+the prompt auto-answers "no" and the deploy fails with:
+
+```
+You need to register a workers.dev subdomain before publishing to workers.dev
+```
+
+There is no `wrangler subdomain` command. Register it in the dashboard — Workers & Pages →
+Onboarding — and pick `jcooperkai`, which makes the site
+`jcooperkai-ai-lab.jcooperkai.workers.dev`.
+
+Free, one time, account-wide. Every later deploy skips this.
+
+## 4. Deploy
 
 ```bash
 cd ~/Documents/Codex/2026-07-28/sites-plugin-sites-openai-bundled-create \
@@ -38,12 +54,12 @@ cd ~/Documents/Codex/2026-07-28/sites-plugin-sites-openai-bundled-create \
 ```
 
 This is the step that puts the site on the internet, at the generated `workers.dev` URL. It also
-creates the worker, which steps 4 and 5 need to exist first.
+creates the worker, which the secret and the KV binding both need to exist first.
 
-Buddy returns a plain "unconfigured" response until step 4 — expected, and the page falls back to
+Buddy returns a plain "unconfigured" response until step 5 — expected, and the page falls back to
 its offline guide rather than erroring.
 
-## 4. Set the Groq key
+## 5. Set the Groq key
 
 The worker exists now, so the secret has somewhere to attach. Use the script — it finds the key
 where it already lives on this machine and pipes it into wrangler's stdin, so the value is never
@@ -78,7 +94,7 @@ That prompts for the value and stores it in the Keychain — no file, no history
 
 The secret applies immediately. No redeploy needed.
 
-## 5. Visit counter (optional, free)
+## 6. Visit counter (optional, free)
 
 ```bash
 cd ~/Documents/Codex/2026-07-28/sites-plugin-sites-openai-bundled-create \
@@ -96,7 +112,7 @@ cd ~/Documents/Codex/2026-07-28/sites-plugin-sites-openai-bundled-create \
 Skip this and the counter shows the static figure with `live: false`. That is a supported state,
 not a broken one.
 
-## 6. Verify against the live site
+## 7. Verify against the live site
 
 ```bash
 # Substitute your workers.dev host until the domain is attached, e.g.
@@ -123,7 +139,7 @@ Expect ten `200`s, then `429`s.
 Then in a browser: Buddy answers, VIEW PAPER opens a PDF in a tab, and the layout holds at 980, 610
 and 500 px.
 
-## 7. Attach the domain
+## 8. Attach the domain
 
 You are buying `jcooperkai.com` from Cloudflare Registrar, so it arrives already set up in your
 account — nothing to configure, no nameservers to change, no waiting.
@@ -150,12 +166,12 @@ curl -sI https://jcooperkai.com/ | head -1
 Two things not to do, because either one makes it look broken:
 
 - Do not pick **Route** instead of Custom Domain. Route needs a DNS record you have not made.
-- Do not add an A or CNAME record yourself. Step 2 makes it for you, and a second one conflicts.
+- Do not add an A or CNAME record yourself. The Custom Domain step makes it for you, and a second one conflicts.
 
 If the browser shows a certificate warning at first, wait a few minutes — the certificate is still
 being issued. It fixes itself.
 
-## 8. Account hardening
+## 9. Account hardening
 
 Full list in SECURITY.md's hosting checklist. The short version: keep DDoS protection and the
 managed WAF on, require TLS 1.2 minimum, enable DNSSEC once the domain is attached, protect the
