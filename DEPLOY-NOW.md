@@ -3,6 +3,11 @@
 Everything code-side is done. The steps below need your Cloudflare account. Nothing is live until
 step 3.
 
+**You do not need the domain to deploy.** Step 3 publishes to a free `workers.dev` subdomain, and the
+Workers free tier needs no payment method. Everything works there — Buddy, the papers, the rate
+limiters, the visit counter. Attaching `jcooperkai.com` (step 6) is cosmetic and can wait as long as
+you like.
+
 Every command below already includes the `cd`, so each block can be copied on its own in any order
 without leaving you in the wrong directory. That matters here: outside this directory wrangler cannot
 resolve the worker name and fails with *"Required Worker name missing"*.
@@ -91,17 +96,11 @@ cd ~/Documents/Codex/2026-07-28/sites-plugin-sites-openai-bundled-create \
 Skip this and the counter shows the static figure with `live: false`. That is a supported state,
 not a broken one.
 
-## 6. Attach the domain
-
-Cloudflare dashboard → Workers & Pages → `jcooperkai-ai-lab` → Settings → Domains & Routes → add
-`jcooperkai.com` and `www.jcooperkai.com`.
-
-If the domain's nameservers are not already pointed at Cloudflare, do that at your registrar first.
-That is the one step with a propagation delay.
-
-## 7. Verify against the live site
+## 6. Verify against the live site
 
 ```bash
+# Substitute your workers.dev host until the domain is attached, e.g.
+#   https://jcooperkai-ai-lab.<your-subdomain>.workers.dev
 curl -sI https://jcooperkai.com/api/paper/001 | grep -i content-type   # application/pdf
 curl -sI -X POST https://jcooperkai.com/ | head -1                     # 405
 curl -s  https://jcooperkai.com/api/visits                             # live:true once KV is bound
@@ -124,7 +123,19 @@ Expect ten `200`s, then `429`s.
 Then in a browser: Buddy answers, VIEW PAPER opens a PDF in a tab, and the layout holds at 980, 610
 and 500 px.
 
-## 8. Account hardening
+## 8. Attach the domain (whenever you have it)
+
+Cloudflare dashboard → Workers & Pages → `jcooperkai-ai-lab` → Settings → Domains & Routes → add
+`jcooperkai.com` and `www.jcooperkai.com`.
+
+If the domain's nameservers are not already pointed at Cloudflare, do that at your registrar first.
+That is the one step with a propagation delay.
+
+Cloudflare Registrar requires a card. If a card is not an option, Namecheap and Porkbun both accept
+PayPal, and the domain works the same — you point its nameservers at Cloudflare afterwards either
+way. Nothing about the deployment changes.
+
+## 9. Account hardening
 
 Full list in SECURITY.md's hosting checklist. The short version: keep DDoS protection and the
 managed WAF on, require TLS 1.2 minimum, enable DNSSEC once the domain is attached, protect the
