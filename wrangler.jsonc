@@ -47,10 +47,8 @@
       "simple": { "limit": 120, "period": 60 }
     }
   ]
-  // The visit counter's KV namespace is deliberately absent. Its id is an account resource that
-  // does not exist until `wrangler kv namespace create VISITS` has been run, and deploying with a
-  // wrong id fails. Add the block below once the real id exists — until then the counter reports
-  // the static figure with live:false, which is a supported state rather than a broken one.
-  //
-  // "kv_namespaces": [{ "binding": "VISITS", "id": "<id from wrangler kv namespace create VISITS>" }]
+  // The visit counter's store. Created with `wrangler kv namespace create VISITS`.
+  // Without it the counter reports a static figure with live:false, which is a supported state.
+  ,
+  "kv_namespaces": [{ "binding": "VISITS", "id": "5b9ee90ce2b54edc9493f32ec0c2f358" }]
 }

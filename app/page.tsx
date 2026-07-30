@@ -557,13 +557,13 @@ export default function Home() {
         <div className="ticker" aria-label="Site status">
           <div className="ticker-track">
             <span>
-              &lt;&lt;::==(( o ))==::&gt;&gt; YOU ARE RETRO VISITOR NUMBER{" "}
+              &lt;&lt;::==(( o ))==::&gt;&gt; YOU ARE VISITOR NUMBER{" "}
               {visitorCount} !!! &nbsp; BEST VIEWED IN NETSCAPE NAVIGATOR 3.0 AT
               800×600 &nbsp; ♥ MODEM FRIENDLY ♥ &nbsp; LAST UPDATED 07.28.96
               &nbsp;
             </span>
             <span aria-hidden="true">
-              &lt;&lt;::==(( o ))==::&gt;&gt; YOU ARE RETRO VISITOR NUMBER{" "}
+              &lt;&lt;::==(( o ))==::&gt;&gt; YOU ARE VISITOR NUMBER{" "}
               {visitorCount} !!! &nbsp; BEST VIEWED IN NETSCAPE NAVIGATOR 3.0 AT
               800×600 &nbsp; ♥ MODEM FRIENDLY ♥ &nbsp; LAST UPDATED 07.28.96
               &nbsp;
@@ -588,14 +588,16 @@ export default function Home() {
               ))}
             </nav>
 
+            {/* Digits only. The "DECORATIVE RETRO COUNTER" caption is gone because the counter is
+                no longer decorative -- it reports real unique visits per day -- and the "VISITORS"
+                heading went with it so the digits sit centred on their own rather than hanging
+                under a label. */}
             <div className="counter-box">
-              <p>VISITORS</p>
               <div className="counter-digits" aria-label={`${visitorCount} visits`}>
                 {visitorCount.split("").map((digit, index) => (
                   <span key={`${digit}-${index}`}>{digit}</span>
                 ))}
               </div>
-              <small>DECORATIVE RETRO COUNTER</small>
             </div>
 
             <a
