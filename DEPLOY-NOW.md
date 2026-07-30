@@ -3,18 +3,15 @@
 Everything code-side is done. The steps below need your Cloudflare account. Nothing is live until
 step 3.
 
-**Run every command from the repo root**, not from `~`. The root `wrangler.jsonc` is what lets
-wrangler resolve the worker name (`jcooperkai-ai-lab`); outside this directory every command fails
-with *"Required Worker name missing"*.
-
-```bash
-cd ~/Documents/Codex/2026-07-28/sites-plugin-sites-openai-bundled-create
-```
+Every command below already includes the `cd`, so each block can be copied on its own in any order
+without leaving you in the wrong directory. That matters here: outside this directory wrangler cannot
+resolve the worker name and fails with *"Required Worker name missing"*.
 
 ## 1. Authenticate
 
 ```bash
-npx wrangler login
+cd ~/Documents/Codex/2026-07-28/sites-plugin-sites-openai-bundled-create \
+  && npx wrangler login
 ```
 
 Opens a browser and asks you to authorize Wrangler on your Cloudflare account.
@@ -22,7 +19,8 @@ Opens a browser and asks you to authorize Wrangler on your Cloudflare account.
 ## 2. Sanity check before anything is published
 
 ```bash
-npm run deploy:check
+cd ~/Documents/Codex/2026-07-28/sites-plugin-sites-openai-bundled-create \
+  && npm run deploy:check
 ```
 
 A dry run: deploys nothing, and confirms the config resolves.
@@ -30,7 +28,8 @@ A dry run: deploys nothing, and confirms the config resolves.
 ## 3. Deploy
 
 ```bash
-npm run deploy
+cd ~/Documents/Codex/2026-07-28/sites-plugin-sites-openai-bundled-create \
+  && npm run deploy
 ```
 
 This is the step that puts the site on the internet, at the generated `workers.dev` URL. It also
@@ -47,13 +46,15 @@ displayed, never typed, never put in shell history, and never passed as a comman
 are readable by any other process via `ps`):
 
 ```bash
-./set-groq-secret.sh
+cd ~/Documents/Codex/2026-07-28/sites-plugin-sites-openai-bundled-create \
+  && ./set-groq-secret.sh
 ```
 
 To see which source it would use without setting anything:
 
 ```bash
-./set-groq-secret.sh --check
+cd ~/Documents/Codex/2026-07-28/sites-plugin-sites-openai-bundled-create \
+  && ./set-groq-secret.sh --check
 ```
 
 It searches, in order: the `GROQ_API_KEY` environment variable, this project's `.dev.vars`, AIRN's
@@ -64,7 +65,8 @@ Groq shows a key once and never again, so if none is found, create one at
 https://console.groq.com/keys and put it somewhere durable that both AIRN and this script read:
 
 ```bash
-security add-generic-password -s groq-api-key -a "$USER" -w
+cd ~/Documents/Codex/2026-07-28/sites-plugin-sites-openai-bundled-create \
+  && security add-generic-password -s groq-api-key -a "$USER" -w
 ```
 
 That prompts for the value and stores it in the Keychain — no file, no history entry.
@@ -74,14 +76,16 @@ The secret applies immediately. No redeploy needed.
 ## 5. Visit counter (optional, free)
 
 ```bash
-npx wrangler kv namespace create VISITS
+cd ~/Documents/Codex/2026-07-28/sites-plugin-sites-openai-bundled-create \
+  && npx wrangler kv namespace create VISITS
 ```
 
 Take the id it prints, uncomment the `kv_namespaces` block at the bottom of `wrangler.jsonc`, paste
 the id in, then redeploy:
 
 ```bash
-npm run deploy
+cd ~/Documents/Codex/2026-07-28/sites-plugin-sites-openai-bundled-create \
+  && npm run deploy
 ```
 
 Skip this and the counter shows the static figure with `live: false`. That is a supported state,
