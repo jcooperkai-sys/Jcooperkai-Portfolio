@@ -16,11 +16,11 @@ const papers = [
   {
     number: "001",
     year: "2026",
-    title: "COMPLETE DECISION OF SMALL TURING MACHINE CLASSES",
+    title: "WHAT BROKE: A DEFECT CENSUS OF AN AI-AUTHORED PRODUCTION SYSTEM",
     venue: "INDEPENDENT RESEARCH NOTE",
     authors: "COOPER E.",
     abstract:
-      "The Busy Beaver function is uncomputable, so each value must be established by deciding every machine in its class individually. This note presents an independently written enumeration and decision pipeline and uses it to completely decide four classical classes: every machine in BB(2,2), BB(3,2), BB(2,3) and BB(4,2) is proven either to halt or never to halt, with no residue. The maxima recovered are 6, 21, 38 and 107 steps, the last with 13 marks, matching the published values. No parameter was tuned against those answers. A soundness defect found in the author's own backward decider is reported in full, because it produced a confident false result rather than a visible failure.",
+      "Defect studies draw on codebases written by many people over years, where the record of what went wrong is scattered and largely lost. This note reports a census of a different corpus: 28,207 lines across thirteen packages, written by a single AI agent over roughly two days, in which every defect found was documented in the commit that fixed it. 119 commits, 48 describing something that was wrong. The dominant class was not logic error but two halves of the system, each internally consistent, that disagreed with each other. The second finding is negative and sharper: of the defects a test caught, none were caught by a test written for something else. Every one required a test that asked that specific question.",
     view: "/api/paper/001",
     paper: "/downloads/paper-001.txt",
     citation: "/downloads/paper-001.bib",
@@ -28,26 +28,14 @@ const papers = [
   {
     number: "002",
     year: "2026",
-    title: "SHORT-HORIZON PRICE DIRECTION IS NOT PREDICTABLE",
-    venue: "NEGATIVE RESULT",
-    authors: "COOPER E.",
-    abstract:
-      "A common assumption among retail traders is that short-horizon price direction carries exploitable signal. This note tests that assumption on 258,737 real one-minute bars spanning roughly 180 days, using walk-forward validation with no lookahead and metrics implemented from scratch. Direction over a fifteen-minute horizon is not predictable: walk-forward AUC is 0.5105 against a 0.5 baseline. The model is well calibrated, but calibrated at a coin flip, and calibration without discrimination is not signal. The result is reported because it rules out an entire strategy class.",
-    view: "/api/paper/002",
-    paper: "/downloads/paper-002.txt",
-    citation: "/downloads/paper-002.bib",
-  },
-  {
-    number: "003",
-    year: "2026",
-    title: "DECODABILITY IS NOT MECHANISM",
+    title: "SPLIT-BRAIN INVARIANTS: WHEN BOTH HALVES ARE CORRECT",
     venue: "INDEPENDENT RESEARCH NOTE",
     authors: "COOPER E.",
     abstract:
-      "Interpretability commonly establishes that a network represents something by training a probe and reporting its accuracy. This note demonstrates, on a system whose ground truth is known analytically, that decodability and causal mechanism are different quantities and can be made to disagree almost completely. A channel decodable at 100 percent contributes 0.9998 bits to a correlational description of a hidden layer and 0.0006 bits to an interventional one, a separation of roughly 1600x across five seeds, while the interventional description recovers the true generating structure at ARI 0.9957 against 0.1243.",
-    view: "/api/paper/003",
-    paper: "/downloads/paper-003.txt",
-    citation: "/downloads/paper-003.bib",
+      "In a census of 48 defects from a 28,207-line AI-authored system, the largest single class had a property that makes it invisible to ordinary review: every half was correct on its own. A gate demanded a file at one path while the component supplying it used another. A rollback looked for a tag in a format nothing produced. Each side passes its own tests and reads correctly to a reviewer; the defect lives in the space between them, which no file owns. This note characterises the class, gives the ten instances, and reports what actually caught them -- not more tests, but tests written specifically to ask whether two halves still agree.",
+    view: "/api/paper/002",
+    paper: "/downloads/paper-002.txt",
+    citation: "/downloads/paper-002.bib",
   },
 ];
 

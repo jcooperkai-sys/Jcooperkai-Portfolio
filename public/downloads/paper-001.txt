@@ -1,4 +1,4 @@
-COMPLETE DECISION OF SMALL TURING MACHINE CLASSES
+WHAT BROKE: A DEFECT CENSUS OF AN AI-AUTHORED PRODUCTION SYSTEM
 
 Author: Cooper E. (jcooperkai)
 Venue: Independent research note
@@ -6,109 +6,175 @@ Year: 2026
 
 ABSTRACT
 
-The Busy Beaver function is uncomputable, so each value must be established by
-deciding every machine in its class individually. This note presents an
-independently written enumeration and decision pipeline and uses it to
-completely decide four classical classes: every machine in BB(2,2), BB(3,2),
-BB(2,3) and BB(4,2) is proven either to halt or never to halt, with no residue.
-The maxima recovered are 6, 21, 38 and 107 steps, the last with 13 marks,
-matching the published values. No parameter was tuned against those answers.
+Studies of software defects draw on codebases written by many people over years,
+where the record of what went wrong is scattered across issue trackers and lost
+in review. This note reports a census of a different kind of corpus: 28,207
+lines of TypeScript across thirteen packages, written by a single AI agent over
+roughly two days, in which every defect found was documented in the commit that
+fixed it, together with the reasoning that produced it. 119 commits, 48 of which
+describe something that was wrong. The dominant class was not logic error. It
+was two halves of the system, each internally consistent, that disagreed with
+each other -- 10 of 48. The second finding is negative and sharper: of the
+defects a test caught, none were caught by a test written for something else.
+Every one required a test that asked that specific question.
 
-1. WHY A MAXIMUM IS NOT A VALUE
+1. THE CORPUS
 
-Finding the machine that runs longest is easy: simulate the class under a step
-limit and record the maximum. Establishing that this maximum IS the maximum
-requires proving that every machine which did not halt within the limit never
-halts at all. One unresolved machine leaves the value unproven, because that
-machine might run a very long time and then stop.
+  +---------------------------------------------------------------+
+  |  ONE AGENT   ~2 DAYS   NO OTHER AUTHORS                        |
+  |                                                                |
+  |   119 commits ....... every defect documented in its fix       |
+  |    48 defect commits  (40.3% of all commits)                   |
+  |  28,207 lines TS .... 13 packages, zero dependencies           |
+  |   1,365 tests ....... all passing at census time               |
+  +---------------------------------------------------------------+
 
-2. ENUMERATION
+The corpus is a business system: an orchestration clock, a monitoring daemon, an
+HTTP API, a backup and restore layer, a static-site pipeline. It runs on one
+machine. Zero npm dependencies, which matters here because it removes
+third-party code as a source of defects: everything counted below was written
+for this system.
 
-Machines are enumerated in Tree Normal Form. A machine begins with a single
-defined transition and is simulated. When the head reads a state/symbol pair
-whose transition is undefined, the search branches over every canonical way of
-defining it, introducing at most one new state per branch. Transitions are never
-written down speculatively -- only at the moment the machine reaches them. The
-full tree for BB(4,2) contains 2,943,669 machines, against 6.98e9 for a naive
-enumeration.
+The unusual property is not the size. It is that a single author with no memory
+between sessions wrote every line, and that the author was required to record,
+in the commit, what had been wrong and why it had been possible. That record is
+the dataset. It does not exist for human codebases because humans do not
+reliably write it down.
 
-3. DECIDERS
+2. METHOD, AND ITS LIMITS
 
-Simulation proves halting. It can never prove non-halting. Three arguments are
-applied in sequence, cheapest first.
+Commits were classified by regular expression over subject and body, then the
+categories were drawn from the language the commits actually used rather than
+from a taxonomy chosen in advance. A commit counts as a defect commit if its
+body describes something that was wrong, not merely something that was added.
 
-  Cyclers. A machine that returns to an identical configuration repeats forever.
+  classification pipeline
+  -----------------------
+     119 commits
+        |
+        v
+     [ body matches defect language? ]  --no--> 71 feature commits
+        | yes
+        v
+      48 defect commits
+        |
+        +--> category (regex over the body's own words)
+        +--> how found (regex; only 13 of 48 were classifiable)
 
-  Translated cycles. Far more machines repeat a configuration SHIFTED in space
-  while marching along the tape, and so never revisit a configuration exactly.
-  Criterion: at two record steps (the head first visiting a virgin cell, so all
-  tape beyond is blank) in the same state, at positions p1 < p2 with d = p2-p1,
-  and L the leftmost cell touched between them, if the tape window [L..p2] at the
-  later step equals [L-d..p1] at the earlier one, the machine replays that
-  interval forever, translated by d.
+Three limits, stated because they bound every number below.
 
-  Backward reasoning. For the remainder, search backwards from the halt
-  condition. A predecessor requiring a cell to hold two different symbols is
-  contradictory and dies. If every branch dies within a bounded depth, the halt
-  is unreachable.
+n = 1. This is one system by one author. Nothing here generalises to codebases
+in the plural, and it is not offered as if it does.
 
-4. RESULTS
+Self-reported. The author of the defects wrote the record of them. A defect
+never noticed is not in the corpus, and the census cannot see what it missed.
 
-  Class     Halting   Non-halting   Undecided   Maximum        Published
-  BB(2,2)   15        106           0           6              6
-  BB(3,2)   1,379     15,170        0           21             21
-  BB(2,3)   866       9,527         0           38             38
-  BB(4,2)   183,983   2,759,686     0           107 (13 marks) 107 (13)
+Categories overlap. A commit can be counted in more than one class; the counts
+sum to more than 48 on purpose, because forcing a single label would discard the
+most interesting cases, which are the ones with two causes.
 
-Undecided machines remaining after each decider:
+3. WHAT THE DEFECTS WERE
 
-  Class     After cyclers   After translated cycles   After backward reasoning
-  BB(2,2)   92              20                        0
-  BB(3,2)   13,187          3,065                     0
-  BB(2,3)   8,492           2,779                     0
-  BB(4,2)   --              589,107                   0
+  class                    n    share of 48
+  ---------------------------------------------------------------
+  split-brain             10        21%     two halves, each correct
+  environment/platform     7        15%     Windows vs macOS, encoding
+  fail-open guard          6        13%     unmeasurable input allowed
+  lifecycle/ordering       5        10%     acted before a precondition
+  external tool            5        10%     a tool lied about succeeding
+  vacuous check            3         6%     a check that could not fail
 
-The two cycle deciders carry the volume; backward reasoning decides whether the
-class closes. A pipeline with only the first two would report a correct maximum
-for every class above while proving nothing.
+The largest class is not a coding error in any usual sense. In a split-brain
+defect, both sides are correct in isolation and the system is broken because
+they were written at different times against different assumptions:
 
-5. A SOUNDNESS DEFECT, REPORTED
+  the shape of a split-brain defect
+  ---------------------------------
+    HALF A                          HALF B
+    "the client file is at          "I supply the client file at
+     clients/<slug>/CLIENT.md"       01 Clients/<slug>/CLIENT.md"
+        |                                   |
+        +---------------+-------------------+
+                        |
+                 both correct.
+                 no agent could ever be granted access.
 
-An earlier version of the backward decider discarded a branch when expansion
-moved outside its tracked window, then read an empty frontier as "every branch
-died". Two situations shared one code path: a branch that died because it was
-CONTRADICTORY, and a branch that vanished because the search RAN OUT OF ROOM.
-The first is a proof; the second is an absence of information.
+Reviewing either half approves it. Testing either half passes. The defect is in
+the space between them, which is exactly the space no file owns.
 
-The consequence was a confident false certificate. Run against BB(2,4) under a
-100,000-step limit, the pipeline reported zero undecided machines -- while the
-champion of that class halts after 3,932,964 steps and had been certified
-non-halting.
+4. HOW THEY WERE FOUND
 
-The fix tracks truncation and concludes non-halting only when nothing was
-discarded. All four classes were re-run and produced byte-identical output,
-confirming their proofs never depended on truncation.
+Only 13 of the 48 recorded enough about discovery to classify. The remaining 35
+are reported as unclassified rather than assigned.
 
-Two general points follow. An unsound decider still produces correct maxima,
-because maxima come from forward simulation; only the non-halting claims are
-corrupted, and those are invisible without an independent check. And the guard
-that caught it was validation against a known value.
+  how found                                  n
+  --------------------------------------------
+  a test that asked that exact question      6
+  running it on the target machine           5
+  reading the code                           2
+  a test written for something else          0
+  unclassified                              35
 
-6. LIMITS
+The zero is the finding. 1,365 tests were passing throughout, and not one defect
+was caught incidentally by a test aimed elsewhere. Every defect a test caught
+was caught by a test written, deliberately, to ask whether that specific thing
+was true.
 
-No new Busy Beaver value is claimed. Open classes need deciders not implemented
-here, champions far past any reachable step limit (BB(3,3) exceeds 1.19e17), and
-contain machines whose halting is equivalent to open problems in number theory.
+This is a negative result about test suites as safety nets. A suite is not a
+mesh that catches what falls into it. It is a set of specific questions, and it
+answers exactly those.
 
-REPRODUCIBILITY
+  what a test suite actually is
+  -----------------------------
+    the comfortable picture          what the data shows
+    ---------------------            -------------------
+      \  1,365 tests  /                | | | | | | |
+       \   a net     /                 | | | | | | |
+        \___________/                  1,365 vertical questions
+             |                          - a defect between two
+        defects fall in                   of them falls through
+                                          untouched
 
-Single C++ file, no dependencies:
-  clang++ -O3 -march=native -std=c++20 -o dec dec.cpp
-  ./dec <states> <symbols> <step-limit> <backward-depth>
+5. THE SECOND ENVIRONMENT
 
-REFERENCES
+Five defects came from an external tool reporting success it had not achieved: a
+copy that returned zero while antivirus removed the file behind it; a scheduler
+that reported a task created that could never run; a deploy that compared file
+sizes and concluded two different files were the same.
 
-[1] T. Rado. On non-computable functions. Bell System Technical Journal, 1962.
-[2] S. Lin, T. Rado. Computer studies of Turing machine problems. JACM, 1965.
-[3] A. H. Brady. The determination of Sigma(k) for k=4. Math. Comp., 1983.
-[4] The bbchallenge Collaboration. Determination of BB(5), machine-checked, 2024.
+  trusting the tool                  checking the result
+  -----------------                  -------------------
+    run tool                           run tool
+    exit code 0                        exit code 0
+    -> success                         -> ask the far side what is there
+                                       -> compare a hash, not a size
+                                       -> only then, success
+
+Seven more came from the difference between where the code was written and where
+it runs. A file handle that macOS allows to be deleted and Windows does not. A
+script whose one multi-byte character is read as ANSI and mangles a quote. A
+directory change that silently does not change drive.
+
+Together these are 12 of 48 -- a quarter of all defects -- and none of them are
+about the program's logic. They are about the program's beliefs concerning the
+world it runs in.
+
+6. WHAT THIS SUGGESTS ABOUT AI-WRITTEN CODE
+
+Stated carefully, because n = 1.
+
+The defects are not the ones the popular account predicts. There were no
+hallucinated APIs in the census and no misunderstood requirements. The agent
+wrote each part correctly and then contradicted itself across a boundary it
+could not see in one context window -- which is the same failure a large team
+produces, arriving by a different road.
+
+If that holds beyond this corpus, the useful defence is not more tests. It is
+tests placed specifically at boundaries, asking whether two halves still agree,
+and running them where the code actually runs.
+
+7. AVAILABILITY
+
+The corpus is a private repository; the classification script and the derived
+counts are reproducible from the commit history it contains. Every number in
+this note was produced by that script rather than counted by hand.

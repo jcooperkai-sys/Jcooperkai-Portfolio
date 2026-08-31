@@ -91,7 +91,7 @@ const MAX_URL_LENGTH = 4_096;
  * consult them: HEAD must agree with GET about what exists, or a monitor sees 200 for a paper that
  * GET reports as missing.
  */
-const PAPER_NUMBERS = new Set(["001", "002", "003"]);
+const PAPER_NUMBERS = new Set(["001", "002"]);
 
 const READABLE_TEXT: Record<string, string> = {
   "exp1-xor": "/downloads/experiments/exp1_xor.py.txt",
