@@ -1,4 +1,4 @@
-SHORT-HORIZON PRICE DIRECTION IS NOT PREDICTABLE: A NEGATIVE RESULT
+SPLIT-BRAIN INVARIANTS: WHEN BOTH HALVES ARE CORRECT AND THE SYSTEM IS NOT
 
 Author: Cooper E. (jcooperkai)
 Venue: Independent research note
@@ -6,86 +6,157 @@ Year: 2026
 
 ABSTRACT
 
-A common assumption among retail traders is that short-horizon price direction
-carries exploitable signal. This note tests that assumption directly on 258,737
-real one-minute bars spanning roughly 180 days, using walk-forward validation
-with no lookahead, and metrics implemented from scratch rather than taken from a
-library. Direction over a fifteen-minute horizon is not predictable: walk-forward
-AUC is 0.5105 against a 0.5 baseline, and the Brier score improves on a
-coin-flip by 0.00004. The result is reported because it rules out an entire
-strategy class, and because negative results of this kind are rarely published.
+In a census of 48 defects from a 28,207-line AI-authored system, the largest
+single class -- 10 of 48 -- had a property that makes it invisible to ordinary
+review: every half was correct on its own. A gate demanded a file at one path
+while the component supplying it used another. A rollback looked for a tag in a
+format nothing produced. A frontend contract promised two data sources returned
+the same shape when they returned different ones. Each side passes its own
+tests. Each side reads correctly to a reviewer. The defect lives in the space
+between them, which no file owns and no test covers by default. This note
+characterises the class, gives the ten instances, and reports what actually
+caught them: not more tests, but tests written specifically to ask whether two
+halves still agree. Those tests are cheap. The reason they are rarely written is
+that nothing about either half suggests they are needed.
 
-1. SETUP
+1. DEFINITION
 
-Data: 258,737 one-minute bars of real market data, roughly 180 days. Windows are
-non-overlapping and fifteen minutes long. Each window's label is simply whether
-the close exceeded the open.
+A split-brain invariant is a fact two components must agree on, that neither
+component stores.
 
-Features, computed strictly from history before the window opens: multi-scale
-momentum over 1, 5, 15, 30 and 60 minutes; realised volatility over two scales;
-sign persistence; a volume trend ratio; time-of-day encoded as sine and cosine;
-and a sixty-minute drift term. Thirteen features in total.
+  +------------------+                       +------------------+
+  |    COMPONENT A   |                       |    COMPONENT B   |
+  |                  |                       |                  |
+  |  believes X      | <---- must agree ---> |  believes X'     |
+  |  tests pass      |      (nothing         |  tests pass      |
+  |  review passes   |       stores this)    |  review passes   |
+  +------------------+                       +------------------+
+                        X != X'  ->  system broken,
+                                     both halves green
 
-Validation is expanding-window walk-forward across six folds, purged by one
-window so no training sample overlaps a test window. The model is logistic
-regression written from scratch. Brier score, AUC and expected calibration error
-are also implemented from scratch, so no library convention is silently assumed.
+Three properties, all of which must hold:
 
-2. RESULT
+  (i)   each half is internally consistent
+  (ii)  the agreement is not represented anywhere -- there is no single
+        definition either half imports
+  (iii) the failure appears at a boundary crossing, so a unit test of either
+        half cannot reach it
 
-  Metric   Model     Baseline    Verdict
-  Brier    0.24996   0.25000     +0.00004 improvement
-  AUC      0.5105    0.5         essentially no skill
-  ECE      0.0096    --          well calibrated, but calibrated at ~0.5
+Property (ii) is what distinguishes this from an ordinary interface bug. If the
+shared fact had one definition, changing it would change both sides. The defect
+exists precisely because the fact was written down twice.
 
-11,497 out-of-sample windows were tested. The model is well calibrated in the
-sense that its confidence matches its accuracy -- but the value it is confident
-about is a coin flip. Calibration without discrimination is not signal.
+2. THE TEN
 
-3. WHAT SURVIVES
+  #   the disagreement                         consequence
+  --------------------------------------------------------------------------
+  1   gate wanted clients/<slug>/CLIENT.md      no agent could ever be
+      runner supplied 01 Clients/<slug>/...     granted write access
+  2   preamble said "DATA, not instructions"    no agent could ever spawn
+      assembler required "DATA, not commands"
+  3   three deploy-tag formats coexisted        rollback failed while
+      nothing produced the one used             reporting the site was up
+  4   live API returned generated_at            dashboard fallback rendered
+      snapshot file returned captured_at        blank on the one path it
+                                                exists for
+  5   CI matrix listed a purged package         386 tests never ran while
+      and omitted four real ones                the badge said passing
+  6   onboarding wrote CLIENT.md                every onboarded client was
+      the gate required three files             one no agent could act on
+  7   secret scanner's patterns matched         every push failed on the
+      the scanner's own source                  scanner itself
+  8   deploy compared file sizes                C:/Webbify and D:/Webbify are
+      to decide "already current"               the same length; nothing shipped
+  9   doc claimed 12 clock jobs                 a human reads a wrong count as
+      the schedule had 13                       evidence nothing is missing
+  10  Turnstile fell back to the                the form looked protected and
+      always-passes test key                    accepted every bot
 
-The instrument is a binary option struck at the window-open price. At minute t
-inside the window, its driftless fair value is
+Read the middle column alone and each line is reasonable. That is the point.
 
-  f(t) = Phi( ln(S_t / K) / (sigma * sqrt(tau)) )
+3. WHY AN AGENT PRODUCES THEM
 
-with sigma a trailing one-minute realised volatility estimate and tau the time
-remaining. Measured against realised settlement, this fair value is calibrated
-(ECE ~= 0.02) and increasingly decisive as tau falls: AUC 0.603 at 14 minutes
-remaining, 0.759 at 10, 0.883 at 5, 0.953 at 2, and 0.977 at 1.
+An agent writes half A in one context and half B in another, with no memory
+between. It is not confused in either. It is confident twice.
 
-This is not alpha. It is the option's delta, and any efficient quote observes the
-same spot and prices it identically. The only tradeable residual is the extent to
-which a quoted mid LAGS this fair value, or misprices volatility.
+  human team                        single agent, no shared memory
+  ----------                        ------------------------------
+  A written by P                    A written at t0
+  B written by Q                    B written at t1
+  P and Q talk (sometimes)          t0 and t1 never meet
+  shared assumption is spoken       assumption re-derived, plausibly,
+    and sometimes written             and differently
 
-4. BOUNDING THE RESIDUAL
+The mechanism is the same one that produces the defect in large teams: the
+assumption is re-derived rather than referenced. The agent is not worse at this
+than a team. It is faster at it, and it produces both halves so fluently that
+neither looks like the guess it is.
 
-Modelling a mid as the fair value lagged by L and shrunk toward 0.5 by a
-favourite discount d, and trading only when the disagreement exceeds the
-half-spread, produces a measurable edge surface. With no lag and no discount --
-an efficient mid -- the edge is zero and no trade fires. That control matters:
-it demonstrates the measurement cannot manufacture profit from an efficient
-quote.
+4. WHAT DOES NOT CATCH THEM
 
-Both L and d are live-measurable quantities, not free parameters. Establishing
-them requires recording quotes against spot over real elapsed time, and cannot
-be obtained from historical bars.
+  unit tests of A     pass -- A is correct
+  unit tests of B     pass -- B is correct
+  code review of A    approves -- A is reasonable
+  code review of B    approves -- B is reasonable
+  type checking       passes -- the types agree; the VALUES do not
+  linting             silent -- there is nothing malformed
 
-5. WHY PUBLISH A NULL
+In the census, 1,365 tests were passing throughout, and no split-brain defect
+was ever caught by a test aimed at something else. Coverage is not the missing
+ingredient: both halves were covered.
 
-Two harness defects were found and fixed before these numbers were trusted. A
-clamp asymmetry, in which fair value was left unclamped while the modelled mid
-was clamped, manufactured a spurious one-to-two cent gap on near-certain
-contracts and turned an efficient-mid control into a large fictitious profit.
-Unbounded Kelly reinvestment across tens of thousands of sequential windows
-produced figures with no economic meaning. Both were caught by insisting that the
-zero-edge control return exactly zero.
+5. WHAT DOES
 
-The discipline generalises: any backtest should contain a configuration in which
-profit is impossible, and that configuration should be checked first.
+One test, at the boundary, that asks the question neither half asks:
 
-REFERENCES
+  the shape that works
+  --------------------
+     run the REAL producer
+            |
+            v
+     ask the REAL consumer: are you satisfied?
+            |
+            v
+     assert on the ANSWER, not on either side's belief
 
-[1] G. Brier. Verification of forecasts expressed in terms of probability, 1950.
-[2] F. Black, M. Scholes. The pricing of options and corporate liabilities, 1973.
-[3] M. Lopez de Prado. Advances in Financial Machine Learning, 2018.
+Concretely, from the corpus:
+
+  - run onboarding, then ask the actual context gate whether its required
+    files are present -- rather than asserting onboarding wrote three files
+  - build the live payload and the snapshot payload, then compare their key
+    sets -- rather than testing each shape separately
+  - parse the deployed workflow and compare its package list to the
+    directories that exist -- in both directions
+  - read the JSON example out of the contract document and hold the API to
+    it, so the document IS the fixture
+
+The last one generalises: where a document states a fact the code must honour,
+parse the document in the test. A number in prose and a number in code will
+disagree within a month, and the prose is what a human reads when deciding
+whether anything is missing.
+
+6. THE CHEAPER FIX
+
+Better than detecting a disagreement is making it impossible: give the fact one
+definition and have both halves import it.
+
+  before                              after
+  ------                              -----
+  A: "clients/<slug>/CLIENT.md"       context.ts: one definition
+  B: "01 Clients/<slug>/CLIENT.md"    A imports it
+     two strings, drifting            B imports it
+                                         one string, cannot drift
+
+Four of the ten were fixed this way. The remaining six could not be: a fact
+shared with a document, a scheduler, an external tool or a design file cannot be
+imported, and for those the boundary test is the only instrument available.
+
+7. WHAT WOULD FALSIFY THIS
+
+The claim is that split-brain defects are disproportionately common in
+agent-authored code, and it rests on one corpus. It would be falsified by a
+comparable census of a human-authored system of similar size showing the same
+21% share -- which would mean the mechanism is not specific to agents at all,
+only faster in them.
+
+That census would be worth doing, and this note does not claim to have done it.
