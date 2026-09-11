@@ -1,2033 +1,868 @@
-A R esearch P rogram in M echanistic I nterpretability
+INTERPRETABILITY · WORKING PAPER V1.0 · 2026-09-10
 
 Causal-State Interpretability
-Reading the mind we built by the futures it predicts:
-a causal–spectral theory of what a neural network computes
-Jeffery Eckert
-Independent Research
-June 2026 — working draft v0.1
-T H E O RY + A G R O U N D I N G E X P E R I M E N T
+What a neural network's features actually are, how many it has, and a way to count them that
+never merges two different ones
+Jeffery Eckert · independent research
+
+Interpretability has no agreed answer to a basic question: what is a feature? The usual answer
+— a direction in activation space — has a known failure: a direction can be perfectly readable
+from a network and still do nothing. We replace it. A feature is a causal state: two internal
+configurations are the same feature exactly when intervening on either produces the same
+future behaviour. That definition is forced rather than chosen — it is the unique minimal
+statistic that preserves behaviour — and it automatically discards information a network carries
+but never uses. On a controlled system, an unused signal that is 100.0% readable from the
+activations leaks 1.0000 bits into ordinary clustering and 0.0001 — the measurement floor —
+into the causal one: more than 10,000× less, from the same activations. Grouping by
+intervention also recovers the network's algorithm, not just its features: transitions between the
+recovered states reproduce the generating machine to within 0.0154.
+The definition left one question open, and it stopped the program: how many states are there?
+We show the obvious estimator measures the sample rather than the network — the count at
+fine resolution grew from 103 to 414 for 30× more data against a true answer of 3 — which
+makes the program's own lower bound vacuous as first stated. We show why the standard
+remedy, stability selection, cannot work here. And we give a method that does: coarsen until
+compression stops being cheap, and stop at the first break. On fifteen unseen systems with 2 to
+6 true states it recovers the exact count in 15/15, and no group it returns ever mixes two
+true states (worst homogeneity 1.0000). Every error made on the way to the final method was
+a split, never a merge. The guarantee holds with up to ε = 0.1 of each signature replaced by
+estimation noise and fails abruptly by ε = 0.35 — a limit this paper measures rather than hides.
+Everything here is toy-scale, and the paper says exactly where.
+
+0 · How to read this paper
+1 · A direction is not a thing the network has
+2 · The definition: a feature is a causal state
+3 · Why the definition is forced
+4 · Readable is not the same as used
+
+5 · The wall: how many states?
+6 · Why "does it replicate?" cannot answer it
+7 · The method: stop where compression stops
+being cheap
+8 · What it recovers, and its guarantee
+
+9 · The two predictions, made measurable
+10 · The larger program (conjecture)
+11 · Where this sits
+
+12 · Limits
+A · Proofs · B · Algorithm · C · Reproducing
+
+0 · How to read this paper
+This paper merges two lines of work — a theory of what features are, and a method for counting them
+— into one argument. Read it straight through and each section answers the question the previous one
+raised. If you read nothing else, read this paragraph.
+
+T he whole paper in one paragraph
+Imagine a toy machine with a lid you cannot open. It has moods. Two moods are really the same
+mood if poking the machine in either one makes it do the same thing next — watching is not
+enough, because the machine can carry things it never uses. To count the moods, start with every
+tiny difference as its own box and keep merging boxes that behave the same. Merging duplicates
+costs nothing. The first merge that costs a lot would be putting a car in the same box as a bear.
+Stop just before it: the boxes you have left are the real moods. The method sometimes leaves two
+identical cars in different boxes — messy, harmless. It never puts a car in with a bear.
+
+Claims come in five kinds, and every claim is boxed as one of them so you always know how much
+weight it can bear:
+
+Established — known mathematics, cited, not
+ours
+Theorem — proved here or in Appendix A
+Conjecture — believed, not yet tested
+
+Definition — a choice we make, and argue for
+Measured — a number from an experiment
+
+Numbers come in two kinds. Rerun numbers were recomputed from scratch for this paper by one
+script with fixed seeds. Recorded numbers are read from the saved output of an earlier experiment
+script — torch runs that take about an hour — and each is dated. Appendix C lists which is which.
+What is tested and what is not. Sections 2–9 are proved or measured. Section 10 is a program: it is
+labelled conjecture throughout and nothing earlier depends on it.
+Relation to earlier write-ups. This is version 1.0 of Causal-State Interpretability. It completes the June
+2026 working draft (v0.1) and folds in the interventional work that followed it. It supersedes the
+companion paper Decodability Is Not Mechanism: that paper's results are reproduced here (§2, §4), and
+its negative result — that the number of states could not be chosen blindly — is overturned (§7–§8).
+
+1 · A direction is not a thing the network has
+Almost all interpretability rests on one assumption: a concept is a direction in the network's activation
+space, and it is "present" to the degree the activation points that way. Probes, steering vectors and
+sparse autoencoders all return directions.
+The trouble is that a direction is a property of a coordinate system, not of the network. Rotate the basis
+and the directions change while the computation does not. Sparse autoencoders make this concrete:
+different seeds return different dictionaries, and a rare concept can be silently folded into a common
+one — feature absorption — leaving a dictionary that looks clean and is wrong about exactly the
+conditional concepts an auditor most needs.
+Underneath both problems is a simpler one. Being able to read something off a network is not the
+same as the network using it. Section 4 measures how large that gap can be. First we need a unit
+that does not depend on coordinates.
+
+2 · The definition: a feature is a causal state
+Computational mechanics solved the analogous problem for random processes decades ago. Two pasts
+of a process are equivalent when they predict the same future; the equivalence classes are the process's
+causal states, and they are the smallest description that loses nothing about what comes next.
+
+E stablished — causal states (C rutchfield & Y oung 1989; S halizi & C rutchfield 2001)
+Two pasts x, x′ are causally equivalent iff P(future | x) = P(future | x′). The classes are the causal
+states; their entropy Cμ is the statistical complexity — the number of bits the optimal predictor
+must store.
 
-Abstract
+A network's forward pass is not a process in time, so we make one change, and it is the important one:
+we define equivalence by intervention rather than observation.
 
-Every dominant interpretability method — sparse autoencoders, linear probes, the logit lens,
-activation patching — answers one question: what directions live in the activations? This framing has no ground truth, depends on arbitrary choices (dictionary size, sparsity penalty, layer),
-and produces features that are unstable and that quietly swallow one another. I argue the
-framing itself is the error. A trained autoregressive network is not a bag of directions; it is a
-process, and a stochastic process has a mathematically forced, choice-free notion of its own
-computational units: the causal states of computational mechanics, which a classical theorem
-certifies as the unique minimal sufficient statistic for prediction. I develop Causal-State
-Interpretability (CSI): define a feature not as a direction in activation space but as a causal
-equivalence class of internal states — two states are the same feature iff the model's entire
-predictive future is identical. Around this object I assemble four layers of structure: an information geometry (the belief manifold with its Fisher–Rao metric), a spectral / Koopman theory
-of the model's internal dynamics whose eigenmodes are the natural features, and a renormalization-group flow over the prediction horizon that separates the computation that matters from
-the noise. The theory makes two falsifiable, laptop- scale predictions: (i) a sparse-autoencoder
-feature is absorbed exactly when it tries to split a single causal state — non-causal directions
-are spurious by construction; and (ii) grokking is a phase transition in causal-state count, visible in the spectrum before it is visible in the loss. I ground the program with a real experiment: a small recurrent model trained on a partially observed Markov process reaches the
-Bayes-optimal loss, linearly encodes the true belief state (
-geometry by predictive future (correlation
-
-), organizes its internal
-
-), and — the crux — represents a causally inert
-
-"nuisance" channel that is perfectly decodable (linear-probe accuracy
-
-) yet causally inert
-
-(normalized output effect
-
-). That single number is the whole thesis in miniature: a direc‐
-
-tion-based interpreter finds a flawless feature that means nothing. First toy-scale runs of both
-predictions then move in the predicted direction: on a real grokked model an SAE atom's
-causal effect predicts its cross-seed stability (correlation
-
-), and a representation's effec‐
-
-tive dimension collapses before generalization and earlier than the weight norm — though a
-confound in the forecasting form keeps the line between directional and settled bright. I am
-explicit throughout about what is established, what I prove here, what is conjecture, and
-which atoms have prior lineages; the contribution is the synthesis, the two predictions, and the
-absorption theorem.
-
-§0 Reader's map & honesty statement
-This is a working draft of a research program, not a finished result. I have tried to write it the
-way I would want a theory handed to me: with the load-bearing claims marked, the borrowed
-machinery cited, and the one experiment I actually ran kept honest. Three conventions:
-W hat is whose . Boxes labelled Established restate known mathematics (mostly Crutchfield–
-
-Shalizi computational mechanics, Amari information geometry, and Koopman operator theory). Boxes labelled Proposition/Theorem are statements I prove in-line or in the appendix. Boxes labelled Conjecture and Prediction are claims I believe and have not
-proven; the Predictions are the ones designed to be killed by an experiment.
-O n novelty . I cannot and do not claim that no one has touched these ideas. Computational
-
-mechanics has recently been connected to transformers (belief-state geometry); information geometry of neural representations is old; Koopman methods are used in dynamics.
-What I have not seen, and what I claim as new, is (a) the use of causal states as the definition of the interpretable unit, displacing the direction; (b) the absorption theorem tying a
-known SAE pathology to non-causal directions; (c) the prediction-horizon renormalization
-flow; and (d) the unification of all four layers into one object. If a reader knows prior art
-for any of these, that improves the program; it does not embarrass it.
-O n scope . The grounding experiment (§7) is a toy: a 3-state hidden Markov process and a
-
-small RNN. It is there to show the foundation is real and the central phenomenon is measurable, not to claim scale. The path to scale is §8.
-Part I — The reframe
-
-§4 Computational mechanics
-
-§1 The unit problem
-
-§5 The prediction process
-
-§2 The process view
-
-Part III — Geometry
-
-§3 The central definition
-
-§6 The belief manifold
-
-Part II — Causal states
-
-§7 Fisher–Rao & the embedding
-
-Part IV — Dynamics
-
-§12 Grokking as collapse
-
-§8 The Koopman view
-
-Part VII — Evidence
-
-§9 Modes vs directions
-
-§13 A real validation
-
-Part V — Scale
-
-§14 Program & limits
-
-§10 Horizon renormalization
-
-Appendices
-
-Part VI — Predictions
-
-A–C Proofs & estimators
-
-§11 Absorption theorem
-
-§1 The unit problem: a direction is not a thing the model has
-Mechanistic interpretability rests, almost universally, on the linear representation hypothesis: that human-meaningful concepts are encoded as directions
-vation space, so that a concept is "present" in activation
-Probes look for such
-
-in a network's acti‐
-
-to the degree
-
-by supervised regression; the logit lens reads
-
-is large.
-
-through the unem‐
-
-bedding; sparse autoencoders (SAEs) try to discover a whole dictionary
-once by reconstructing
-
-at
-
-from a sparse code. The program has produced real results. It also
-
-has a foundational crack that no amount of engineering closes.
-T he crack . A direction is not a property of the model; it is a property of a chosen description
-
-of the model. Concretely, the SAE that names the features depends on three free choices
-with no principled setting: the dictionary size
-
-, the sparsity penalty , and the layer. Vary
-
-any of them and the features change identity — split, merge, appear, vanish. There is no
-ground truth against which to say a discovered feature is the right one, because "feature"
-was never defined except operationally as "whatever this SAE, at this , put in slot ." We
-have been reading tea leaves and calibrating the cup.
-T he symptom , made precise — feature absorption . In a companion toy I planted two groundtruth signals in synthetic activations: a general feature
-only inside
-climbs from
-
-and a specific feature
-
-. As the sparsity penalty rises, the SAE drops
-to
-
-(over half its amplitude) while
-
-that fires
-
-first: its reconstruction error
-is kept. The specific concept is
-
-absorbed into the general one — the dictionary looks clean and is silently lying about exactly
-the rare, conditional concepts an auditor most needs. Absorption is not a bug in one SAE; it is
-what the sparsity objective does when one signal predicts another. The question this program
-answers is why, and the answer will turn out to be that
-
-and
-
-were never two causal
-
-distinctions to begin with — or that the SAE split one causal state into two directions that the
-model treats identically.
-
-Notice the shape of the failure. Every pathology of direction-based interpretability — absorption, polysemanticity, the basis ambiguity of superposition, the instability across seeds
-
-— is a symptom of describing a computation in coordinates that the computation does not
-itself use. The network was never trained to keep its concepts axis-aligned, sparse, or even
-linearly separable. It was trained to predict. So the natural units of its computation should
-be defined by what it predicts, not by how we happen to slice its activation vectors.
-
-§2 The process view: what a trained model actually is
-Take a model trained by next-token prediction and feed it a data distribution. The pair
-(data, model) defines a stochastic process. Write the (bi-infinite) sequence of tokens as
-over
-
-an
-
-alphabet
-
-.
-
-At
-
-time
-
-and the future
-
-split
-
-it
-
-into
-
-the
-
-past
-
-. The only thing a predictor
-
-can be graded on is the conditional law of the future given the past,
-
-a probability measure on future sequences for each past
-
-. A model is optimal on this
-
-process iff its emitted next-token distribution equals the marginal of
-
-for almost
-
-every past it is shown. This is the whole of the prediction problem, and it makes no reference to activations at all.
-
-E stablished ( sufficiency ). A statistic
-
-of the past is predictively sufficient if the
-
-future is conditionally independent of the past given :
-depends on
-
-only through
-
-. Equivalently,
-
-. Any optimal predictor's internal state must be a
-
-(possibly redundant) sufficient statistic, because two pasts it maps to the same state must
-induce the same future, or it would be sub-optimal on one of them.
-
-This is the lever. An optimal model's hidden state is a sufficient statistic of the past for the
-future — not approximately, by construction of optimality. So the model's representation is
-not an arbitrary vector to be probed; it is an encoding of a specific, theory-given object. The
-job of interpretability is to identify which sufficient statistic, and there is a canonical, minimal one.
-
-§3 The central definition: a feature is a causal state
-Among all predictively sufficient statistics there is a coarsest — the one that throws away
-everything except what changes the future. It is obtained by the only equivalence relation
-the prediction problem itself supplies.
-
-D efinition 3.1 ( causal equivalence ; C rutchfield –Y oung ). Two pasts are causally equivalent,
-, iff they induce the same conditional future:
-
-The equivalence classes
-
-are the causal states, and the map
-
-,
-
-, is the causal-state function.
-
-The reframe of this program is to take this object, not the direction, as the atom of
-interpretation.
-R eframing principle (CSI). An interpretable feature of a model is not a direction
-
-in
-
-activation space. It is a measurable function of the causal state — in the simplest case, a
-causal state itself, or a coordinate on the space of causal states. Two internal configurations
-encode the same feature iff the model's entire predictive future is identical from them:
-are the same feature
-
-.
-
-Three properties make this worth the trouble, each fixing a specific failure of §1.
-(i) Choice-free. Definition 3.1 has no
-
-, no , no layer. The causal states are a property of
-
-the process, fixed before any interpreter arrives. There is finally a ground truth: a discovered feature is real to the degree it refines or aligns with , and spurious to the degree it
-splits a single causal state. We will turn this into the absorption theorem in §11.
-(ii) Minimal and unique. The causal states are not just a sufficient statistic; a theorem
-(§4) says they are the unique coarsest one — the minimal sufficient statistic, achieving optimal prediction at the smallest possible internal entropy. There is exactly one right answer
-to "what does the model need to remember," and this is it.
-(iii) Causal, not correlational. A probe direction can be perfectly decodable and mean
-nothing, because decodability is correlation. Causal states are defined by intervention on
-the future: two states differ iff doing the prediction yields different distributions. §13 shows
-a representation that is
-
-decodable yet
-
-causally inert — the exact gap this defini‐
-
-tion closes by construction.
-What remains is to make the object computable, give it a geometry and a dynamics, scale
-it, and extract its two predictions. That is the rest of the program. We begin with the theorem that licenses calling
-
-the answer.
-
-§4 Why the causal states are the answer: the minimality theorem
-
-The reframe is only worth anything if "causal state" is forced, not chosen. It is. The following is the load-bearing classical result (Shalizi & Crutchfield, 2001); I restate it in our notation and give the short proof, because the proof is the reason the whole program has a
-ground truth.
-Call a statistic
-
-a prescient rival if it is predictively sufficient,
-
-. Define
-
-the statistical complexity of a sufficient statistic as the Shannon entropy of the state it
-induces,
-
-for the statistical complexity of the causal states themselves.
-
-is the number of bits the
-
-optimal predictor must physically store about the past.
-T heorem 4.1 ( causal states are the minimal sufficient statistic ). The causal-state function
-is predictively sufficient, and for every prescient rival
-
-Moreover
-
-,
-
-is the unique minimizer up to relabeling: any prescient rival attaining
-
-is, almost surely, an invertible recoding of .
-Proof. Sufficiency of
-so
-
-is immediate from Definition 3.1:
-
-. For minimality, let
-
-depends on
-
-be any prescient rival. Sufficiency of
-
-for some function
-
-only through
-
-,
-
-means
-
-, i.e.\ the predictive distribution is determined by
-
-. But
-
-the causal state is, by definition, the predictive distribution's own label:
-. Hence if
-, so
-function of
-
-:
-
-then
-. Therefore
-
-is a deterministic
-
-a.s. Entropy cannot increase under a deterministic map, so
-. Equality forces
-
-to be injective on the support of
-
-, which is the
-
-stated uniqueness.
-
-□
-
-Two corollaries fix the program's vocabulary. First, the bits the model shares with the future
-are the excess entropy
-
-and the gap
-
-, the crypticity, is information the model must store that is
-
-not directly visible in the future — internal bookkeeping. This already predicts that interpretability is harder than "read off the future": a faithful representation contains
-
-bits, of
-
-which only
-
-are future-facing and
-
-are hidden state the model carries for its own sake.
-
-Second, the causal states carry a dynamics.
-E stablished ( the - machine ). The causal states, together with the transition kernel
-, form a hidden Markov model — the -machine —
-which is the unique minimal unifilar optimal predictor: the next state
-function of the current state
-
-is a deterministic
-
-and the emitted symbol . Unifilarity is exactly what lets the
-
-machine track its own state by watching the output, and it is what an optimal sequence
-model must reconstruct.
-
-So an optimal model is implementing the -machine of its data process, and its internal
-state must encode the current causal state. Interpretability becomes a concrete inverse
-problem: recover ,
-
-, and the embedding of
-
-into activation space. The remaining ob‐
-
-stacle is that a finite model never knows the causal state with certainty — it knows a distribution over it. That distribution is the object it actually represents, and it is the bridge to
-geometry.
-
-§5 The prediction process: what the model carries on the simplex
-A predictor that has seen only a finite past is generally not synchronized to a single causal
-state; it holds a belief over them. Let
-
-be the probability simplex over causal states
-
-and define the belief (or mixed) state
-$$ \eta_t \;=\; \P\big(\causal_t = \cdot \;\big|\; X_{On observing the next symbol
-, the belief updates by Bayes' rule composed with the machine's dynamics,
-$$ \eta_{t+1} \;=\; \frac{ \eta_t\, T^{(a)} }{ \big\| \eta_t\, T^{(a)} \big\|_1 },
-\qquad \P(X_t=a\mid X_{where
-
-is the substochastic symbol-labelled transition
-
-matrix. Equation (5.1) defines a random dynamical system on the simplex: the belief
-performs an iterated random map, driven by the observed symbols, whose stationary
-behavior is the mixed-state presentation of the process. This is the heart of the matter, so
-state it plainly:
-W hat the model represents . The minimal internal state of an optimal sequence model is not
-a causal state but a point
-
-on the belief simplex
-
-(5.1). The set of beliefs reachable from the start,
-
-, evolving by the nonlinear update
-, is the model's true state
-
-space — the belief manifold. Recovering an interpretable account of the model means
-recovering , the map
-on it.
-
-that embeds it in activation space, and the symbol-driven flow
-
-This object has teeth even before any geometry. The belief simplex is finite-dimensional (
-coordinates) when the -machine is finite, but
-
-can be a complicated — even frac‐
-
-tal — subset of it, because the iterated map (5.1) is a place-dependent iterated function
-system. Its structure is an intrinsic invariant of the computation: two models optimal on the
-same process must embed the same
-
-, however different their weights, which is the uni‐
-
-versality the field keeps observing empirically and lacking a definition for. We will give that
-universality a metric (§6–7), a spectrum (§8–9), and a renormalization scale (§10); and in
-§13 we will watch a real RNN place its hidden states on exactly this .
-Remark (why this is not just "probing for the HMM state"). One could try to probe for the hidden Markov
-state directly. But the hidden state is not a sufficient statistic of a finite past — the belief
-the latent state recovers a noisy projection; recovering
-ing the crypticity
-
-is. Probing for
-
-recovers the actual computational variable, includ‐
-
-that pure state-probing misses. The distinction is the difference between guessing what
-
-the world is doing and reading what the model is thinking.
-
-§5.1 A fully worked machine (everything computable by hand)
-
-Abstraction earns its keep on an example one can hold in the hand. Take the golden-mean
-process: binary sequences in which
-states —
-and
-
-never occurs. Its -machine has exactly two causal
-
-("the last symbol was , or we just started," so either symbol may come next)
-
-("the last symbol was ," so the next must be "). With
-
-emitting
-
-with probability
-
-, the labelled dynamics are
-
-Every quantity in the theory is now elementary. The stationary distribution is
-;
-
-the
-
-statistical
-
-complexity
-
-is
-
-;
-
-; and the transfer operator's spectrum is
-— the forgetting rate of §8 — is exactly
-bits/symbol,
-The single slow mode
-
-, gap
-(eigenvalue
-
-. At
-
-the
-
-entropy
-
-rate
-
-is
-
-, so the spectral gap
-:
-
-,
-
-bits,
-
-(all verified numerically in the repository).
-) is the one real feature of this process: a number
-
-that flips sign and halves each step, encoding "am I in the must-emit- state
-
-?" An optimal
-
-model of the golden-mean process needs exactly this one bit of dynamical structure, and
-CSI predicts an SAE on such a model should find one stable causal feature aligned with
-— any further atoms are gauge, and should be unstable (Prediction 9.2). The belief manifold here is especially clean: observing a
-
-proves you are in
-
-process synchronizes and the reachable beliefs
-
-(only
-
-emits ), so the
-
-form a small finite set of points rather
-
-than a continuum —
-
-is finite and the whole machine is visible. Contrast the even process
-
-(blocks of
-
-s must have even length), whose innocuous-looking definition
-
-s between
-
-yields a belief manifold that never fully synchronizes and an infinite hierarchy of horizon-
-
-states — a one-line change in the constraint moves the process up the renormalization ladder of §10. The lesson the worked pair teaches is the program's whole attitude: the process,
-not the network, sets how many features there are and how hard they are to see, and the
-network is just a lens that either resolves that structure or does not.
-
-§6 The belief manifold and the representation map
-We now give the object the model carries — the belief
-
-of §5 — a geometry, because the
-
-geometry is what an interpreter actually measures (distances, neighborhoods, directions).
-The belief lives on the simplex
-
-, but it does not fill it; the reachable set
-
-is the model's true state space. Because (5.1) is a place-dependent iterated function system
-— each observed symbol
-
-applies the projective map
-
-—
-
-is the at‐
-
-tractor of that IFS and can be a smooth region, a finite set of points, or a self-similar fractal,
-depending on the process. Its structure is not a modeling choice; it is forced by the data.
-D efinition 6.1 ( representation map ). Let
-
-be the map sending each belief to the
-
-model's activation at the read-out layer when it holds that belief,
-representation map and its image
-empirical program is to recover
-
-. We call
-
-the representational manifold. CSI's
-(and hence , ,
-
-) from activations.
-
-The minimality theorem now pays a structural dividend. Since
-
-is the minimal sufficient
-
-statistic of a finite past, any optimal model must carry a faithful image of
-on
-
-the
-
-:
-
-is injective
-
-(else two distinguishable futures would be confused). Different optimal models differ
-
-only by the choice of embedding
-
-, not by the intrinsic object
-
-being embedded.
-
-This is a precise statement of representational universality:
-U niversality ( precise form ). Two models optimal on the same process embed the same belief
-manifold
-
-with its same symbol-flow; they can differ only by the representation map , up
-
-to a smooth change of coordinates on
-
-. "The same features in different models" is therefore
-
-not a vague empirical regularity but the statement that
-
-is a process invariant and only
-
-model-specific. Aligning two models = recovering the diffeomorphism
-
-is
-
-between
-
-their representational manifolds.
-
-Two consequences worth flagging. First, the dimension of
-plex dimension
-
-is bounded by the belief-sim‐
-
-, often far below the activation dimension
-
-— the manifold is thin,
-
-which is why low-rank and clustering methods see structure, and why a wrong (linear, axis-
-
-aligned) description of a thin curved set fragments it into many "features." Second,
-a generic embedding means the coordinates of
-etry of
-
-being
-
-are meaningless; only the intrinsic geom‐
-
-is. So we need an intrinsic metric, not the ambient Euclidean one.
-
-§7 The right metric is Fisher–Rao, not Euclidean
-How far apart are two internal states? The interpretively correct answer cannot be "Euclidean distance in
-
-," because that depends on the arbitrary embedding . The states are be‐
-
-liefs — points that parameterize predictive distributions — and the canonical, reparameterization- invariant distance between distributions is the one from information geometry.
-E stablished (F isher –R ao ). A belief
-
-induces a predictive distribution over the next symbol
-
-(and, by iterating, over length- futures),
-
-. The Fisher information metric on
-
-belief space is
-
-and the Fisher–Rao distance
-
-is the geodesic distance it induces. It is the unique (up
-
-to scale) Riemannian metric invariant under sufficient statistics (Čencov's theorem): it
-measures distinguishability of the futures the two beliefs predict, in a way no choice of
-coordinates can distort.
-
-This is the metric CSI uses, and it converts the central definition (§3) into a measurable object: two states are the same feature iff
-
-, and the "size" of a feature distinction is
-
-how many bits of future it buys, i.e.\ its Fisher–Rao length. The Euclidean geometry of activations is interpretable only to the extent that
-from
-
-to
-
-happens to be an approximate isometry
-
-— and there is a real, testable question of how close to
-
-isometric trained models are.
-P rediction 7.1 ( representations are quasi - isometric to belief space ). For a well-trained
-model, activation distance is monotone in — and approximately proportional to — Fisher–
-Rao distance on the belief manifold:
-
-. Equivalently, the
-
-model's internal geometry is organized by predictive future, not by surface or recency
-similarity of inputs. §13 measures exactly this correlation and finds it strong (
-scale; the sharp test at scale is whether the pullback metric
-
-) at toy
-
-converges to
-
-as capability rises.
-
-The metric also resolves a stubborn confusion about "feature directions." A direction is
-meaningful only as a tangent vector on
-
-, and its meaning is the change in predicted fu‐
-
-ture it produces —
-rection that is large in
-
-measures how much future a unit move along
-but null under
-
-(
-
-buys. A di‐
-
-) is a gauge direction: it moves the
-
-activation without changing any prediction. This is the geometric identity of the "nuisance"
-we will exhibit in §13 — a perfectly decodable direction lying in the kernel of the Fisher
-metric. The next two sections give such gauge/non-gauge directions a global, spectral description, which is where the natural features finally appear.
-Remark (curvature has content). The belief manifold is generically curved, and its curvature is computable
-from the -machine. Negative curvature (common for mixing processes, where beliefs contract toward a stationary region) means nearby histories converge — the model forgets at a rate set by the geometry, and the
-forgetting rate equals the second-largest eigenvalue modulus of the dynamics in §8. Curvature, mixing, and
-the spectrum are three views of one quantity; an interpreter who measures any one constrains the others.
-
-§8 The computation is a linear operator: the Koopman view
-The belief update (5.1) is nonlinear because of the renormalization, and nonlinear dynamics resist clean decomposition. The standard escape — older than deep learning, from
-Koopman (1931) — is to stop tracking the state and start tracking observables of it, on
-which even nonlinear dynamics act linearly. This turns "what is the model computing" into
-a spectral question with a basis-free answer.
-Strip the renormalization and the dynamics is already linear: on distributions over causal
-states, one step of the process is the Markov operator
-
-a row-stochastic matrix on
-
-. Its dual — the Koopman operator — acts on observables
-
-by
-
-is linear regardless of how intricate
-
-is. Decompose it spectrally (assume diagonalizable
-
-for exposition; the Jordan case adds polynomial-in-
-
-factors and changes nothing
-
-essential):
-
-with right/left eigenvectors
-tribution (
-
-,
-
-metrically at their own rate:
-
-and
-
-. The leading pair is the stationary dis‐
-
-). Every observable evolves as a sum of modes that decay geo‐
-
-T he natural features are the K oopman modes . The eigen-observables
-coordinate-free coordinates of the computation. Mode
-
-is a single number you can read off
-
-the state whose only dynamical role is to relax toward zero at rate
-. These — not the axes of
-
-are the intrinsic,
-with oscillation
-
-, not the slots of an SAE — are what the model's computation is
-
-"made of." A feature, in CSI, is most precisely a Koopman eigen-observable (or a small
-invariant subspace of them).
-
-This decomposition already carries interpretive meaning for free, because the spectrum is
-the process's memory structure:
-Spectral gap
-
-= forgetting rate. It sets how fast the belief contracts (the
-
-curvature remark of §7) and the timescale over which the model must hold
-information.
-Slow modes (
-
-) = long-memory features. These are the predictively load-
-
-bearing variables — the ones worth a name. The number of modes with
-
-above a
-
-threshold is the effective feature count at that timescale.
-Fast modes (
-
-) = transients; they vanish within a step and carry no usable
-
-memory.
-Null/absent modes (
-
-, or directions outside
-
-) = gauge: parts of the
-
-activation that move without changing any future. This is the spectral home of the
-nuisance of §13.
-The excess entropy and statistical complexity of §4 are recovered from (8.1)–(8.2): both
-are spectral sums weighted by the
-
-and the geometry of
-
-, so "how much does the
-
-model remember" and "what are its features" are answered by the same eigendecomposition. One object, two readings.
-
-§9 Why SAE directions fragment the modes (the absorption
-mechanism, geometrically)
-We can now say precisely what a sparse autoencoder does to this structure, and why it
-must produce absorption. An SAE seeks a sparse linear code of the activations
-Pull it back to belief space: each dictionary atom
-
-.
-
-corresponds to a linear functional
-
-that the SAE treats as a "feature." But the SAE's objective — reconstruction plus an
-
-sparsity penalty — knows nothing about the Koopman basis
-
-or the
-
-Fisher metric. It chooses atoms to tile the activation cloud sparsely, which in general makes
-each
-
-a superposition of several eigen-observables.
-
-P roposition 9.1 ( sparsity does not respect the spectrum ). Let the true features be the
-Koopman modes
-
-with rates
-
-. A sparse-coding objective on
-
-rotation within a near-degenerate eigenspace (
-without reference to
-
-is invariant to any
-
-) and trades reconstruction against
-
-. Consequently (i) atoms that fall in a near-degenerate subspace are
-
-determined only up to an arbitrary rotation — they have no stable identity across seeds or ;
-and (ii) when one mode is consistently small in amplitude relative to a correlated larger
-mode, the penalty is reduced by dropping the small mode's atom and absorbing its mass into
-the large one. Both are pathologies of the basis, not of the model.
-Proof. (i) The reconstruction loss depends on
-dynamics assigns equal
-
-only through
-
-; within a subspace where the
-
-the model imposes no preferred axes, so the loss landscape over atoms in
-
-that subspace is rotation-invariant and the minimizer is a continuum — there is no fact of the matter
-about which atom is "the" feature. (ii) For two modes with amplitudes
-directions, representing both costs
-
-units of
-
-along correlated
-
-on active examples; representing only the large one
-
-and letting it shoulder the small one's contribution costs
-
-, at a reconstruction error
-
-Whenever the penalty weight exceeds the marginal reconstruction value
-
-.
-
-, the optimizer absorbs
-
-the small mode. This is exactly the amplitude-ordered dropout observed in the companion
-experiment ( , the smaller-amplitude conditional mode, lost first).
-
-□
-
-So absorption is not mysterious: it is what happens when you describe a spectrally-structured object in a basis chosen by a sparsity heuristic that is blind to the spectrum. The fix
-the theory implies is not "tune " but "change the basis": project activations onto the estimated Koopman modes (or, operationally, onto directions stable under the Fisher metric
-and the dynamics) before naming features. A feature is real iff it is a (near-)eigen-observable — stable under the model's own dynamics — and spurious iff it is a dynamics-blind
-linear combination that the next time-step would mix.
-P rediction 9.2 ( stability tracks the spectrum ). SAE atoms aligned with well-separated
-Koopman modes (
-
-isolated) are stable across seeds, , and dictionary size; atoms inside
-
-near-degenerate eigenspaces are unstable (seed-to-seed cosine
-
-random), and atoms
-
-representing small correlated modes are absorbed. One can therefore predict, from the
-eigenvalue spacing of the estimated dynamics before training any SAE, which features will be
-trustworthy. This is the operational payoff: a spectral stability map of an SAE dictionary.
-
-§10 Scale as a renormalization flow over the prediction horizon
-
-The causal states of §3 are defined by the entire infinite future. A real model has finite context and finite capacity; it cannot resolve distinctions that only a very long future would reveal. This is not a defect to apologize for — it is a scale, and it organizes the whole theory
-into a renormalization-group ladder whose rungs are prediction horizons.
-D efinition 10.1 ( horizon -
-
-causal states ). Let
-
-be the lengthiff
-a horizon-
-
-predictive distribution. Define
-
-, with classes
-
-. These are the distinctions
-
-predictor must make.
-
-Because a longer future can only distinguish more pasts, the partitions form a refinement
-chain
-
-Reading the ladder downward (
-
-) is a coarse-graining: it merges any two states
-
-whose predictions agree up to horizon
-
-but diverge only later. That is precisely a
-
-renormalization step — integrate out the long-horizon detail, keep the rest — and the
-increments
-
-are the structure spectrum over scale: the new bits of computational structure that first become necessary at horizon
-
-. A process whose
-
-features live at small horizon); one whose
-
-decays fast is "short-range" (all its
-has a heavy tail is long-range correlat‐
-
-ed — near-critical — with features that only a far horizon reveals.
-T he flow is the spectrum (P art IV meets P art V). The horizon at which a feature becomes
-resolvable is set by its Koopman eigenvalue. From (8.2), a mode with rate
-detectable imprint on the lengthmode
-
-prediction of size
-
-requires horizon
-
-leaves a
-
-; so a distinction carried by
-
-to appear. Slow modes are long-horizon features.
-
-Hence the RG ladder (10.1) and the spectrum (8.1) are the same object viewed along time
-vs.\ along scale:
-
-is dominated by the eigenvalues
-
-with
-
-, i.e.\ the modes
-
-whose relaxation time matches the horizon.
-
-This reframes the two things the field most wants to understand — scaling and emergence
-— as one geometric statement about horizon resolution.
-
-P rediction 10.2 ( scaling = horizon resolution ; emergence = a distinction crossing it ). A
-model with finite context/capacity resolves causal states up to an effective horizon
-capturing
-
-,
-
-of the available structure; loss is set by the unresolved tail
-weighted by its predictive value. Increasing scale pushes
-
-capability that hinges on a causal distinction first appearing at horizon
-$L^\*present once
-
-outward. A
-is absent while
-
-— an emergent ability is a slow Koopman mode crossing the
-
-resolution horizon. The smooth driver underneath the sharp capability jump is
-sweeping past
-
-; the jump is sharp because
-
-is concentrated. This predicts
-
-emergence is forecastable from two measurable curves: the task's
-
-and the model's
-
-.
-
-The renormalization picture also tells the interpreter which scale to look at. Features are
-horizon-indexed: a fast mode is a feature of the immediate next token; a slow mode is a
-feature of a distant outcome. Asking "is this feature real?" without naming a horizon is malformed, the way asking for "the" temperature of a multi-scale system is. CSI's dictionary is
-therefore not flat but stratified — a tower of feature sets
-as
-
-Koopman modes with
-
-— and the absorption of §9, read through this tower, is a feature being pushed be‐
-
-low the model's resolution by a faster correlated mode. The two predictions that make the
-program falsifiable are §11 and §12, to which we now turn.
-Remark (why this is genuinely RG, not just a metaphor). The horizon coarse-graining has the formal ingredients of a renormalization semigroup: a family of coarse-graining maps
-
-that compose (
-
-), a flow on the space of -machines, and fixed points (self-similar processes whose -machine is invariant under horizon coarse-graining — these are exactly the scale-free / critical
-processes, where
-
-is power-law). The relevant/irrelevant dichotomy of RG becomes: distinctions
-
-whose eigenvalue
-
-are relevant (survive coarse-graining, dominate large
-
-);
-
-are irrelevant
-
-(integrated out immediately). A full development of the fixed-point structure is Appendix C; here it is
-enough that the analogy is load-bearing, not decorative.
-
-§11 Prediction I: absorption is the splitting of a causal state
-The program's first falsifiable claim turns the central definition into a sharp criterion that
-separates real features from artifacts, and explains absorption as the special case of a feature with no causal content. Decompose any candidate feature into the part the model's
-predictions can see and the part they cannot.
-
-D efinition 11.1 ( causal vs .\ gauge content ). Let
-
-be a candidate feature (an
-
-SAE atom's activation, a probe output, any read-off of ). Relative to the belief/causal state,
-split
-
-where
-
-is the conditional expectation onto the causal state,
-
-, and the gauge residual
-is causal if
-
-and pure gauge if
-
-is the within-causal-state variation.
-
-is constant.
-
-T heorem 11.2 ( causal criterion for feature reality ). For any candidate feature :
-(i) Gauge is invisible and unidentifiable. Replacing
-
-by any
-
-with
-
-model output and every future-prediction unchanged; hence
-
-leaves every
-
-is unconstrained by the
-
-predictive objective and is determined, across models and seeds, only by accident. Its
-expected seed-to-seed agreement is chance.
-(ii) Decodability cannot tell them apart. A pure-gauge feature can be perfectly linearly
-decodable from
-
-(it is a genuine direction in activation space), so any reality score based on
-
-decodability assigns it full marks.
-(iii) Only causal effect distinguishes them. The invariant that vanishes for gauge and is positive
-for real features is the causal effect on the future — operationally, the change in the
-predictive distribution under an intervention that moves , equivalently the Fisher–Rao
-length of the induced belief displacement. Absorption is the regime where
-
-is small and
-
-correlated with a larger causal mode: by Proposition 9.1 the sparse objective then drops , so
-a feature is absorbed precisely when the causal distinction it claims to make is (nearly) within
-a single causal state.
-Proof. (i) is immediate: by Definition 3.1 the future depends on
-
-only through
-
-, and
-
-is
-
-constant on -classes' complement of variation, so it enters no output; an objective that only grades
-outputs cannot pin it, and two independently trained models fix it independently. (ii) holds because
-decodability measures linear correlation between
-
-and a target, which is generically nonzero for any
-
-direction with activation variance, gauge or not; the
-
-of a probe is blind to whether moving along
-
-the probed direction changes a prediction. (iii) The predictive distribution is
-changes it iff the induced
-on the gauge subspace
-
-; an intervention
-
-, whose first-order size is
-
-, zero exactly
-
-. Absorption follows from Prop 9.1.
-
-□
-
-This is not abstract: §13 exhibits a feature that is
-
-decodable and
-
-causally ac‐
-
-tive — an almost-pure-gauge direction — which is Theorem 11.2(ii)–(iii) instantiated. The
-actionable form is a new feature-validation protocol that any lab can run today: score every
-SAE atom not by how interpretable its activations look, but by its causal length (intervene,
-measure
-
-of the output shift) and its cross-seed stability; the theorem predicts these two
-
-numbers are highly correlated and that low-causal-length atoms are exactly the unstable,
-absorbing ones. Falsification: find SAE atoms that are causally inert yet stable across seeds,
-or causally potent yet unstable. Either would break the criterion.
-
-§12 Prediction II: grokking is a collapse in causal-state count
-The second prediction is about training, and it gives the field's favorite mystery a mechanical order parameter from this theory rather than a borrowed proxy. Recall the two solutions
-a network can hold for a finite dataset:
-Memorization stores a near-distinct internal state per training context: its effective
-causal-state count
-
-is
-
-, its statistical complexity
-
-is large, and its
-
-spectrum is crowded with spurious near-degenerate slow modes (the lookup table is
-"long-memory" in the worst way — it must hold every context).
-Generalization is the -machine itself: the minimal
-
-, the minimal
-
-(Theorem
-
-4.1), and a clean spectral gap separating the few real modes from the rest.
-P rediction 12.1 ( the grok point is a
-
-collapse , visible in the spectrum first ). Across a
-
-grokking run, the effective statistical complexity
-
-— estimated from the representation
-
-by clustering activations into causal states — drops sharply from its memorization value
-toward the -machine value, and this drop coincides with or precedes the rise in test accuracy.
-Equivalently: the count of resolvable causal states collapses, the spurious near-degenerate
-modes of §9 annihilate, and the spectral gap opens to the true machine's gap. The weightnorm decay reported as a grokking "progress variable" in the companion experiment is a
-proxy for this collapse — low norm
-
-low
-
-— but the
-
-/spectral order parameter is the
-
-mechanistic quantity, and it should be the cleaner, earlier predictor of the transition.
-Falsification: a grokking run in which
-
-does not fall, or falls strictly after test accuracy has
-
-already risen.
-
-This is laptop-runnable and directly extends the companion grokking result (memorize at
-step
-
-, generalize at step
-
-, weight norm
-
-): re-run it, estimate
-
-along the way, and check whether the complexity collapse leads the test-accuracy jump.
-The reframe also predicts the role of weight decay precisely — it is the term that prices
-
-,
-
-tilting the late-time dynamics from the memorized high-complexity solution toward the
-minimal machine, which is why grokking needs it and why its strength sets the grok time.
-§12.1 The singular-learning bridge
-
-There is a second complexity measure already attached to this phenomenon — the local
-learning coefficient
-
-(real log canonical threshold) of singular learning theory, which
-
-counts the effective degrees of freedom near a parameter and governs Watanabe's free energy
-
-. Memorizing and generalizing solutions are different phases with
-
-different , and the late-time transition between them is exactly the kind of phase transition SLT was built to describe. CSI and SLT are then two thermometers for the same heat:
-
-C onjecture 12.2 ( complexity duality ). Along a grokking trajectory the statistical complexity
-and the local learning coefficient
-
-fall together, and their landing values order the
-
-solutions identically: the generalizing -machine is simultaneously the minimal4.1) and minimal- solution. More strongly,
-belief manifold — the degeneracy
-
-and
-
-(Theorem
-
-are related by the geometry of the
-
-counts is the gauge subspace of §11 (directions that
-
-move parameters without moving the -machine), so
-
-scales with the effective causal-
-
-state dimension. This is conjectural; it is also a concrete, finite computation on the toy of §13,
-and confirming or breaking it is among the cleanest next experiments the program offers.
-
-Whether or not Conjecture 12.2 survives, the two predictions stand on their own: §11 is
-testable now on any SAE, §12's prediction is testable on any grokking run. Together they
-convert "the mind we can't read" from a slogan into two measurements. The remainder of
-the paper shows the foundation those measurements rest on is already real at toy scale.
-
-§13 A real validation: the foundation is measurable
-Theory earns trust by touching ground. I ran one experiment — deliberately a toy — to
-check the load-bearing claims: that an optimal model carries the belief state (§5), organizes
-its geometry by predictive future (§7), and that decodability and causal reality come apart
-exactly as Theorem 11.2 says. All of it is hand-written numpy; code and seed are in the
-repository ( exp_causal.py ).
-§13.1 Setup
-
-A 3-state hidden Markov process with sticky transitions (
-noisy emissions (
-
-self) and state-revealing-but-
-
-on the matching symbol over a 3-letter alphabet) generates the data;
-
-its belief states form a nontrivial interior region of the 2-simplex (the target geometry
-
-).
-
-To each emission I append a nuisance bit drawn as an independent fair coin — by construction it carries zero information about the hidden state or the future, so it is pure gauge
-(§11). A small RNN (width
-
-, tanh, BPTT) is trained to predict the next symbol from the
-
-(symbol, nuisance) stream. I then read its hidden state
-belief
-
-and compare it against the true
-
-computed by the forward algorithm.
-
-§13.2 The model reaches optimality and carries the belief manifold
-
-Figure 1. Left: the true belief states
-
-on the 2-simplex — the geometry
-
-the theory says the model must embed,
-
-colored by most-likely hidden state. Middle: the same beliefs as linearly decoded from the RNN's hidden state (heldout, ridge),
-
-— the representation map
-
-of Definition 6.1 is recovered. Right: representation distance
-
-vs.\ predictive-future (belief) distance across history pairs; the internal geometry is organized by future, not surface
-form (correlation
-
-).
-
-The trained RNN reaches a next-symbol cross-entropy of 0.9898 nats against a Bayes-optimal floor of 0.9911 (uniform baseline
-
-) — it is, within noise, optimal. By the suffi‐
-
-ciency argument of §2 it therefore must encode a sufficient statistic, and indeed the true
-belief state is linearly decodable from the hidden state at
-(Figure 1, middle): the belief manifold
-
-on held-out data
-
-is really embedded in activation space, as §5–§6
-
-require. Moreover the model's internal distances track Fisher-relevant future distances (Prediction 7.1): the correlation between representation distance and belief distance is
-(Figure 1, right). The model organizes itself by what it predicts.
-§13.3 The crux: a perfect feature that means nothing
-
-Figure 2. The nuisance channel is causally inert by construction, yet it is a flawless "feature" to a direction-based
-interpreter. Left bar: a linear probe recovers the nuisance bit from the hidden state with accuracy
-
-— it is fully
-
-present as a direction. Right bar: flipping only the nuisance changes the model's actual output distribution by a
-normalized
-
-of a typical change — it does nothing. Decodability and causal effect have come completely apart.
-
-This is Theorem 11.2 made flesh. The nuisance is perfectly linearly decodable from the activations — a probe reads it at accuracy
-
-, so a feature-hunter would proudly report a
-
-clean "nuisance feature." Yet intervening on it moves the model's predictive distribution by
-only
-of
-
-against a typical inter-state
-. The feature is
-
-decodable and
-
-of
-
-— a normalized causal effect
-
-inert. No method that scores features
-
-by how cleanly they read out can tell this apart from a real one; only the causal criterion —
-intervene and measure the future — exposes it as gauge. This single contrast is the entire
-argument of the paper compressed into one experiment: the question "what directions are in
-the activations" has a perfect, meaningless answer, and the question "what causal states does
-the model distinguish" does not.
-Claim under test
-
-Quantity
-
-Model is optimal
-
-loss vs.\ Bayes floor
-
-Belief manifold
-
-Result
-0.9898 vs.\
-0.9911
-
-What it validates
-§2 sufficiency premise holds
-
-belief decode
-
-0.980
-
-Geometry is predictive
-
-corr(repr, future dist)
-
-0.71
-
-Gauge is decodable
-
-nuisance probe acc
-
-1.00
-
-Thm 11.2(ii)
-
-0.034
-
-Thm 11.2(iii)
-
-embedded
-
-Gauge is causally inert
-
-normalized output
-
-§5–§6 (the model carries )
-§7 (Fisher-organized
-representation)
-
-What this is and is not. It is a genuine, measured demonstration that the central objects (belief manifold,
-causal vs.\ gauge) are real and recoverable, and that the causal criterion separates what decodability cannot. It is not evidence at scale, nor a test of the two big predictions (§11 absorption-stability across SAE
-seeds; §12
-
--collapse during grokking) — those require the larger runs specified next. I am keeping the
-
-line between "shown" and "predicted" bright on purpose — and §13.4 now reports the first, toy-scale runs of
-those two predictions.
-
-§13.4 First contact: the two predictions, run
-
-After drafting the predictions I ran small, honest versions of both flagship tests (§14.2).
-Neither is at scale; both move in the predicted direction; I report them with the kill conditions in view.
-Test A — does causal effect predict feature stability? (Prediction I / Theorem 11.2).
-On a grokked 1-hidden-layer model of modular addition (test accuracy
-three sparse autoencoders (
-
-), I trained
-
-atoms each) on the hidden representation with different
-
-seeds, and scored every atom two ways: its causal length (the
-
-shift in the model's out‐
-
-put when I intervene along the atom's direction) and its cross-seed stability (max cosine to
-atoms of an independently trained SAE). The theory predicts these should track each other
-— causally potent atoms are real and stable, causally inert ones are gauge and unstable.
-
-Figure 3. Each point is one SAE atom on a real grokked model: its causal effect on the output (x, log scale) vs.\
-how stably it reappears in an independently-seeded SAE (y). The predicted positive relationship holds —
-correlation
-
-; the most causally-potent quartile is stabler (
-
-The direction is confirmed:
-
-) than the most-inert (
-
-).
-
-, and potent atoms
-
-are stabler than inert ones. It is a moderate effect, not a knockout — and the honest reason
-is illuminating: SAE atoms are generically unstable here (cosines cluster low), which is the
-field's known instability and exactly what §9 predicts a dynamics-blind basis should suffer.
-The kill condition — a non-trivial population of stable-yet-inert atoms — did not appear. So
-
-Theorem 11.2 survives its first contact with a real trained transformer's features,
-directionally.
-Test B — does complexity collapse, and lead generalization? (Prediction II). On a
-cleanly-grokking 2-layer MLP (mod-
-
-addition; memorizes by step
-
-, generalizes by
-
-) I tracked a parameter-free compression proxy — the effective dimension (participation ratio) of the hidden representation over all inputs — alongside test accuracy and the
-weight norm.
-
-Figure 4. The representation's effective dimension (green) expands during memorization (while test accuracy, red,
-is still zero), then collapses; its steepest drop ( step
-the weight-norm progress measure (gray,
-
-) leads the test-accuracy rise (
-
-) and is earlier than
-
-).
-
-The picture is sharper than I expected: an expand-then-compress signature. The representation first inflates (
-
-effective dimensions) while it memorizes — test accuracy
-
-flat at zero — then compresses hard (
-
-). The compression is a leading indicator of
-
-generalization, and robustly so. Across 8 of 8 seeds the effective dimension crosses its midpoint before generalization — leading the test-accuracy rise by
-weight-norm progress measure the literature uses by
-compress shape itself holds in
-
-steps and the
-steps; the expand-then-
-
-. (An earlier single-steepest-point estimator misfired on
-
-the non-monotonic curve for two seeds; a robust threshold-crossing measure resolves them
-and gives the unanimous result above.) That is the predicted shape — complexity falls, and
-falls early. Two honest limits keep the line bright. First, effective dimension is a proxy for
-, not the causal-state count itself; the clean test is the predictive-clustering estimate of
-(§14.1a), which I have not yet run on a transformer grok. Second, I tried to upgrade
-"leads" into a forecasting law — predict the grok step from early compression across weightdecay and seed — and it failed to be clean: correlation
-
-but leave-one-out
-
-only
-
-,
-
-largely confounded by weight decay driving both compression and grok-time. So the col‐
-
-lapse and its lead are real; a quantitative forecast is not yet earned. The kill condition
-(complexity flat through the transition, or collapsing only after generalization) did not trigger — it collapses, and early.
-W here this leaves the two predictions . Both survive first contact in the predicted direction,
-on real trained models, with the kill conditions un-triggered — and both stop short of proof:
-Test A is moderate against a backdrop of generic SAE instability, Test B measures a
-compression proxy and its forecasting form is confounded. That is exactly the status an
-honest theory should report after one laptop weekend: directional confirmation, scale pending.
-The two scale-ups that would settle it are a real-LM SAE stability map (A) and a predictiveclustering
-
-trace through a transformer's grok (B).
-
-§14 The program: how to test this at scale, and what would kill it
-CSI is only worth the math if it cashes into experiments on real models. Here is the ladder,
-each rung a concrete, falsifiable study, in increasing order of ambition.
-§14.1 Estimating causal states from a real model
-
-The one hard primitive is approximating
-
-from activations without the generating process.
-
-Three estimators, in rising fidelity: (a) predictive clustering — cluster activations so that
-within a cluster the model's next-token (and length- ) distributions agree to tolerance , a
-direct finite-horizon approximation of Definition 3.1 (this is the CSSR/state-merging idea
-adapted to a model whose predictions we can query freely); (b) diffusion/Koopman embedding — estimate the transfer operator from activation transitions and read causal coordinates off its leading eigenfunctions (§8); (c) information-bottleneck compression — compress
-
-to the minimal code that preserves the next-
-
-prediction, whose rate is
-
-(§10). All three are tractable because, unlike in classical comp mechanics, we can interrogate the predictor directly rather than estimate from samples alone. Appendix B gives the
-predictive-clustering algorithm in full.
-§14.2 The two flagship tests
-
-Both were run at toy scale in §13.4 (directional confirmations, kill conditions untriggered). The versions below are the scale-ups that would turn "directional" into "settled."
-
-T est A — the absorption / stability map (§11). On a real SAE, score every atom by (1)
-causal length: intervene along the atom's direction, measure the
-
-shift of the model's
-
-output; (2) cross-seed stability: max cosine to atoms of an independently trained SAE.
-Prediction: a strong positive correlation, with causally-inert atoms clustered at low stability
-and identifiable as absorbing/absorbed. Kill condition: stable yet causally-inert atoms, or
-potent yet unstable ones, at non-trivial rate.
-
-T est B — grokking complexity collapse (§12). Re-run a grokking setup; along training,
-estimate
-
-by §14.1(a) on the representation and track the spectral gap. Prediction:
-
-collapses at, or just before, the test-accuracy jump, and leads weight norm as a cleaner order
-parameter. Kill condition:
-
-flat through the transition, or collapsing strictly after
-
-generalization.
-
-Either test is runnable on a single GPU (Test B on a laptop), and either result is publishable: a confirmation hands the field a ground-truth feature-validation protocol and an
-emergence order parameter; a refutation falsifies a clean theory, which is also progress.
-That asymmetry — that the program is set up to lose cleanly — is the point.
-§14.3 Honest limitations
-
-Exact causal states can be intractable. For a real LM the true
-
-may be enormous or
-
-effectively continuous; CSI must live with horizon- , tolerance- approximations
-(§10, §14.1). The theory is exact; the practice is approximate, and the approximation
-error is itself a quantity to track, not hide.
-The belief manifold can be wild. Mixing processes give fractal ; embedding error
-and estimator bias on such sets are open numerical questions.
-Optimality is assumed in the cleanest statements. Real models are sub-optimal;
-then
-
-is only approximately injective and the gauge/causal split is fuzzy. Quantifying
-
-CSI's robustness to sub-optimality is necessary before any strong claim on a frontier
-model.
-Conjecture 12.2 (CSI–SLT duality) is unproven and may be only heuristic.
-§14.4 What is borrowed and what is new
-
-Borrowed, and essential: computational mechanics — causal states, -machines, statistical
-complexity, the minimality theorem (Crutchfield, Shalizi, Young); the recent and important
-finding that transformers represent belief-state geometry, which is the empirical seed this
-program generalizes; information geometry and Čencov's theorem (Amari, Čencov);
-Koopman/transfer-operator spectral theory; and singular learning theory (Watanabe) for
-
-§12.1. What I claim as the contribution of this draft: (1) elevating the causal state from "a
-thing models happen to represent" to the definition of the interpretable unit, displacing the
-direction; (2) the causal criterion and absorption theorem (§11) tying a concrete SAE
-pathology to non-causal directions, with the decodable-yet-inert experiment as its instance;
-(3) the prediction-horizon renormalization flow (§10) and its identification with the
-Koopman spectrum, yielding the scaling/emergence reframe; and (4) the synthesis — belief manifold, Fisher metric, Koopman modes, horizon-RG — into one object with two falsifiable predictions. If prior art exists for any piece, the program absorbs it and is stronger for
-it; none of the contribution depends on the pieces being unprecedented, only on the assembly and the predictions being right.
-
-The one-line version. Stop asking what directions are in the activations. Ask what futures the
-model distinguishes — that question has a unique, ground-truthed answer, and the gap between the two questions is a feature that is perfectly readable and completely meaningless.
-
-§15 CSI versus the existing toolkit
-CSI is not a rejection of current interpretability so much as a coordinate system that explains what each tool is approximating and where each must fail. The unifying statement:
-every existing method is an estimator of some shadow of the causal-state structure, and its
-pathologies are the places its shadow diverges from the real object.
-Method
-
-What it estimates
-
-CSI reading & predicted failure
-Measures decodability, i.e.\ correlation with , including
-
-Linear probes
-
-a direction
-
-pure gauge (Thm 11.2(ii)). Fails exactly when the probed
-
-correlated with a
-
-direction is causally inert — the §13 nuisance is a probe at
-
-target label
-
-that does nothing. CSI keeps the probe but adds the
-causal-length test that the probe omits.
-
-Sparse
-autoencoders
-
-Activation
-patching
-
-a sparse linear
-dictionary of
-activations
-
-causal effect of a
-component on an
-output
-
-A dynamics-blind basis for
-
-. Fragments near-
-
-degenerate Koopman modes (Prop 9.1), absorbs small
-correlated modes (§11). CSI predicts which atoms are
-stable from the spectrum, before training the SAE.
-Already a causal measurement — CSI's ally. It is the right
-instrument; CSI supplies what to patch (Koopman modes /
-causal-state coordinates) and the invariant it estimates
-(Fisher length).
-
-Causal scrubbing
-
-whether a
-
-Tests a proposed feature partition against behavior. CSI
-
-/ DAS
-
-hypothesized
-
-gives the unique partition any faithful hypothesis must
-
-computation is
-
-coarsen toward — the causal states — turning "is this
-
-causally faithful
-
-hypothesis faithful?" into "how far is it from ?".
-A read of the belief
-
-Logit lens / tuned
-
-intermediate next-
-
-lens
-
-token beliefs
-
-through the unembedding — a
-
-direct (if lossy) estimate of the object §5 says is being
-carried. CSI says the lens is reading the right variable in the
-wrong (output) coordinates; the Fisher metric is the right
-one.
-
-Representation
-similarity (CKA,
-etc.)
-
-An attempt at the universality of §6 without its invariant.
-alignment of two
-
-CSI replaces "are these activations similar?" with "do these
-
-models' activations
-
-models embed the same
-
-and
-
-?", which is
-
-diffeomorphism-invariant and has a yes/no answer.
-
-The pattern is consistent: the field has been building better and better estimators of an object it had not named. Naming it does three things a toolkit cannot — it says when each estimator is trustworthy (causal vs gauge), it predicts cross-method agreement (all should
-converge on ), and it gives a target for failure (any method that disagrees with the causaleffect criterion is wrong, not merely different).
-
-§16 Objections and responses
-The strongest version of a program is the one that has met its own best objections in
-writing.
-"Causal states are intractable for a real language model." The exact infinite-future object can be; the usable object is the horizon- , tolerance- approximation
-
-(§10, App
-
-B), and crucially we estimate it by querying the model's own predictions, not by sample statistics of the data — a far easier problem than classical -machine reconstruction. The relevant question is not "can we get
-
-exactly" but "does
-
-converge usefully as
-
-grows,"
-
-which §14.1's convergence test answers empirically.
-"This is just probing for the belief state, which is already known." The belief-state finding is the empirical seed, and I say so plainly. But CSI is not the observation that belief
-geometry is represented; it is the use of the causal state as the definition of a feature, from
-which follow the causal criterion and absorption theorem (§11), the Koopman feature basis
-and its stability prediction (§9), the horizon-RG account of scaling and emergence (§10,
-§12), and a unification of metric, dynamics, and scale. None of these is "probe for the HMM
-state."
-"Real models are sub-optimal and real data isn't a clean process." True, and the theory
-degrades gracefully rather than breaking. Sub-optimality makes
-
-only approximately in‐
-
-jective and blurs the causal/gauge split into a spectrum — but the criterion (causal effect
-
-on the future) is defined for any model, optimal or not, and the §11 protocol runs unchanged. The clean theorems describe the attractor the model is moving toward; the program measures how close it is.
-"The linear representation hypothesis works fine." It works until it produces absorption,
-polysemantic atoms, and seed-unstable dictionaries — the exact failures §9 and §11 derive
-from first principles. CSI does not deny that features are often approximately linear (the
-embedding
-
-is often near-linear on
-
-); it denies that linearity is the definition, and it pre‐
-
-dicts precisely the cases where linear descriptions fracture.
-"Why must the model represent causal states at all?" Because an optimal predictor's
-state is a sufficient statistic (§2), and the causal state is the minimal one (Thm 4.1); a model that failed to encode it would be sub-optimal on some past. This is not an assumption
-about architecture — it is forced by the loss. The experiment of §13 confirms it at toy scale:
-optimality and an
-
-belief representation arrived together.
-
-"Measuring causal effect requires interventions you can't trust." The intervention is the
-same activation edit the field already performs in patching and steering; CSI's only addition
-is to read its output as the reality score of a feature. If one distrusts interventional measurement, one distrusts the whole causal-interpretability program, not CSI specifically.
-
-Appendix A Proofs
-A.1 Minimality, in full
-
-We expand Theorem 4.1. Let
-tively sufficient statistic, i.e.\
-kernel
-
-with
-
-have joint law , and let
-
-be any predic‐
-
-. Sufficiency is equivalent to the existence of a
-for
-
--a.e.\
-
-. Define the causal map
-
-(we identify a causal state with its predictive measure). Suppose
-.
-
-Then
-
-,
-
-. Thus the map
-
-is well defined a.s., giving
-
-hence
-.
-
-Apply the data-processing inequality for entropy (a deterministic image cannot have larger
-entropy):
-a.s., so
-
-. If
-and
-
-then
-
-is injective on
-
-are measurably isomorphic; this is the uniqueness clause.
-
-Three remarks. (i) The proof never uses stationarity beyond well-definedness of , so it applies to the non-stationary, finite-context predictors we actually have. (ii) It is purely measure-theoretic; no metric, no linearity, no architecture enters — which is why
-invariant to hang interpretability on. (iii) The same argument with
-
-is the right
-
-replaced by the
-
-length-
-
-predictive
-
-proves minimality of
-
-at each horizon, underwriting the ladder
-
-(10.1).
-A.2 The excess-entropy bound
-
-Let
-
-. By the chain rule for mutual information,
-
-. Sufficiency gives
-
-, so the second term vanishes and
-
-Since
-
-is
-
-mutual
-
-information
-. Hence
-
-bounded
-
-by
-
-the
-
-entropy
-
-.
-of
-
-either
-
-argument,
-
-, with the crypticity
-
-equal to the residual uncertainty about the causal state given the entire future — the bits
-the model must hold that never surface downstream.
-
-Appendix B Estimating causal states from a queryable model
-The classical obstacle to computational mechanics is that one must estimate
-
-from sam‐
-
-ples. With a trained model we have a stronger affordance: we can query its predictive distribution at any context. This makes predictive clustering direct.
-A lgorithm B.1 ( predictive - clustering causal states ).
-Input: model
-
-(returns next- token distribution at any context), context sample
-
-,
-
-horizon , tolerance .
-1. For each
-
-collect activation
-
-and predictive signature
-
-2. Agglomeratively merge contexts whose signatures are within
-Fisher–Rao) distance,
-state moves
-
-.
-
-by counting, for each symbol , the state-to-
-
-.
-
-4. Report
-5. Increase
-
-in Jensen–Shannon (or
-
-; the merged groups are estimated causal states
-
-3. Estimate the labelled transition kernel
-
-.
-
-and the spectrum of
-until
-
-Output:
-
-(gap, slow modes).
-
-and the spectrum stabilize (horizon convergence, §10).
-spectrum, and the embedding
-
-that recovers .
-
-Two cross-checks make the estimate trustworthy. Unifilarity test: a good estimate should be
-nearly deterministic in
-
-(the defining property of an -machine); residual non‐
-
-determinism measures under-resolution (raise , lower ). Reconstruction test: predicting
-from
-
-alone should match
-
-'s loss; a gap is unmodeled structure. The same pipeline
-
-yields the §11 stability map (run on two seeds, compare states) and the §12 trajectory (run
-along training, watch
-
-).
-
-Appendix C The horizon renormalization semigroup and its fixed
-points
-Let
-states
-
-be the space of -machines. The horizon coarse-graining
-distinguishable
-
-only
-
-by
-
-futures
-
-of
-
+D efinition 1 — interventional causal state
+Fix a layer ℓ with activations h. For activation vectors a, a′:
+
+a ∼ a′ ⟺ P( Y | do(h = a) ) = P( Y | do(h = a′) )
+The equivalence class of a is its causal state; the map σ sending each activation to its class is the
+causal-state function. A feature is a causal state.
+
+The do(·) is the whole point. Conditioning asks what can be read off an activation. Intervening —
+setting the layer to a and running the rest of the network — asks what the network does with it.
+Information that is present but never used cannot change the output under intervention, so it cannot
+separate two states. Figure 1 shows the definition and, on its second row, how the rest of the paper
+counts the states it defines.
+
+Figure 1. The whole method in two rows. Top: a feature is defined by what the network does when you
+intervene, not by what you can read off it. Bottom: the number of features is found by merging groups until
+merging suddenly gets expensive — here from 256 groups down to 3, on a system whose true answer is 3.
+the answer
+
+where compression stops being cheap
+
+The explanation of a network is then the list of its layers' causal states together with the transitions
+between them. The transitions are the algorithm. That is the structural difference from a dictionary of
+features, which names the pieces and is silent about what the computation does with them.
+
+M easured — the algorithm , recovered ( rerun )
+On the 3-state source of §4, the break rule of §7 chooses its tolerance blindly — 0.26 — and
+returns 3 states. Counting how the network moves between them from one step to the next
+reproduces the generating machine’s transition matrix to within 0.0154 (largest error; mean
+0.0088). Each cell reads true → recovered:
+
+FROM ↓ TO →
+
+state 1
+state 2
+state 3
+
+STATE 1
+
+0.100 → 0.103
+0.700 → 0.715
+0.650 → 0.637
+
+STATE 2
+
+0.700 → 0.691
+0.150 → 0.141
+0.200 → 0.215
+
+STATE 3
+
+0.200 → 0.206
+0.150 → 0.143
+0.150 → 0.147
+
+A dictionary of features cannot produce this object at all.
+
+3 · Why the definition is forced
+A definition is only worth building on if it is not arbitrary. This one is pinned down by what it
+preserves. Call a statistic T of the activations sufficient if the network's interventional behaviour can be
+computed from T(a) alone.
+
+T heorem 1 — minimality
+
+σ is sufficient, and every sufficient statistic T determines it: σ = φ ∘ T for some φ. Hence
+H[σ(h)] ≤ H[T(h)], with equality only when T is a relabelling of σ.
+Honestly stated, this is the classical fact that a minimal sufficient statistic is the coarsest sufficient
+partition (Fisher; Lehmann & Scheffé) — the same argument Shalizi and Crutchfield used for causal
+states — carried into the interventional setting. The setting is new; the minimality argument is not. Its
+consequence is what matters: every other description of a layer is a refinement of σ, so it carries
+redundant structure unless it equals σ. Probes, dictionaries and circuits are all points on the far side
+of this line.
+
+T heorem 2 — unused information is discarded
+If part of the activation has no effect on P(Y | do(h)), two activations differing only in that part lie
+in the same causal state. σ is invariant to anything the network carries but does not use.
+
+T heorem 3 — estimation error degrades gracefully
+If the interventional signature is estimated within ε (sup-norm) and groups are merged at
+tolerance τ around a representative, then any two activations placed in the same group have true
+signatures within 2τ + 2ε. Error costs fidelity linearly, never catastrophically.
+
+Theorem 3's constant was first written as τ + 2ε; numerical checking falsified that, because the
+estimator merges by representative rather than pairwise, and the constant doubles. The corrected
+bound holds in every configuration tested:
+
+M easured — T heorem 3 checked numerically ( rerun )
+
+ε (ESTIMATION ERROR) τ (MERGE TOLERANCE) OBSERVED SPREAD BOUND 2τ + 2ε HOLDS
+
+0.01
+0.01
+0.03
+0.03
+0.08
+0.08
+
+0.05
+0.15
+0.05
+0.15
+0.05
+0.15
+
+0.0979
+0.2160
+0.1230
+0.2418
+0.2091
+0.3095
+
+0.1200 yes
+0.3200 yes
+0.1600 yes
+0.3600 yes
+0.2600 yes
+0.4600 yes
+
+4 · Readable is not the same as used
+Here is the gap between the two equivalence relations, measured twice on independent setups.
+A recurrent network on a hidden Markov process. A small RNN is trained to predict the next symbol
+of a 3-state hidden Markov process whose inputs carry an extra coin flip that has nothing to do with
+anything. It reaches loss 0.9898 against a Bayes-optimal 0.9911 (uniform guessing: 1.0986), and its
+hidden state encodes the true belief state linearly with held-out R² = 0.98. The coin flip is readable
+from its activations with accuracy 1.00. Yet flipping it moves the output by only 0.0335 of a typical
+difference between states. Perfectly readable; essentially unused.
+A feedforward network on a source with known states. Here the interventional distribution can be
+computed exactly, so this tests the definition itself with no estimator in the way. Across 5 seeds, an
+unused nuisance channel is 100.0% decodable from the hidden layer. Grouping raw activations and
+grouping by intervention then disagree about what counts as structure:
+
+M easured — same activations , two equivalence relations ( rerun , 5 seeds )
+
+Bits shared with the unused nuisance
+Agreement with the true states (ARI)
+
+GROUP RAW ACTIVATIONS GROUP INTERVENTIONS (ICS)
+
+1.0000 ± 0.0000
+0.1085 ± 0.0735
+
+0.0001 ± 0.0000
+1.0000 ± 0.0000
+
+Figure 2. Decodable is not the same as used. (A) A nuisance bit the network never uses is read off its
+activations with accuracy 1.00, yet flipping it moves the output by only 0.0335 of a typical difference. (B)
+Grouping raw activations captures 1.0000 bits of that nuisance; grouping by interventions captures 0.0001,
+which is the measurement floor — more than 10,000× less, from the same activations.
+correlational
+
+causal effect
+
+interventional (ICS)
+
+The gap is more than 10,000×.
+Ordinary clustering hands almost all of an unused signal back as "structure"; the causal quotient
+throws it away, as Theorem 2 says it must, and recovers the true states at ARI 1.0000.
+
+The earlier companion paper put this gap at about 1,600×. The numerator is the same in both runs;
+the whole difference is in the denominator, which sits at the numerical floor in both — 0.0001 ±
+0.0000 bits here, and exactly zero on some seeds. So the honest statement is a lower bound rather
+than a ratio, and a ratio quoted to several digits would be false precision.
+Every probing result that never ran an intervention was measuring the first column.
+
+5 · The wall: how many states?
+Section 4 cheated in one respect: it told the clustering there were 3 states. A method for unknown
+networks has to find the number. This is where the program stopped, and the reason turned out to be
+more interesting than a tuning problem.
+The natural estimator is the definition taken literally: group activations whose signatures agree exactly
+— tolerance zero — and count. Figure 3 shows what that measures.
+
+Figure 3. The obvious estimator measures the sample, not the network. Counting states at zero tolerance
+gives 103 states from 200 samples and 414 from 6,000, while the true answer is 3. Statistical complexity rises
+with it, from 6.16 to 7.33 bits.
+states found at tolerance → 0
+
+truth
+
+The count went from 103 states on 200 samples to 414 on 6,000 — 4.0× more states for 30× more
+data — and was still climbing. The truth is 3. Statistical complexity rose with it, from 6.16 to 7.33 bits.
+At zero tolerance the estimator is counting the sample, not the network: finitely many samples of
+a continuous signature never coincide exactly, so almost every point becomes its own class.
+That has a consequence for the theory. The program's keystone was a lower bound: no faithful
+explanation of a layer can be shorter than Cμ bits.
+
+T heorem 4 — the lower bound , stated where it can be measured
+For the exact quotient, every faithful explanation has entropy at least Cμ (Appendix A). But Cμ
+estimated at tolerance → 0 grows without bound in the sample size, so the bound in that form
+binds nothing. The usable statement is at fixed distortion: every explanation with expected
+distortion ≤ D needs at least R(D) bits, where R is the rate–distortion function of the
+interventional source, and R(0) = Cμ. The limit D → 0 must be taken after n → ∞, not before.
+
+So the honest object is not a number but a curve: how many bits of explanation buy how much fidelity.
+And the structure is on that curve — at the right tolerance the same data give exactly 3 states that
+agree with the truth at ARI 0.985. The problem is purely that nothing yet says where on the curve to
+stand.
+
+6 · Why "does it replicate?" cannot answer it
+The standard answer to "how many clusters?" is stability selection: choose the resolution at which
+independent halves of the data produce the same grouping. It is widely used, and here it fails for a
+structural reason worth stating plainly.
+
+Figure 4. Stability selection cannot find the scale. Splitting the data in half and asking whether both halves
+group the same way scores 0.972 at about 187 states — as high as the true structure's 0.963 at about 3. A
+finely-sampled smooth cloud can be cut the same way twice simply because it is smooth.
+replication, corrected for chance
+
+At the finest tolerance, with about 187 states, the replication score is 0.972. At the true structure,
+about 3 states, it is 0.963. In between it dips to 0.602. The meaningless answer replicates as well as
+
+the right one.
+
+M easured — the failure mode
+Any criterion built on partitions agreeing rewards the trivial partition. When almost every
+point is its own group, two halves that densely cover the same smooth cloud assign a fresh point
+to the same nearest neighbour — reproducibly, and meaninglessly. Fine partitions of a smooth
+manifold replicate because the manifold is smooth, not because it has structure.
+
+Two natural repairs fail too, in exploratory runs kept in the repository rather than reproduced here.
+Dividing replication by the bits it costs diverges as the cost goes to zero, so it drifts toward a single
+group. Subtracting a structureless control fails unless the control is matched on rate rather than on
+tolerance. The lesson generalises beyond this paper: reproducibility is necessary and nowhere near
+sufficient. What is needed is a signal the smoothness cannot fake.
+
+7 · The method: stop where compression stops being cheap
+That signal was sitting on the rate–distortion curve. Merging two groups that behave the same costs
+almost no fidelity; merging two that behave differently costs a lot. So walk the curve from fine to
+coarse and watch the price of each merge (Figure 5).
+
+Figure 5. Where compression stops being cheap. Each bar is one merge step. Merging redundant groups
+costs almost nothing, and those bars sit on a flat baseline. The first step that breaks it — 3 groups to fewer —
+costs 25× the baseline. The method stops just before it and returns 3. On this system the first break happens
+also to be the last merge, to a single group. In general the largest step is that final collapse and can come
+after the real break, which is why the rule takes the first break rather than the largest.
+redundant merge
+
+first real merge
+
+Going from 256 groups down to 3 costs very little — distortion moves from 0.0007 to 0.0395. The
+next merge, to 1, costs 25× the baseline set by every cheaper merge before it. That step destroys real
+structure. The method stops just before it and returns 3.
+
+D efinition 2 — the first structural break
+(1) Index the curve by distinct group counts, never by tolerance: many tolerances give the same
+grouping, and dividing by a near-zero change in rate manufactures enormous costs out of
+nothing. (2) Walk from fine to coarse and take the first merge whose cost exceeds the median of
+all cheaper merges by a threshold — not the largest merge, which is always the final collapse to a
+single group. (3) Return the grouping just before that merge.
+
+Three details turn this rule into a method, and each came from a failure.
+No threshold is chosen. A fixed threshold works, but choosing it after seeing the answer would make
+the result self-fulfilling. Instead the method sweeps 112 thresholds and keeps the answer that survives
+the longest run of them (Figure 6). The answer is not fragile: the longest run covers 101–112 of 112
+thresholds across every test system. This is also the plateau an earlier attempt looked for and failed to
+find — it was looking along the tolerance axis, where there is none. Along the threshold axis the
+plateau is wide.
+
+Figure 6. No threshold is chosen. The method sweeps 112 thresholds and keeps the answer that survives the
+longest. For three systems with 2, 4 and 6 true states, the returned count is flat across almost the whole
+sweep — the longest run covers 101–112 of 112 thresholds across all fifteen test systems.
+2 true states
+
+4
+
+6
+
+Tiny groups are dropped. A group holding under 1% of the mass cannot be told from a sampling
+fragment, so its points join the nearest surviving group.
+
+Fragments are prevented, not repaired. Some splits survive the 1% floor. Section 8 shows that trying
+to merge them back afterwards destroys the method's guarantee, while mixing each signature slightly
+with noise before grouping stops them forming. The level used is 0.20. That level was fixed in advance:
+in the original run the estimation sweep singled it out before the smoothing sweep was written, and
+this rerun reproduces both (§8).
+
+8 · What it recovers, and its guarantee
+The test: fifteen networks the method never saw, trained on sources with 2, 3, 4, 5 and 6 true states
+(three seeds each), where the true state of every sample is known exactly.
+
+Figure 7. Each step of the method, measured on fifteen systems it had never seen. The final method —
+smoothing, then the parameter-free break, then dropping groups under 1% of the mass — recovers the exact
+count in 15 of 15. Across all of them the lowest homogeneity is 1.0000.
+intermediate
+
+final method
+
+M easured — each step of the method ( rerun , 15 systems )
+
+STEP OF THE METHOD
+
+Fixed threshold, as found
++ drop groups under 1% of the mass
+Parameter-free threshold (no smoothing)
+Fixed threshold + smoothing 0.20
+Final: smoothing 0.20 + parameterfree + drop tiny
+
+EXACT
+COUNT
+
+2/15
+10/15
+10/15
+15/15
+15/15
+
+WORST
+HOMOGENEITY
+
+MIXED TWO
+STATES?
+
+— —
+1.0000 never
+1.0000 never
+1.0000 never
+1.0000 never
+
+The fixed threshold alone overshoots: it finds the exact count in 2 of 15 and returns too many states in
+13. Each component closes part of that gap, and the final method recovers the exact count in 15/15,
+with mean agreement ARI 1.0000 and worst-case 1.0000.
+
+No group it returns ever mixes two true states.
+Homogeneity measures whether each returned group lies inside a single true state; 1.0 means
+always. The worst homogeneity across all fifteen systems is 1.0000.
+
+This is a soundness property rather than an accuracy score, and Theorem 1 says why it is the right one.
+Every faithful description of a layer is a refinement of σ. A grouping that splits a true state is still a
+refinement — still faithful, merely not minimal. A grouping that merges two true states is not faithful
+at all: it asserts that two things which behave differently under intervention are the same. So the
+method's errors can cost minimality, but never faithfulness. For an interpretability method, that is
+the only error direction worth having.
+
+The guarantee under estimation error
+Everything above computed P(Y | do(h)) exactly. A real model has to estimate it. To test whether
+soundness was an artifact of exactness, a growing fraction ε of every signature is replaced with noise
+before the method runs:
+
+Figure 8. How much estimation error the guarantee tolerates. The final method keeps every group inside one
+true state up to ε = 0.1, then breaks abruptly: at ε = 0.5 the worst homogeneity is 0.186. The same method
+without its smoothing step lasts to ε = 0.2, because smoothing and estimation noise add together — the step
+that buys exact counts spends noise headroom.
+final method (15 systems)
+
+without smoothing (fixed threshold, 6 systems)
+
+M easured — final method under estimation noise ( rerun , 15 systems per level )
+
+ε
+
+0
+0.02
+0.05
+0.1
+0.2
+0.35
+0.5
+
+EXACT COUNT
+
+15/15
+15/15
+15/15
+15/15
+15/15
+6/15
+2/15
+
+MEAN ARI
+
+1.0000
+1.0000
+1.0000
+1.0000
+0.9990
+0.5377
+0.2172
+
+WORST HOMOGENEITY
+
+1.0000
+1.0000
+1.0000
+1.0000
+0.9977
+0.3227
+0.1857
+
+UNDER-COUNTS
+
+0
+0
+0
+0
+0
+9
+12
+
+No returned group mixes two true states up to ε = 0.1. Past that the guarantee does not fade gently —
+it breaks: by ε = 0.35 groups mix true states, and at ε = 0.5 the worst homogeneity is 0.186. Theorem
+3 bounds how far each group's contents can drift, and that drift is linear. What fails abruptly is the
+count: once enough of each signature is noise, the break in the curve disappears and the method
+collapses toward too few groups.
+There is a trade-off hiding here. The original design — fixed threshold, no smoothing, on six of the
+systems — keeps every group pure up to ε = 0.2, against 0.1 for the final method. Smoothing and
+
+estimation noise add together, so the step that buys exact counts spends noise headroom. The practical
+reading is that smoothing should shrink as the estimator gets noisier, since estimation noise already
+does part of its job. That adaptive version has not been built or tested.
+
+The repair that was rejected
+The first attempt to fix the residual splits merged back any pair of groups whose fusion was cheap. It
+raised the metric it targeted and broke the one that matters:
+
+M easured — pairwise collapse , rejected ( rerun )
+
+Exact count
+Mean ARI
+Worst homogeneity
+Systems where two true states were mixed
+
+DROP TINY GROUPS ONLY
+
+10/15
+0.9798
+1.0000
+0
+
++ PAIRWISE COLLAPSE
+
+5/15
+0.5287
+0.3397
+10
+
+It mixed true states in 10 of 15 systems, with worst homogeneity 0.340. That is not a tuning problem.
+The global rule works because the curve shows where compression stops being cheap; greedy pairwise
+merging throws the global view away for a local cost with no scale-free stopping point, and walks
+toward the floor. It is reported here rather than tuned, because tuning it against known answers is
+exactly the error a fixed threshold was discarded for.
+
+M easured — how much smoothing ( rerun , fixed threshold , 15 systems )
+
+SMOOTHING
+
+0.00
+0.05
+0.10
+0.15
+0.20
+0.25
+0.30
+
+EXACT COUNT
+
+10/15
+13/15
+13/15
+14/15
+15/15
+15/15
+15/15
+
+MEAN ARI
+
+0.9798
+0.9962
+0.9942
+0.9965
+1.0000
+1.0000
+0.9998
+
+WORST HOMOGENEITY
+
+1.0000
+1.0000
+1.0000
+1.0000
+1.0000
+1.0000
+0.9997
+
+9 · The two predictions, made measurable
+The theory made two falsifiable predictions before any of the counting work existed. Both were run at
+toy scale. What the counting method adds is the ability to test them directly.
+
+9.1 Prediction I — absorption is the splitting of a causal state
+
+P rediction I
+A sparse-autoencoder feature that does not correspond to a causal state has no causal content:
+nothing the network does depends on it, so nothing pins it down across training runs. Such
+features should be unstable across seeds, and absorption is the special case of a feature that tries
+to split a single causal state.
+
+Figure 9. Prediction I, first contact (recorded). Features with more causal effect reappear more reliably in an
+independently trained autoencoder: correlation +0.405; the most causal quarter has stability 0.607 against
+0.535 for the least. A moderate effect on a toy model, not a knockout.
+one SAE atom
+
+On a grokked model of modular addition (test accuracy 0.96), 469 of 512 autoencoder features were
+scored for causal effect and for whether they reappear in an independently seeded autoencoder. The
+predicted relationship holds, moderately: correlation +0.405, with the most causal quarter at 0.607
+against 0.535 for the least. The kill condition — a population of stable features with no causal effect —
+did not appear.
+Section 8 now gives the prediction a precise meaning. "Splits a causal state" is exactly homogeneity 1
+with completeness below 1: every group sits inside one true state, but some state is spread across
+
+several groups. That is measurable on any model where the counting method runs.
+
+9.2 Prediction II — grokking is a collapse in causal-state count
+
+P rediction II
+A network that memorises needs roughly one internal state per training example; one that
+generalises needs only the true machine's few. So when a network groks, its count of causal states
+should collapse — and the collapse should come before test accuracy moves.
+
+Figure 10. Prediction II, first contact (recorded). In 8 of 8 grokking runs the representation compresses
+before test accuracy rises — by 4,675 ± 1,393 steps — and before the standard weight-norm signal in 8 of 8,
+by 2,525 steps. The compression measured here is effective dimension, a proxy; §9.3 explains why the direct
+measurement needs the counting method.
+lead over test accuracy
+
+lead over weight norm
+
+In 8 of 8 grokking runs the representation compressed before test accuracy rose, by 4,675 ± 1,393
+steps, and before the standard weight-norm signal in 8 of 8, by 2,525 steps.
+
+9.3 Why the direct test needs the counting method
+Those grokking runs measured effective dimension, a proxy. The planned direct test estimates the
+causal-state count itself by grouping activations to some tolerance δ. Section 5 shows why that is
+dangerous without a rule for δ, and grokking is where the danger bites. At small δ a spread-out
+activation cloud splits into roughly one group per point regardless of its causal structure, and a
+contracted cloud does not. Memorisation spreads activations; generalisation contracts them. A
+"collapse" would therefore appear at the grok point even if the causal structure never changed —
+geometric contraction wearing a causal-state label, which is the effective-dimension result again
+
+under a new name. Choosing δ by the first structural break is what makes the direct test a test of the
+prediction rather than of geometry.
+
+10 · The larger program (conjecture)
+Everything in this section is labelled conjecture. Nothing above depends on it; it is where the definition
+leads if it holds up at scale.
+
+C onjecture — the right distance is F isher –R ao
+Causal states parameterise predictive distributions, and the only distance between distributions
+that no choice of coordinates can distort is the Fisher–Rao metric (Čencov's theorem). Euclidean
+distance between activations is interpretable only where the network happens to embed that
+geometry faithfully.
+
+C onjecture — the computation is a linear operator
+On distributions over causal states, one step of computation is linear (the Koopman view). Its
+eigenmodes are coordinate-free candidates for "natural features", and a sparsity objective that
+ignores them should fragment them — a geometric account of absorption.
+
+C onjecture — scale is a flow over prediction horizon
+A model with finite capacity resolves causal states only up to some horizon. Ordering the
+distinctions by the horizon at which they first matter gives a renormalisation-style ladder, in
+which "emergence" is a distinction crossing the model's horizon.
+
+One data point from a real language model is consistent with the starting assumption and does not
+establish it. In Qwen2.5-0.5B, probing 600 sequences from a hidden Markov process, the belief state is
+linearly decodable from layer 21 with R² = 0.892 — but a baseline that uses only the most recent
+tokens reaches 0.835. The gap, 0.057, is small. It says the model carries belief-like information; it does
+not say it carries more than recency explains.
+
+11 · Where this sits
+The closest body of theory is causal abstraction (Geiger, Lu, Icard & Potts 2021; and its theoretical
+foundation, Geiger et al., JMLR 2025), which aligns network activations with variables of a high-level
+
+causal model and tests the alignment with interchange interventions. Checked against its full text:
+
+LOAD-BEARING PIECE
+
+A unique minimal abstraction
+Approximate abstraction with a
+tolerance
+How many high-level variables,
+derived from data
+A lower bound on explanation
 length
 
-;
+CAUSAL ABSTRACTION THEORY
+(GEIGER ET AL.)
 
-merges
-the
+THIS PAPER
 
-maps
+absent
+present (graded faithfulness)
 
-compose,
+Theorem 1
+Theorem 3
 
-, forming a semigroup — the renormalization flow. A
-process is a fixed point if its machine is invariant under
+absent — alignments are supplied
 
-up to rescaling: the set of distinc‐
+§7–§8
+Theorem 4, stated at fixed
+resolution
 
-tions looks the same at every horizon. These are exactly the scale-free processes, characterized by a power-law structure spectrum
-spectrum accumulating at
+absent
 
-(a closing gap). Around a fixed point, linearizing
+Causal abstraction supplies a hypothesis and tests it; it does not derive one, say how many variables
+there are, or bound explanation length. The closest competitor on derivation is Unsupervised Causal
+Abstractions Discovery (arXiv 2606.19594), which obtains identifiability under an anchor assumption
+and a factor-graph structure. It must be read in full before any priority claim. The apparent difference
+is that it buys identifiability with assumptions about form, where this paper assumes nothing about
+form and gives up exact identifiability for a soundness guarantee.
+Much here is not new, and it should be said: causal states and statistical complexity (Crutchfield &
+Young; Shalizi & Crutchfield); minimal sufficiency (Fisher; Lehmann & Scheffé); belief-state geometry
+in transformers (Shai et al. 2024); elbow-style model selection (Thorndike 1953); the information
+bottleneck (Tishby, Pereira & Bialek 1999); stability selection (Ben-Hur et al. 2002; Lange et al. 2004;
+Meinshausen & Bühlmann 2010); homogeneity and completeness (Rosenberg & Hirschberg 2007). A
+rate–distortion view of sparse autoencoders exists (arXiv 2605.14694) but does not select a number of
+states, and a false-discovery-rate treatment of SAE features exists (arXiv 2511.11711) with a statistical
+rather than a structural guarantee.
+What I could not find stated elsewhere, and would bet on in that order: that the zero-tolerance
+complexity estimate grows without bound in the sample (§5); that stability selection fails structurally
+for this problem (§6); and soundness as refinement (§8). The knowledge cutoff behind this search is
+May 2026, so this is a scan, not a literature review.
 
-sifies perturbations as relevant (eigen-rate
-small
+12 · Limits
+The weakest section is §9. Both predictions are supported only by recorded toy-scale runs with
+moderate effects (correlation +0.405; a lead measured with a proxy), and neither has been run with
+the counting method that §9.3 argues it needs. It is argued more than tested.
+What was synthetic. Every counting result uses feedforward networks on unifilar sources whose
+causal states are finite and known. The estimation noise in §8 is simulated by mixing signatures with
 
-and, equivalently, a Koopman
-clas‐
+random distributions, not incurred by a real estimator of P(Y | do(h)) on a real model. Nothing in §5–
+§8 has touched a transformer.
+Larger or smaller in the wild? Smaller, most likely. Real networks' causal states are approximate and
+may form a continuum, so the break in the curve may be softer than here, and exact recovery rarer.
+Soundness held longest in every test here, but §8 shows it can fail abruptly rather than gradually once
+noise erases the break — so on a real model it should be checked, not assumed.
+Two parameters remain, and one has a cost. The 1% mass floor and the smoothing level 0.20 are
+fixed choices; neither is derived. Smoothing levels 0.20 and 0.25 recover every count with no mixing
+at all, and 0.30 (worst homogeneity 0.9997) begins to mix. The cost is noise headroom: smoothing
+and estimation error add, so the final method stays pure only to ε = 0.1, against 0.2 without
+smoothing (§8).
+The experiment not run. The method applied to a grokked modular-arithmetic transformer, with
 
-, growing under coarse-graining toward
+P(Y | do(h)) estimated by real interventions, counting causal states across training. That single
+experiment would test §8's guarantee on a real model and §9.2's prediction directly.
+Do the limits change the direction of any result? Not for the negative results in §5 and §6, which
+are about estimators and hold regardless of scale. Possibly for exact recovery at scale. The soundness
+claim is the one to watch.
 
-— these dominate macroscopic behavior) or irrelevant (
+Appendix A · Proofs
+Write g(a) := P(Y | do(h = a)). A statistic T is sufficient if g = ψ ∘ T for some ψ.
+Theorem 1. Sufficiency: g is constant on each class by construction, so g = ĝ ∘ σ with ĝ([a]) := g(a) well
+defined. Minimality: let g = ψ ∘ T. If T(a) = T(a′) then g(a) = g(a′), so a ∼ a′ and σ(a) = σ(a′); hence
 
-, integrated out im‐
+σ = φ ∘ T. A function of a random variable has entropy no greater than the variable, so
+H[σ(h)] ≤ H[T(h)]. ∎
+Theorem 2. Write h = (u, z) where g does not depend on z. Then g(u, z) = g(u, z′) for all z, z′, so
 
-mediately). This is the precise sense in which §10's analogy is a real renormalization group
-and not a metaphor: critical (long-range, near-ungapped) processes are the ones whose
-features require unbounded horizon — and, by Prediction 10.2, the ones where capability
-is hardest to scale and emergence is sharpest. A model trained on a near-critical process
-must keep resolving new slow modes as it grows, which is a concrete, spectral restatement
-of "scaling never saturates."
+(u, z) ∼ (u, z′): the classes, and σ, are unchanged by z. ∎
+Theorem 3. Let ‖ĝ − g‖∞ ≤ ε and let a, a′ be merged with representative r, so ‖ĝ(a) − ĝ(r)‖ ≤ τ and
 
-Appendix D Sources and pointers (informal)
-These are honest pointers to the bodies of work this program stands on, by author and topic rather than
-precise citation — I have not verified exact titles/years here and would pin them down before any formal
-write-up. Computational mechanics: Crutchfield & Young (causal states,
+‖ĝ(a′) − ĝ(r)‖ ≤ τ. By the triangle inequality ‖g(a) − g(a′)‖ ≤ ε + τ + τ + ε = 2τ + 2ε. ∎
+Theorem 4. Let (enc, dec) be faithful, so g = dec ∘ enc; then enc is sufficient and by Theorem 1
 
--machines); Shalizi &
+H[enc(h)] ≥ H[σ(h)] = Cμ; Shannon's source-coding theorem gives the code length. For distortion D:
+any encoder S with expected distortion ≤ D is feasible for the minimisation defining
 
-Crutchfield (the minimality/optimality theorem, statistical complexity, CSSR estimation). Belief-state
-geometry in transformers: the recent line showing trained transformers linearly represent the mixedstate/belief simplex — the empirical seed CSI generalizes. Information geometry: Amari (Fisher metric,
-natural gradient); Čencov (uniqueness of the Fisher metric under sufficient statistics). Operator-theoretic
-dynamics: Koopman; modern data-driven spectral (DMD/transfer-operator) methods. Singular learning
-theory: Watanabe (RLCT, free energy), and the developmental-interpretability work estimating the local
-learning coefficient and phase transitions in training. Companion experiments (this author): the featureabsorption SAE toy (§1, §9) and the grokking reproduction (§12), both laptop-scale numpy.
+R(D) = min I(h; S), so H[S] ≥ I(h; S) ≥ R(D); at D = 0 the minimiser is σ, giving R(0) = Cμ. What §5
+shows is that the finite-sample estimate of Cμ is not the Cμ of the theorem. ∎
 
-Working draft v0.1 · June 2026 · Jeffery Eckert · prepared with computational assistance. Corrections, priorart pointers, and especially refutations of §11 or §12 are the most valuable responses this draft can receive.
+Appendix B · The counting algorithm
+1. Signatures. For each sampled activation a, compute or estimate g(a) = P(Y | do(h = a)).
+2. Smooth. Replace each signature with 0.8 · g(a) + 0.2 · n, where n is drawn uniformly from the
+simplex.
+3. Curve. For a ladder of tolerances, group signatures by representative merging; record, for each
+distinct group count, the rate (entropy of the grouping) and the distortion.
+4. Break. For each threshold in a sweep, walk fine → coarse and take the first merge whose cost
+per bit saved exceeds the threshold times the median of all cheaper merges.
+5. Plateau. Keep the grouping whose count survives the longest run of thresholds.
+6. Prune. Reassign points in groups holding under 1% of the mass to the nearest surviving group.
+
+Appendix C · Reproducing every number
+paper/make.sh rebuilds the paper from nothing. experiments.py writes data/results.json ;
+build_paper.py draws every figure from that file; write_paper.py fills every number in the prose
+
+from it and refuses to build if the data contradicts the paper's central claims. This build: 2026-09-10
+20:17.
+
+BLOCK
+
+KIND
+
+SOURCE
+
+rerun
+
+paper/experiments.py
+
+recorded
+
+exp_causal.py
+results.json
+
+§9 Prediction I (autoencoder features)
+
+recorded
+
+exp_absorption_mlp.py
+
+§9 Prediction II (grokking, 8 seeds)
+
+recorded
+
+exp_grok_lead_robust.py
+
+§10 real 0.5B language model
+
+recorded
+
+exp_llm_belief.py
+
+§2 transitions, §4 anchor, §5 scaling, §6
+stability, §7 curve, §8 recovery, §8
+estimation, T3 check
+§4 RNN on a hidden Markov process
+
+DATE
+
+→
+
+2026-0910 20:17
+2026-0618
+2026-0618
+2026-0619
+2026-0618
+
+References
+1. Crutchfield, J. P. & Young, K. (1989). Inferring statistical complexity. Physical Review Letters.
+2. Shalizi, C. R. & Crutchfield, J. P. (2001). Computational mechanics: pattern and prediction, structure and
+simplicity. Journal of Statistical Physics.
+3. Lehmann, E. L. & Scheffé, H. (1950). Completeness, similar regions, and unbiased estimation. Sankhyā.
+4. Geiger, A., Lu, H., Icard, T. & Potts, C. (2021). Causal abstractions of neural networks. NeurIPS.
+5. Geiger, A. et al. (2025). Causal abstraction: a theoretical foundation for mechanistic interpretability. JMLR 26.
+6. Saulus, T. et al. Unsupervised causal abstractions discovery. arXiv:2606.19594.
+7. Shai, A. et al. (2024). Transformers represent belief state geometry in their residual stream. NeurIPS.
+8. Tishby, N., Pereira, F. & Bialek, W. (1999). The information bottleneck method.
+9. Thorndike, R. L. (1953). Who belongs in the family? Psychometrika.
+10. Ben-Hur, A., Elisseeff, A. & Guyon, I. (2002). A stability based method for discovering structure in clustered
+data.
+11. Lange, T., Roth, V., Braun, M. & Buhmann, J. (2004). Stability-based validation of clustering solutions. Neural
+Computation.
+12. Meinshausen, N. & Bühlmann, P. (2010). Stability selection. JRSS-B.
+13. Rosenberg, A. & Hirschberg, J. (2007). V-measure: a conditional entropy-based external cluster evaluation
+measure.
+14. The rate–distortion–polysemanticity tradeoff in SAEs. arXiv:2605.14694.
+15. Which sparse autoencoder features are real? Model-X knockoffs for false discovery rate control.
+arXiv:2511.11711.
+
+Causal-State Interpretability · v1.0
+
+Code and data: github.com/jcooperkai-sys/Causal-State-Interpretability
 
 

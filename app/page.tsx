@@ -42,12 +42,16 @@ const papers = [
   {
     number: "005",
     year: "2026",
+    // Not tagged NEW: the badge only ever shows on the two papers visible before "View More" is
+    // clicked (papers.slice(0,2), array-order-based -- see the render code), and this entry sits
+    // further down. v1.0 is signalled in the venue line instead.
     isNew: false,
-    title: "CAUSAL-STATE INTERPRETABILITY: A CAUSAL-SPECTRAL THEORY OF WHAT A NEURAL NETWORK COMPUTES",
-    venue: "RESEARCH PROGRAM — WORKING DRAFT",
+    title:
+      "CAUSAL-STATE INTERPRETABILITY: WHAT A NETWORK'S FEATURES ACTUALLY ARE, HOW MANY IT HAS, AND A WAY TO COUNT THEM THAT NEVER MERGES TWO DIFFERENT ONES",
+    venue: "INDEPENDENT RESEARCH — v1.0",
     authors: "COOPER E.",
     abstract:
-      "Every dominant interpretability method — sparse autoencoders, linear probes, the logit lens, activation patching — answers one question: what directions live in the activations? This framing has no ground truth and produces features that are unstable and quietly swallow one another. I argue the framing itself is the error: a trained network is not a bag of directions, it is a process, and computational mechanics gives a stochastic process a choice-free notion of its own computational units — causal states. Causal-State Interpretability (CSI) defines a feature as a causal equivalence class of internal states, not a direction. Grounded with a real experiment: a small recurrent model linearly encodes the true belief state (R²=0.98) and represents a causally inert “nuisance” channel that is perfectly decodable (100% probe accuracy) yet causally inert (3% output effect) — a direction-based interpreter's flawless feature that means nothing.",
+      "Interpretability has no agreed answer to a basic question: what is a feature? The usual answer — a direction in activation space — has a known failure: a direction can be perfectly readable from a network and still do nothing. We replace it. A feature is a causal state: two internal configurations are the same feature exactly when intervening on either produces the same future behaviour. On a controlled system, an unused signal that is 100% readable from the activations leaks 10,000× less information into a causal description than a correlational one, and grouping by intervention recovers the network's algorithm, not just its features. The definition left one question open — how many states are there — and we show the obvious estimator measures the sample, not the network. We give a method that doesn't: coarsen until compression stops being cheap, and stop at the first break. On 15 unseen test systems it recovers the exact count in 15 of 15, and no group it returns ever mixes two true states. Toy-scale throughout, and the paper says exactly where.",
     view: "/api/paper/005",
     paper: "/downloads/paper-005.txt",
     citation: "/downloads/paper-005.bib",
@@ -64,19 +68,6 @@ const papers = [
     view: "/api/paper/006",
     paper: "/downloads/paper-006.txt",
     citation: "/downloads/paper-006.bib",
-  },
-  {
-    number: "007",
-    year: "2026",
-    isNew: false,
-    title: "DECODABILITY IS NOT MECHANISM",
-    venue: "INDEPENDENT RESEARCH NOTE",
-    authors: "COOPER E.",
-    abstract:
-      "Interpretability frequently establishes that a network “represents” a quantity by training a probe on its activations. We demonstrate, on a system whose ground truth is known analytically, that decodability and causal mechanism are distinct quantities that can be made to disagree almost completely. A channel decodable at 100% accuracy contributes 0.9998 bits to a correlational description and 0.0006 bits to an interventional one — a separation of roughly 1600×, stable across five seeds. The interventional description recovers the true generating structure at adjusted Rand index 0.9957, where the correlational description reaches 0.1243. A controlled demonstration, not a claim of novelty.",
-    view: "/api/paper/007",
-    paper: "/downloads/paper-007.txt",
-    citation: "/downloads/paper-007.bib",
   },
   {
     number: "008",
@@ -327,7 +318,7 @@ function getBuddyReply(message: string, attachment: BuddyAttachment | null) {
   }
 
   if (/(paper|research|publication|arxiv)/.test(question)) {
-    return "11 notes are up, newest first: Constraint Collapse (why a forced Y/N answer isn't the model's real opinion), Autocorrection Fidelity (a model's typo-fix fails by confidently handing you a different real word), Causal-State Interpretability (a causal-spectral theory of what a network computes), a red-team of a small local LLM, a demonstration that decodability and causal mechanism diverge by roughly 1600x, a Busy Beaver pipeline that completely decides four classical classes, two notes on tokenization cost, and a negative result showing short-horizon price direction is unpredictable across 258,737 real minute bars (AUC 0.5105). Open any abstract, view the full text, or download the citation.";
+    return "10 notes are up, newest first: Constraint Collapse (why a forced Y/N answer isn't the model's real opinion), Autocorrection Fidelity (a model's typo-fix fails by confidently handing you a different real word), Causal-State Interpretability v1.0 (a network feature as a causal state, not a direction, plus a method that finds the exact number of them 15 of 15 times), a red-team of a small local LLM, a Busy Beaver pipeline that completely decides four classical classes, two notes on tokenization cost, and a negative result showing short-horizon price direction is unpredictable across 258,737 real minute bars (AUC 0.5105). Open any abstract, view the full text, or download the citation.";
   }
   if (/(project|code|github|build)/.test(question)) {
     return "HisokaOS is a 32-bit x86 operating system that boots on its own kernel with 27 bundled applications. The Lazy Driver is an autonomous-driving perception stack over dashcam footage. Bill and Oneiro are local-first systems: a conversational runtime with a from-scratch core, and a continuously learning pixel-art generator. Every project has a README download and a public repository.";

@@ -101,8 +101,12 @@ const MAX_URL_LENGTH = 4_096;
  * consult them: HEAD must agree with GET about what exists, or a monitor sees 200 for a paper that
  * GET reports as missing.
  */
+// 007 (Decodability Is Not Mechanism) retired 2026-09-10 -- superseded by Causal-State
+// Interpretability v1.0 (005), which reproduces its result and overturns its main negative
+// finding. Left out on purpose so an old bookmark 404s instead of serving a paper the site no
+// longer lists.
 const PAPER_NUMBERS = new Set([
-  "001", "002", "003", "004", "005", "006", "007", "008", "009", "010", "011",
+  "001", "002", "003", "004", "005", "006", "008", "009", "010", "011",
 ]);
 
 const READABLE_TEXT: Record<string, string> = {
@@ -359,12 +363,13 @@ const BUDDY_SYSTEM = [
   "- Autocorrection Fidelity: when a model corrects a typo in isolation it fails 97% of the time by",
   "  confidently returning a different, correctly-spelled real word -- not by refusing. Sentence",
   "  context only helps once corruption is heavy enough to need it.",
-  "- Causal-State Interpretability: a research program arguing that an interpretable feature is a",
-  "  causal equivalence class of a network's internal states (computational mechanics), not a",
-  "  direction in activation space -- grounded with a real experiment showing a channel can be",
-  "  100% decodable yet almost entirely causally inert.",
-  "- Decodability Is Not Mechanism: on a system with known ground truth, a channel decodable at",
-  "  100% accuracy can contribute ~1600x less to a causal description than a correlational one.",
+  "- Causal-State Interpretability (v1.0): defines a network feature as a causal state, not a",
+  "  direction in activation space -- two configurations are the same feature exactly when",
+  "  intervening on either produces the same future behaviour. An unused signal that is 100%",
+  "  readable from activations leaks 10,000x less into a causal description than a correlational",
+  "  one. Also gives a method that recovers the exact number of a network's causal states on 15 of",
+  "  15 unseen test systems without ever merging two different ones. Supersedes and subsumes",
+  "  Cooper's earlier 'Decodability Is Not Mechanism' note, which is retired.",
   "- Red-teamed a small local LLM (minicpm-v4.6) across secret extraction, degenerate generation,",
   "  fuzzing and guardrail bypass; found an effectively absent safety wall (6/6 bypassed).",
   "- The Token Tax / Cheap Damage: tokenizers shatter unfamiliar text into fragments. A doubled",
