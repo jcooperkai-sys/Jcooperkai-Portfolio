@@ -292,6 +292,23 @@ textarea:focus-visible {
   display: block;
 }
 
+/* Same box, same font, same animation as .ticker -- only the outline and text read yellow, and
+   the content is a news-style announcement rather than the visitor-count status line. */
+.ticker-yellow {
+  color: var(--yellow);
+  border-color: #d6c900;
+}
+
+.ticker-yellow a {
+  color: var(--yellow);
+  text-decoration: underline;
+}
+
+.ticker-yellow a:hover,
+.ticker-yellow a:focus-visible {
+  color: #fff;
+}
+
 @keyframes ticker-run {
   to {
     transform: translateX(-50%);
@@ -401,13 +418,13 @@ textarea:focus-visible {
   text-align: center;
 }
 
-/* The counter is digits only now. Centring both axes keeps them from sitting high in the box,
-   which is how they looked once the heading and caption above and below them were removed. */
+/* Heading above the digits, digits, caption below -- restored so the box reads
+   "VISITOR COUNTER / 000000 / VISITS" instead of bare digits. */
 .counter-box {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 61px;
 }
 
 .counter-box p,
@@ -726,6 +743,18 @@ main {
   margin: 0 0 5px;
   color: #000079;
   font: 900 18px/1.15 Arial, Helvetica, sans-serif;
+}
+
+.paper-tag-new {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 7px;
+  color: #000;
+  background: #fff600;
+  border: 2px outset #d8cf00;
+  vertical-align: middle;
+  font: 900 11px/1 Arial, Helvetica, sans-serif;
+  letter-spacing: 0.08em;
 }
 
 .paper-venue {

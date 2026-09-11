@@ -1,0 +1,178 @@
+INDEPENDENT RESEARCH · TOKENIZATION · NO. 2
+
+Cheap Damage
+
+Token cost is a bad proxy for information loss
+Jeffery Eckert · Independent · 2026
+
+Character-level corruption is usually treated as one phenomenon: insertions, deletions and
+swaps get bundled together as "noise" and applied interchangeably. This paper separates two of
+them and finds they behave in opposite directions. At four edits, insertion inflates token count
+by 400% but the original word is still recoverable 87.5% of the time from the corrupted string
+alone. Deletion inflates tokens by only 146% — and recovery collapses to 8.3%. The cheaper
+corruption is the far more destructive one. Context repairs the gap almost entirely for deletion
+(+54.2 points) and does nothing at all for insertion. 384 trials, 24 words, qwen2.5:3b.
+
+1. The assumption being tested
+Work on text robustness generally treats character corruption as a single axis with a magnitude.
+Benchmarks apply insertions, deletions and swaps as interchangeable noise, and edit distance is used
+as the measure of how badly something has been damaged.
+That framing contains an assumption worth checking: that two corruptions of the same edit distance
+do comparable damage. They do not, and the reason is visible before any measurement.
+
+Figure 1. Both corruptions are edit distance 4 from the original. Insertion keeps every original letter and adds
+padding. Deletion removes letters permanently.
+Insert a character and nothing is lost — the original letters are all still present, just diluted. Delete one
+and that information is gone from the string for good. Edit distance counts operations. It does not
+count what was destroyed.
+
+2. Insertion costs far more in tokens
+The first measurement is the one that looks intuitive, and it points the wrong way.
+
+Figure 2. Token inflation over the clean word. Insertion is consistently and increasingly more expensive.
+Insertion climbs steeply — 196% at one edit, 400% at four. Deletion stays roughly flat around 146%.
+Mechanically this makes sense. Inserting a character creates a letter pair that has not appeared in that
+position, so the tokenizer's greedy match breaks early and everything after is misaligned — and each
+new insertion breaks it again. Deletion shortens the word, and a shortened word is often still a valid
+prefix the matcher can consume in one piece.
+If token count tracked damage, insertion would be the corruption to worry about.
+
+3. It does not track damage
+The same corrupted words, handed to a model with no surrounding sentence, with one question: what
+was the original word?
+
+Figure 3. Recovery from the corrupted string alone. The expensive corruption survives; the cheap one does
+not.
+At four edits, insertion recovers 87.5% of the time and deletion recovers 8.3%.
+Insertion costs 2.7× more tokens and is roughly 11× more survivable. The relationship between
+cost and damage is not weak — it is inverted.
+
+Insertion barely degrades at all: 95.8% at one edit, 87.5% at four, having quadrupled in token cost
+along the way. Deletion falls off a cliff — 95.8%, 58.3%, 33.3%, 8.3%.
+The explanation is the one from Figure 1. ssufffficient still contains every letter of sufficient
+in order; reading it is a filtering problem. sufint does not contain them, and no amount of attention
+to the string can recover characters that are not in it.
+
+4. What context is actually worth
+Repeating everything with the surrounding sentence restored isolates what context contributes,
+because nothing else differs between the two runs.
+
+Figure 4. Recovery with the sentence minus recovery from the word alone. Context is worth almost nothing
+for insertion and almost everything for deletion.
+Context is worth +54.2 points for deletion at four edits, and +0.0 for insertion.
+It only helps when information is genuinely missing.
+
+The deletion column rises monotonically with damage — +4.2, +37.5, +41.7, +54.2 points. The
+worse the destruction, the more of the answer comes from the sentence rather than the word.
+The insertion column sits at zero throughout and dips slightly negative in the middle, which is noise at
+this sample size. That flatness is the point: when the letters are all still present there is nothing for
+context to supply, so it supplies nothing.
+This gives a cleaner statement of something usually asserted loosely. Language models are described as
+robust to typos "because context helps." That is only half right. Context is not a general-purpose
+repair mechanism — it is a substitute for missing information, and it does nothing when nothing
+is missing.
+
+5. All four conditions
+
+EDITS
+
+1
+
+TOKEN INFLATION
+
+RECOVERY, WORD ALONE
+
+RECOVERY, IN CONTEXT
+
+INS
+
+INS
+
+INS
+
+DEL
+
+196%
+
+125%
+
+DEL
+
+95.8%
+
+95.8%
+
+DEL
+
+95.8%
+
+100.0%
+
+2
+3
+4
+
+279%
+342%
+400%
+
+158%
+150%
+146%
+
+100.0%
+95.8%
+87.5%
+
+58.3%
+33.3%
+8.3%
+
+95.8%
+91.7%
+87.5%
+
+95.8%
+75.0%
+62.5%
+
+Every cell is 24 trials. Both corruptions are applied to the same words at the same positions, so the
+comparison is not confounded by which letters happened to be affected.
+
+6. What this changes
+Edit distance is not a damage metric. Two corruptions four edits from the original differ by an order
+of magnitude in recoverability. Robustness benchmarks that sample corruption types uniformly and
+report a single noise level are averaging over an effect larger than most of the differences they are
+trying to detect.
+Token inflation is not a damage metric either, and it is worse than useless — it points the wrong
+way. Any quality or anomaly filter using token count as a corruption signal will flag harmless padding
+while passing the corruption that actually destroys meaning.
+For adversarial work, deletion is the efficient attack. It is cheap in tokens, hard to detect by
+inflation, and far more destructive per edit. An attacker optimising for damage per token should
+delete.
+For OCR, ASR and transcription pipelines, dropped characters deserve more alarm than
+duplicated ones. They are currently treated as comparable error classes; on this evidence they are not
+close.
+
+7. Limits
+One model (qwen2.5:3b, 3B parameters) and 24 words. The effect sizes are large — 87.5% versus
+8.3% is not a marginal difference — but whether the gap narrows in larger models is untested and
+worth testing. A bigger model with stronger priors might rescue deletions a small one cannot.
+Corruption is synthetic and uniformly positioned. Real deletions cluster differently: dropped characters
+in human typing favour doubled letters and unstressed syllables, which may be more recoverable than
+random positions. That would make this an upper bound on deletion damage in the wild.
+Recovery is scored as exact match to the original word. A model answering with a reasonable different
+word counts as failure, which is correct for this question but means the numbers are not a measure of
+comprehension in general.
+
+The mechanism in §3 is argued from what the strings contain rather than demonstrated inside the
+model. The word-recovery literature has shown models internally rebuild corrupted words; whether
+that rebuilding fails for deletion specifically, or merely has nothing to work with, is not something this
+experiment can distinguish.
+None of these change the direction of the result. The inversion between cost and damage is too large
+to be an artifact of any of them.
+
+All numbers generated by experiment_sweep.py with a fixed seed and reproducible from data/sweep.json .
+Figures are drawn from that file rather than written alongside it, so they cannot disagree with it.
+
+

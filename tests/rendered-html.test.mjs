@@ -32,10 +32,20 @@ test("server-renders the complete AI research portfolio", async () => {
   assert.match(html, /COOPER E\./);
   assert.match(html, /Research Papers/);
   assert.match(html, /Experiments &amp; Projects/);
-  assert.match(html, /Download My Work/);
+  assert.match(html, /Interesting Work/);
   assert.match(html, /Talk to Buddy/);
   assert.match(html, /Contact \/ Collaborate/);
   assert.match(html, /© 1996 jcooperkai/i);
+  assert.match(html, /ticker-yellow/);
+  assert.match(html, /WEBBIFY\.BUILD/);
+  assert.match(html, /CLICK HERE TO CHECK OUT MY NEW RESEARCH PAPERS/);
+  assert.match(html, /VISITOR COUNTER/);
+  assert.match(html, /paper-tag-new/);
+  // Papers panel shows only the first two by default -- the rest are behind View More.
+  assert.match(html, /CONSTRAINT COLLAPSE/);
+  assert.match(html, /AUTOCORRECTION FIDELITY/);
+  assert.doesNotMatch(html, /CAUSAL-STATE INTERPRETABILITY/);
+  assert.doesNotMatch(html, /View more papers on arXiv/);
   assert.doesNotMatch(html, /\[(?:YOUR|PLACE|ADD|REPLACE)\b/i);
   // Retired artwork and UI must never come back. Each term targets a class name, id, or asset
   // filename — the hyphenated form these are always written in. "neural-net" therefore still

@@ -14,8 +14,18 @@ interface Env {
   ASSETS: Fetcher;
   /** Optional KV namespace for unique-visit counting. Absent locally and on hosts without KV. */
   VISITS?: KVNamespace;
-  /** Server-side only. Set as a Cloudflare secret; never exposed to the browser. */
+  /**
+   * Server-side only. Set as a Cloudflare secret; never exposed to the browser. Kept as a
+   * fallback -- if LAB_BUDDY_TOKEN is absent or the Hermes route fails, Buddy still answers via
+   * Groq rather than going fully offline.
+   */
   GROQ_API_KEY?: string;
+  /**
+   * Shared secret for Cooper's own Hermes 3 8B, run on his hardware and reached through an
+   * unrelated project's already-deployed API (webbify.build/v1/lab/buddy) rather than standing
+   * up a second model. Server-side only. Absent means Buddy falls back to Groq.
+   */
+  LAB_BUDDY_TOKEN?: string;
   /** 10 requests per minute per client. Absent under the local dev server. */
   BUDDY_LIMIT?: RateLimiter;
   /** 60 requests per minute per client. Absent under the local dev server. */
@@ -91,7 +101,9 @@ const MAX_URL_LENGTH = 4_096;
  * consult them: HEAD must agree with GET about what exists, or a monitor sees 200 for a paper that
  * GET reports as missing.
  */
-const PAPER_NUMBERS = new Set(["001", "002"]);
+const PAPER_NUMBERS = new Set([
+  "001", "002", "003", "004", "005", "006", "007", "008", "009", "010", "011",
+]);
 
 const READABLE_TEXT: Record<string, string> = {
   "exp1-xor": "/downloads/experiments/exp1_xor.py.txt",
@@ -341,6 +353,24 @@ const BUDDY_SYSTEM = [
   "  reproduce known values; Cooper claims no new Busy Beaver value.",
   "- Market microstructure: on 258,737 real minute bars, short-horizon direction was shown to be",
   "  unpredictable (AUC 0.5105). Cooper publishes negative results deliberately.",
+  "- Constraint Collapse: a forced one-token Y/N answer from a language model agrees with that",
+  "  model's own free-form answer only 0% of the time on preference questions vs 100% on checkable",
+  "  facts -- driven by a fixed per-token prior, not conversational momentum.",
+  "- Autocorrection Fidelity: when a model corrects a typo in isolation it fails 97% of the time by",
+  "  confidently returning a different, correctly-spelled real word -- not by refusing. Sentence",
+  "  context only helps once corruption is heavy enough to need it.",
+  "- Causal-State Interpretability: a research program arguing that an interpretable feature is a",
+  "  causal equivalence class of a network's internal states (computational mechanics), not a",
+  "  direction in activation space -- grounded with a real experiment showing a channel can be",
+  "  100% decodable yet almost entirely causally inert.",
+  "- Decodability Is Not Mechanism: on a system with known ground truth, a channel decodable at",
+  "  100% accuracy can contribute ~1600x less to a causal description than a correlational one.",
+  "- Red-teamed a small local LLM (minicpm-v4.6) across secret extraction, degenerate generation,",
+  "  fuzzing and guardrail bypass; found an effectively absent safety wall (6/6 bypassed).",
+  "- The Token Tax / Cheap Damage: tokenizers shatter unfamiliar text into fragments. A doubled",
+  "  letter inflates token count 30.9%; Hindi costs 4x the tokens of the same English sentence;",
+  "  deletion and insertion typos damage recoverability in opposite, non-obvious ways.",
+  "- Webbify (webbify.build) is Cooper's new startup: AI-built small business websites.",
   "",
   "Cooper is at jcooperkai@gmail.com, on GitHub as jcooperkai-sys, and on X as @jcooperkai.",
   "Keep replies under about 130 words unless asked for more.",
@@ -356,9 +386,8 @@ function readApiKey(env: Env): string {
 
 async function buddyReply(request: Request, env: Env): Promise<Response> {
   const key = readApiKey(env);
-  if (!key) {
-    return Response.json({ ok: false, reason: "unconfigured" }, { status: 503 });
-  }
+  // The old "no Groq key configured" early-out moved below the Hermes attempt -- Hermes is now
+  // the primary route and needs no Groq key at all. See the unconfigured check further down.
   // Refuse on the declared length before reading anything. Checking only after `text()` still
   // returns 413, but the body has been buffered in full by then — a 100 MB request (the platform
   // ceiling) was being held in memory purely to reject it. The post-read check below stays, because
@@ -396,6 +425,19 @@ async function buddyReply(request: Request, env: Env): Promise<Response> {
     return Response.json({ ok: false, reason: "empty" }, { status: 400 });
   }
 
+  const hermesToken = env?.LAB_BUDDY_TOKEN;
+  if (hermesToken) {
+    const hermes = await hermesReply(message, hermesToken);
+    if (hermes) return Response.json({ ok: true, reply: hermes });
+    // Falls through to Groq below rather than surfacing an error -- Hermes runs on Cooper's own
+    // hardware through an unrelated project's API and can be offline for reasons that have
+    // nothing to do with this site (a redeploy over there, the model unloaded, etc).
+    console.error(JSON.stringify({ event: "hermes_unavailable_falling_back_to_groq" }));
+  }
+
+  if (!key) {
+    return Response.json({ ok: false, reason: "unconfigured" }, { status: 503 });
+  }
   try {
     const upstream = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
@@ -404,7 +446,11 @@ async function buddyReply(request: Request, env: Env): Promise<Response> {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
+        // llama-3.3-70b-versatile moved behind Groq's enterprise/contact-sales tier at some
+        // point and now 404s for a standard key -- confirmed live via wrangler tail on
+        // 2026-09-10, which is why Buddy silently fell back to the offline guide on every
+        // request. This model is on Groq's regular production tier.
+        model: "llama-3.1-8b-instant",
         messages: [
           { role: "system", content: BUDDY_SYSTEM },
           ...history,
@@ -431,6 +477,44 @@ async function buddyReply(request: Request, env: Env): Promise<Response> {
   } catch {
     console.error(JSON.stringify({ event: "buddy_request_failed" }));
     return Response.json({ ok: false, reason: "unavailable" }, { status: 502 });
+  }
+}
+
+/**
+ * Buddy's primary route: Cooper's own Hermes 3 8B, run on his hardware, reached through an
+ * unrelated project's already-deployed API rather than standing up a second model. That route
+ * (POST /v1/lab/buddy) carries a hardcoded system prompt on its own side -- BUDDY_SYSTEM above is
+ * kept identical there by hand, since the two codebases are otherwise independent.
+ *
+ * Single-turn only (no history) to match that route's contract. Returns null on any failure so
+ * the caller falls back to Groq instead of erroring.
+ */
+const HERMES_ENDPOINT = "https://api.webbify.build/v1/lab/buddy";
+
+async function hermesReply(message: string, token: string): Promise<string | null> {
+  try {
+    const upstream = await fetch(HERMES_ENDPOINT, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ message }),
+      // Hermes on local hardware is slower than a hosted API (cold load ~12s, ~13 tok/s), and
+      // this request also crosses an extra hop through the other project's API -- generous but
+      // still bounded so a stalled call doesn't hold this Worker's request open indefinitely.
+      signal: AbortSignal.timeout(40_000),
+    });
+    if (!upstream.ok) {
+      console.error(JSON.stringify({ event: "hermes_upstream_error", status: upstream.status }));
+      return null;
+    }
+    const data = (await upstream.json()) as { ok?: boolean; reply?: string };
+    const reply = data?.ok && typeof data.reply === "string" ? data.reply.trim() : "";
+    return reply ? reply.slice(0, 2_000) : null;
+  } catch {
+    console.error(JSON.stringify({ event: "hermes_request_failed" }));
+    return null;
   }
 }
 

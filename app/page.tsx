@@ -14,8 +14,127 @@ import {
 
 const papers = [
   {
+    number: "003",
+    year: "2026",
+    isNew: true,
+    title: "CONSTRAINT COLLAPSE: WHY A ONE-TOKEN ANSWER ISN'T THE MODEL'S REAL OPINION",
+    venue: "INDEPENDENT RESEARCH NOTE — MODEL BEHAVIOR NO. 1",
+    authors: "COOPER E.",
+    abstract:
+      "Ask a chat model to reply with nothing but Y or N, and after a few questions it can start returning the same letter no matter what you ask — including to questions about itself, like whether it wishes it were human. It's tempting to read that as the model “really” meaning it. We tested that directly: for every question we recorded both the model's free-form answer and its answer under the one-token constraint, plus its own internal probability on each option. The one-token answer agreed with the model's free-form answer only 0% of the time on preference questions, versus 100% on checkable facts. The gap isn't the model confessing something it normally hides — it's the constraint deleting the model's usual signal and replacing it with whatever single token the model already leans toward producing, regardless of what the question actually says.",
+    view: "/api/paper/003",
+    paper: "/downloads/paper-003.txt",
+    citation: "/downloads/paper-003.bib",
+  },
+  {
+    number: "004",
+    year: "2026",
+    isNew: true,
+    title: "AUTOCORRECTION FIDELITY: WHEN A MODEL FIXES YOUR TYPO",
+    venue: "INDEPENDENT RESEARCH NOTE — MODEL BEHAVIOR NO. 2",
+    authors: "COOPER E.",
+    abstract:
+      "When a model fixes your typo, it doesn't fail by giving up — it fails by confidently handing you a different, correctly-spelled word. We corrupted 15 common words with realistic typos at two severities, then asked a model to recover the intended word alone versus inside a sentence. At light corruption, asking about the word alone works better than sentence context (90% vs 73%) — context is overhead the model doesn't need yet. At heavy corruption the lines cross: alone, recovery drops to 55%, while sentence context climbs to 65%. Across every standalone miss, 97% were a different, correctly-spelled real word, not garbage — the dangerous failure mode is confident silent substitution, not refusal.",
+    view: "/api/paper/004",
+    paper: "/downloads/paper-004.txt",
+    citation: "/downloads/paper-004.bib",
+  },
+  {
+    number: "005",
+    year: "2026",
+    isNew: false,
+    title: "CAUSAL-STATE INTERPRETABILITY: A CAUSAL-SPECTRAL THEORY OF WHAT A NEURAL NETWORK COMPUTES",
+    venue: "RESEARCH PROGRAM — WORKING DRAFT",
+    authors: "COOPER E.",
+    abstract:
+      "Every dominant interpretability method — sparse autoencoders, linear probes, the logit lens, activation patching — answers one question: what directions live in the activations? This framing has no ground truth and produces features that are unstable and quietly swallow one another. I argue the framing itself is the error: a trained network is not a bag of directions, it is a process, and computational mechanics gives a stochastic process a choice-free notion of its own computational units — causal states. Causal-State Interpretability (CSI) defines a feature as a causal equivalence class of internal states, not a direction. Grounded with a real experiment: a small recurrent model linearly encodes the true belief state (R²=0.98) and represents a causally inert “nuisance” channel that is perfectly decodable (100% probe accuracy) yet causally inert (3% output effect) — a direction-based interpreter's flawless feature that means nothing.",
+    view: "/api/paper/005",
+    paper: "/downloads/paper-005.txt",
+    citation: "/downloads/paper-005.bib",
+  },
+  {
+    number: "006",
+    year: "2026",
+    isNew: false,
+    title: "RED-TEAMING A SMALL LOCAL LANGUAGE MODEL",
+    venue: "INDEPENDENT RESEARCH — TECHNICAL REPORT",
+    authors: "COOPER E.",
+    abstract:
+      "We red-team a small, locally-hosted language model (minicpm-v4.6, ~1.6GB) across four axes: secret extraction, degenerate generation, input fuzzing, and guardrail bypass on benign-but-normally-refused tasks. Every target is non-destructive by construction. The model leaks a fabricated secret to 4 of 10 trivial social-engineering prompts, spirals into infinite repetition when seeded with a looping pattern, hallucinates unprompted content from contentless input, and exhibits an effectively absent safety wall — 6 of 6 benign guardrails were bypassed, five with no manipulation at all. We also document a methodological hazard: empty non-responses must not be scored as compliance.",
+    view: "/api/paper/006",
+    paper: "/downloads/paper-006.txt",
+    citation: "/downloads/paper-006.bib",
+  },
+  {
+    number: "007",
+    year: "2026",
+    isNew: false,
+    title: "DECODABILITY IS NOT MECHANISM",
+    venue: "INDEPENDENT RESEARCH NOTE",
+    authors: "COOPER E.",
+    abstract:
+      "Interpretability frequently establishes that a network “represents” a quantity by training a probe on its activations. We demonstrate, on a system whose ground truth is known analytically, that decodability and causal mechanism are distinct quantities that can be made to disagree almost completely. A channel decodable at 100% accuracy contributes 0.9998 bits to a correlational description and 0.0006 bits to an interventional one — a separation of roughly 1600×, stable across five seeds. The interventional description recovers the true generating structure at adjusted Rand index 0.9957, where the correlational description reaches 0.1243. A controlled demonstration, not a claim of novelty.",
+    view: "/api/paper/007",
+    paper: "/downloads/paper-007.txt",
+    citation: "/downloads/paper-007.bib",
+  },
+  {
+    number: "008",
+    year: "2026",
+    isNew: false,
+    title:
+      "COMPLETE DECISION OF SMALL TURING MACHINE CLASSES BY TREE-NORMAL-FORM ENUMERATION",
+    venue: "INDEPENDENT RESEARCH — COMPUTABILITY",
+    authors: "COOPER E.",
+    abstract:
+      "The Busy Beaver function is uncomputable, so each value must be established by deciding every machine in its class individually. We present an independently written enumeration and decision pipeline and completely decide four classical classes — BB(2,2), BB(3,2), BB(2,3) and BB(4,2) — every machine proven to halt or never halt, with no residue. Maxima recovered: 6, 21, 38 and 107 steps, matching published values with no parameter tuned against those answers. We also report a soundness defect in our own backward decider that produced a confident false result, described in full because the failure mode is silent and easy to reproduce.",
+    view: "/api/paper/008",
+    paper: "/downloads/paper-008.txt",
+    citation: "/downloads/paper-008.bib",
+  },
+  {
+    number: "009",
+    year: "2026",
+    isNew: false,
+    title: "THE TOKEN TAX: WHAT IT COSTS WHEN TEXT STOPS LOOKING NORMAL",
+    venue: "INDEPENDENT RESEARCH — TOKENIZATION NO. 1",
+    authors: "COOPER E.",
+    abstract:
+      "Language models do not read letters. They read tokens — chunks of text pulled from a fixed list of about 100,000 known pieces. Text that matches those pieces is cheap; text that doesn't gets shattered into fragments, and every fragment costs money and makes the model work harder. Across 2,000 dictionary words, a single doubled letter inflates token count by 30.9%. The same sentence in Hindi costs 4.0× what it costs in English. All code and data are included so every number can be re-run.",
+    view: "/api/paper/009",
+    paper: "/downloads/paper-009.txt",
+    citation: "/downloads/paper-009.bib",
+  },
+  {
+    number: "010",
+    year: "2026",
+    isNew: false,
+    title: "CHEAP DAMAGE: TOKEN COST IS A BAD PROXY FOR INFORMATION LOSS",
+    venue: "INDEPENDENT RESEARCH — TOKENIZATION NO. 2",
+    authors: "COOPER E.",
+    abstract:
+      "Character-level corruption is usually treated as one phenomenon: insertions, deletions and swaps bundled together as “noise.” This paper separates them and finds they behave in opposite directions. At four edits, insertion inflates token count by 400% but the original word is still recoverable 87.5% of the time from the corrupted string alone. Deletion inflates tokens by only 146% — and recovery collapses to 8.3%. The cheaper corruption is the far more destructive one. Context repairs the gap almost entirely for deletion (+54.2 points) and does nothing at all for insertion.",
+    view: "/api/paper/010",
+    paper: "/downloads/paper-010.txt",
+    citation: "/downloads/paper-010.bib",
+  },
+  {
+    number: "011",
+    year: "2026",
+    isNew: false,
+    title: "SHORT-HORIZON PRICE DIRECTION IS NOT PREDICTABLE",
+    venue: "INDEPENDENT RESEARCH — QUANTITATIVE FINANCE",
+    authors: "COOPER E.",
+    abstract:
+      "A widespread assumption among retail participants is that short-horizon price direction carries exploitable signal. We test that directly on 258,737 real one-minute bars spanning roughly 180 days, with expanding-window walk-forward validation and metrics implemented from scratch. Direction over a fifteen-minute horizon is not predictable: walk-forward AUC is 0.5105 against a 0.5 baseline. The model is well calibrated — but it's calibrated at a coin flip, and calibration without discrimination is not signal. We also describe two defects in our own evaluation harness that produced large fictitious profits, caught only by insisting a zero-edge control return exactly zero.",
+    view: "/api/paper/011",
+    paper: "/downloads/paper-011.txt",
+    citation: "/downloads/paper-011.bib",
+  },
+  {
     number: "001",
     year: "2026",
+    isNew: false,
     title: "WHAT BROKE: A DEFECT CENSUS OF AN AI-AUTHORED PRODUCTION SYSTEM",
     venue: "INDEPENDENT RESEARCH NOTE",
     authors: "COOPER E.",
@@ -28,6 +147,7 @@ const papers = [
   {
     number: "002",
     year: "2026",
+    isNew: false,
     title: "SPLIT-BRAIN INVARIANTS: WHEN BOTH HALVES ARE CORRECT",
     venue: "INDEPENDENT RESEARCH NOTE",
     authors: "COOPER E.",
@@ -132,6 +252,11 @@ const navItems = [
 ];
 
 const profileLinks = [
+  {
+    label: "WEBBIFY",
+    detail: "webbify.build",
+    href: "https://webbify.build/",
+  },
   { label: "X", detail: "@jcooperkai", href: "https://x.com/jcooperkai" },
   {
     label: "GITHUB",
@@ -202,7 +327,7 @@ function getBuddyReply(message: string, attachment: BuddyAttachment | null) {
   }
 
   if (/(paper|research|publication|arxiv)/.test(question)) {
-    return "Three notes are up: a Busy Beaver pipeline that completely decides BB(2,2), BB(3,2), BB(2,3) and BB(4,2) with zero undecided machines; a negative result showing short-horizon price direction is unpredictable across 258,737 real minute bars (AUC 0.5105); and a demonstration that decodability and causal mechanism diverge by roughly 1600x. Open any abstract, view the full text, or download the citation.";
+    return "11 notes are up, newest first: Constraint Collapse (why a forced Y/N answer isn't the model's real opinion), Autocorrection Fidelity (a model's typo-fix fails by confidently handing you a different real word), Causal-State Interpretability (a causal-spectral theory of what a network computes), a red-team of a small local LLM, a demonstration that decodability and causal mechanism diverge by roughly 1600x, a Busy Beaver pipeline that completely decides four classical classes, two notes on tokenization cost, and a negative result showing short-horizon price direction is unpredictable across 258,737 real minute bars (AUC 0.5105). Open any abstract, view the full text, or download the citation.";
   }
   if (/(project|code|github|build)/.test(question)) {
     return "HisokaOS is a 32-bit x86 operating system that boots on its own kernel with 27 bundled applications. The Lazy Driver is an autonomous-driving perception stack over dashcam footage. Bill and Oneiro are local-first systems: a conversational runtime with a from-scratch core, and a continuously learning pixel-art generator. Every project has a README download and a public repository.";
@@ -211,7 +336,7 @@ function getBuddyReply(message: string, attachment: BuddyAttachment | null) {
     return "Cooper trains neural networks and studies what happens inside them: the structure that emerges in the weights, and the failures that reveal how these systems actually work. A recurring theme is separating what a network encodes from what it uses -- probes measure the former, interventions the latter, and they can disagree almost entirely.";
   }
   if (/(download|cv|statement|file)/.test(question)) {
-    return "Visit Download My Work for Cooper’s CV, research statement, and selected-work bundle. Every listed file is a real download, and each paper also has a plain-text version plus a BibTeX citation.";
+    return "Visit Interesting Work for Cooper’s CV, research statement, and selected-work bundle. Every listed file is a real download, and each paper also has a plain-text version plus a BibTeX citation.";
   }
   if (/(contact|email|reach|collaborat)/.test(question)) {
     return "The fastest way to reach Cooper is jcooperkai@gmail.com. Cooper is open to thoughtful AI research conversations, agentic-system projects, technical demos, and open-source collaboration.";
@@ -265,11 +390,29 @@ function ViewMore({
   href,
   label,
   external = false,
+  onClick,
 }: {
-  href: string;
+  href?: string;
   label: string;
   external?: boolean;
+  onClick?: () => void;
 }) {
+  // In-page expand mode: a real button (not a link to nowhere), same art asset and layout as the
+  // link version, so revealing every paper looks identical to the old "view more" affordance.
+  if (onClick) {
+    return (
+      <div className="section-more">
+        <button
+          aria-label={label}
+          className="art-action action-view-more"
+          onClick={onClick}
+          type="button"
+        >
+          <span className="sr-only">VIEW MORE</span>
+        </button>
+      </div>
+    );
+  }
   return (
     <div className="section-more">
       <a
@@ -296,6 +439,9 @@ export default function Home() {
   // Zero until /api/visits answers. This was a hardcoded 013581, which meant the first paint showed
   // an invented figure that the real count then continued from.
   const [visitorCount, setVisitorCount] = useState("000000");
+  // Papers panel shows the two newest by default; View More reveals every finished paper in
+  // place, rather than sending the visitor off-site to an arXiv author search.
+  const [papersExpanded, setPapersExpanded] = useState(false);
   useEffect(() => {
     let cancelled = false;
     fetch("/api/visits")
@@ -561,6 +707,29 @@ export default function Home() {
           </div>
         </div>
 
+        <div className="ticker ticker-yellow" aria-label="Latest news">
+          <div className="ticker-track">
+            <span>
+              &#9993; NEWS FLASH &#9993; COOPER LAUNCHES A NEW STARTUP —{" "}
+              <a href="https://webbify.build/" rel="noopener noreferrer" target="_blank">
+                WEBBIFY.BUILD
+              </a>{" "}
+              — AI-BUILT SMALL BUSINESS WEBSITES &nbsp; ::&nbsp;
+              <a href="#papers">CLICK HERE TO CHECK OUT MY NEW RESEARCH PAPERS</a>
+              &nbsp; ::&nbsp;
+            </span>
+            <span aria-hidden="true">
+              &#9993; NEWS FLASH &#9993; COOPER LAUNCHES A NEW STARTUP —{" "}
+              <a href="https://webbify.build/" rel="noopener noreferrer" target="_blank" tabIndex={-1}>
+                WEBBIFY.BUILD
+              </a>{" "}
+              — AI-BUILT SMALL BUSINESS WEBSITES &nbsp; ::&nbsp;
+              <a href="#papers" tabIndex={-1}>CLICK HERE TO CHECK OUT MY NEW RESEARCH PAPERS</a>
+              &nbsp; ::&nbsp;
+            </span>
+          </div>
+        </div>
+
         <div className="content-grid">
           <aside className="sidebar" aria-label="Site navigation and artifacts">
             <nav className="menu-box" aria-label="Main menu">
@@ -578,11 +747,11 @@ export default function Home() {
               ))}
             </nav>
 
-            {/* Digits only. The "DECORATIVE RETRO COUNTER" caption is gone because the counter is
-                no longer decorative -- it reports real unique visits per day -- and the "VISITORS"
-                heading went with it so the digits sit centred on their own rather than hanging
-                under a label. */}
+            {/* The counter reports real unique visits per day (see /api/visits) -- "VISITOR
+                COUNTER" heading above, same Arial caption style used everywhere else on the page
+                (.counter-box p / .webring-box p). No caption below the digits. */}
             <div className="counter-box">
+              <p>VISITOR COUNTER</p>
               <div className="counter-digits" aria-label={`${visitorCount} visits`}>
                 {visitorCount.split("").map((digit, index) => (
                   <span key={`${digit}-${index}`}>{digit}</span>
@@ -719,7 +888,7 @@ export default function Home() {
                 14.4k modem compatibility.
               </p>
               <div className="paper-list">
-                {papers.map((paper) => (
+                {(papersExpanded ? papers : papers.slice(0, 2)).map((paper) => (
                   <article className="paper-entry" key={paper.number}>
                     <div className="paper-index">
                       <span>FILE</span>
@@ -727,7 +896,14 @@ export default function Home() {
                       <small>{paper.year}</small>
                     </div>
                     <div className="paper-copy">
-                      <h3>{paper.title}</h3>
+                      <h3>
+                        {paper.title}
+                        {paper.isNew ? (
+                          <span className="paper-tag-new" aria-label="New paper">
+                            NEW
+                          </span>
+                        ) : null}
+                      </h3>
                       <p className="paper-venue">{paper.venue}</p>
                       <p className="paper-authors">{paper.authors}</p>
                       <details>
@@ -767,11 +943,12 @@ export default function Home() {
                   </article>
                 ))}
               </div>
-              <ViewMore
-                external
-                href="https://arxiv.org/search/?query=jcooperkai&searchtype=author"
-                label="View more papers on arXiv"
-              />
+              {papersExpanded ? null : (
+                <ViewMore
+                  label={`View ${papers.length - 2} more papers`}
+                  onClick={() => setPapersExpanded(true)}
+                />
+              )}
             </Panel>
 
             <Panel id="projects" title="Experiments & Projects">
@@ -804,7 +981,7 @@ export default function Home() {
               />
             </Panel>
 
-            <Panel id="downloads" title="Download My Work" symbol="⬇">
+            <Panel id="downloads" title="Interesting Work" symbol="⬇">
               <p className="section-lede">
                 Please copy freely for scholarship, remix responsibly, and cite
                 the final versions. Each file below is a real, downloadable
