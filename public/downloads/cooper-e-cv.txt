@@ -22,8 +22,8 @@ Honest evaluation - controls, negative results, calibration
 
 RESEARCH NOTES
 
-These are independent drafts in progress. None is peer-reviewed, and each is
-labelled as unfinished on the site itself.
+These are independent research notes. None is peer-reviewed. Full list of ten
+papers at jcooperkai.com/#papers.
 
 1. Complete Decision of Small Turing Machine Classes by Tree-Normal-Form
    Enumeration with Translated-Cycle and Backward Deciders, 2026
@@ -41,13 +41,22 @@ labelled as unfinished on the site itself.
    from scratch. Reports two defects in my own harness that manufactured large
    fictitious profits, and the zero-edge control that caught both.
 
-3. Decodability Is Not Mechanism: Separating What a Network Encodes from What
-   It Uses, 2026
-   A channel decodable at 100 percent accuracy contributes 0.9998 bits to a
-   correlational description of a layer and 0.0006 bits to an interventional
-   one, a separation of roughly 1600x that is stable across five seeds.
-   Includes a negative result: selecting the number of states blindly failed
-   under two independent principled criteria.
+3. Causal-State Interpretability, 2026, v1.0
+   Defines a network feature as a causal state rather than a direction in
+   activation space. An unused signal that is 100 percent readable from the
+   activations leaks more than 10,000x less information into a causal
+   description than a correlational one, since the interventional value sits
+   at the measurement floor. Gives a method that recovers the exact number of
+   a network's causal states on 15 of 15 unseen test systems without ever
+   merging two different ones. Supersedes an earlier, narrower note on the
+   same underlying question.
+
+4. Constraint Collapse: Why a One-Token Answer Isn't the Model's Real
+   Opinion, 2026
+   A forced one-token Y/N answer from a language model agrees with that
+   model's own free-form answer 100 percent of the time on checkable facts
+   and 0 percent of the time on preference questions, driven by a fixed
+   per-token prior rather than conversational momentum.
 
 SELECTED PROJECTS
 

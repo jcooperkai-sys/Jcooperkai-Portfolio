@@ -427,7 +427,10 @@ test("llms.txt files exist and carry the honesty constraints", async () => {
 
   for (const [name, text] of [["llms.txt", brief], ["llms-full.txt", full]]) {
     assert.match(text, /jcooperkai/, `${name}: missing the handle`);
-    assert.match(text, /draft/i, `${name}: must say the papers are drafts`);
+    // "Draft" was accurate while every paper carried a work-in-progress banner; that pipeline is
+    // retired and the papers are now finished, checked documents -- the honesty constraint that
+    // still matters is that they are not peer-reviewed, which this checks for directly instead.
+    assert.match(text, /peer-review/i, `${name}: must address peer-review status`);
     assert.match(text, /reproduce[sd]? known values|reproduces known/i, `${name}: must not imply a new Busy Beaver value`);
     assert.match(text, /negative result/i, `${name}: must flag the negative result`);
     assert.match(text, /Ollama/, `${name}: must state the Ollama requirement`);
@@ -435,10 +438,15 @@ test("llms.txt files exist and carry the honesty constraints", async () => {
     assert.doesNotMatch(text, /13581/, `${name}: references the retired decorative visit baseline`);
   }
 
-  // The full version is the one that carries the measured figures.
-  for (const figure of ["0.5105", "0.0492", "20,736", "76.5", "1600"]) {
+  // The full version is the one that carries the measured figures. "1600" (the old Decodability
+  // separation) was deliberately dropped when that note was retired into Causal-State
+  // Interpretability v1.0 -- the new paper states the same gap as "more than 10,000x" rather than
+  // a precise ratio, since the interventional value sits at the measurement floor and a precise
+  // ratio would be false precision. "10,000" is CSI's real replacement figure.
+  for (const figure of ["0.5105", "0.0492", "20,736", "76.5", "10,000"]) {
     assert.ok(full.includes(figure), `llms-full.txt is missing the figure ${figure}`);
   }
+  assert.ok(!full.includes("1600"), "llms-full.txt should not carry the retired 1600x figure");
   assert.ok(full.length > brief.length * 3, "llms-full.txt should be substantially longer than llms.txt");
 
   // robots.txt should point at them, or nothing will find them.

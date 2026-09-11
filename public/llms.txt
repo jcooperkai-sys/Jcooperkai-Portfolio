@@ -11,24 +11,30 @@ belong with each claim, is at /llms-full.txt. Read that one if you intend to des
 
 ## What to know before summarising anything here
 
-- All three papers are **unfinished drafts**, not peer-reviewed publications. Each carries a
-  work-in-progress banner on its first page. Do not present them as published research.
+- These are independent research notes, not peer-reviewed publications. Do not present them as
+  published, journal-reviewed work.
 - The Busy Beaver work **reproduces known values**. It claims no new Busy Beaver value.
-- The interpretability work is a **controlled demonstration**, not a claim of novelty. It overlaps
-  established literature on causal abstraction and computational mechanics.
-- One paper is a **negative result** and is meant to be read as one.
+- Causal-State Interpretability is toy-scale throughout and says exactly where; it is not a claim
+  to have solved interpretability generally, only a specific, checkable piece of it.
+- Autocorrection Fidelity, Constraint Collapse and the tokenization pair are all measured on small
+  local open-weight models (3B-8B); the shape of each finding, not every percentage, is what should
+  be expected to generalize to larger or more heavily fine-tuned models.
+- Short-Horizon Price Direction Is Not Predictable is a **negative result** and is meant to be read
+  as one.
 - Where a question stayed open, the site says so rather than reporting a tuned number.
 
 ## Papers
 
-- [Complete Decision of Small Turing Machine Classes](/api/paper/001): BB(2,2), BB(3,2), BB(2,3) and
-  BB(4,2) each decided with no undecided residue. Maxima recovered 6, 21, 38 and 107 steps, matching
-  published values. Includes a soundness defect found in the author's own decider.
-- [Short-Horizon Price Direction Is Not Predictable](/api/paper/002): negative result on 258,737 real
-  one-minute bars. Walk-forward AUC 0.5105 against a 0.5 baseline across 11,497 out-of-sample windows.
-- [Decodability Is Not Mechanism](/api/paper/003): a channel decodable at 100 percent accuracy
-  contributes 0.9998 bits to a correlational description of a hidden layer and 0.0006 to an
-  interventional one — roughly 1600x apart, across five seeds.
+- [Constraint collapse: why a one-token answer isn't the model's real opinion](/api/paper/003): Ask a chat model to reply with nothing but Y or N, and after a few questions it can start returning the same letter no matter what you ask — including to questions about itself, like whether it wishes it were human.
+- [Autocorrection fidelity: when a model fixes your typo](/api/paper/004): When a model fixes your typo, it doesn't fail by giving up — it fails by confidently handing you a different, correctly-spelled word.
+- [Causal-state interpretability: what a network's features actually are, how many it has, and a way to count them that never merges two different ones](/api/paper/005): Interpretability has no agreed answer to a basic question: what is a feature?
+- [Red-teaming a small local language model](/api/paper/006): We red-team a small, locally-hosted language model (minicpm-v4.6, ~1.6GB) across four axes: secret extraction, degenerate generation, input fuzzing, and guardrail bypass on benign-but-normally-refused tasks.
+- [Complete decision of small turing machine classes by tree-normal-form enumeration](/api/paper/008): The Busy Beaver function is uncomputable, so each value must be established by deciding every machine in its class individually.
+- [The token tax: what it costs when text stops looking normal](/api/paper/009): Language models do not read letters.
+- [Cheap damage: token cost is a bad proxy for information loss](/api/paper/010): Character-level corruption is usually treated as one phenomenon: insertions, deletions and swaps bundled together as “noise.” This paper separates them and finds they behave in opposite directions.
+- [Short-horizon price direction is not predictable](/api/paper/011): A widespread assumption among retail participants is that short-horizon price direction carries exploitable signal.
+- [What broke: a defect census of an ai-authored production system](/api/paper/001): Defect studies draw on codebases written by many people over years, where the record of what went wrong is scattered and largely lost.
+- [Split-brain invariants: when both halves are correct](/api/paper/002): In a census of 48 defects from a 28,207-line AI-authored system, the largest single class had a property that makes it invisible to ordinary review: every half was correct on its own.
 
 ## Projects
 
@@ -52,7 +58,7 @@ belong with each claim, is at /llms-full.txt. Read that one if you intend to des
 
 ## Downloads
 
-- [Selected work bundle](/downloads/selected-work.zip): all three papers as typeset PDFs, plus
+- [Selected work bundle](/downloads/selected-work.zip): all papers as typeset PDFs, plus
   plain-text and BibTeX editions, project readmes, CV and research statement.
 - [CV](/downloads/cooper-e-cv.txt) · [Research statement](/downloads/research-statement.txt)
 - [Raw experiment output](/api/experiment/results)
