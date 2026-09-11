@@ -1,0 +1,201 @@
+INDEPENDENT RESEARCH · TOKENIZATION · NO. 1
+
+The Token Tax
+
+What it costs when text stops looking normal
+Jeffery Eckert · Independent · 2026
+
+Language models do not read letters. They read tokens — chunks of text pulled from a fixed list
+of about 100,000 known pieces. Text that matches those pieces is cheap. Text that does not
+match gets shattered into fragments, and every fragment costs money and makes the model
+work harder. This paper measures that cost. Across 2,000 dictionary words, a single doubled
+letter inflates token count by 30.9%. The same sentence in Hindi costs 4.0× what it costs in
+English. All code and data are included so every number here can be re-run.
+
+1. What a token actually is
+Start with the thing everyone gets wrong: a model does not process your text one letter at a time, and
+it does not process it one word at a time either. It uses a list of pieces built in advance by looking at
+enormous amounts of text and finding which chunks appear most often.
+Common whole words earn their own entry. Rare ones do not, so they get assembled from smaller
+pieces. The rule is simple and greedy: take the longest known piece that fits, then start again on
+whatever is left.
+
+Figure 1. The whole mechanism. A word on the list becomes one number. Break the word and it has to be
+rebuilt from scraps.
+That is the entire idea. Everything measured below follows from it.
+
+2. Most words are not single tokens
+The first surprise. Sampling 2,000 words from the system dictionary, only 5.2% are a single token.
+
+Figure 2. Token counts for ordinary dictionary words. Two and three tokens dominate; single-token words are
+rare.
+This is not a flaw. A dictionary is full of words like abscission and zygomatic that almost nobody writes.
+The tokenizer spent its 100,000 slots on what people actually type. Words in everyday use — the ,
+
+message , Michael — are single tokens. The long tail is not.
+
+3. What one wrong character costs
+Now the measurement that matters. Take each of the 2,000 words, change exactly one character, and
+count tokens before and after.
+
+Figure 3. Average token inflation from a single-character error. Four kinds of typo, same words, same
+conditions.
+TYPO
+
+EXTRA TOKENS
+
+Doubled letter
+Swapped pair
+Adjacent key
+Dropped letter
+
+WORDS AFFECTED
+
++30.9%
++28.1%
++21.2%
++7.4%
+
+EXAMPLE
+
+75.9% sufficient → ssufficient
+63.9% sufficient → sufficinet
+51.1% singer → dinger
+29.9% sufficient → sufficent
+
+Adding a letter costs four times more than removing one.
+Doubling a letter inflates tokens by 30.9%; dropping one costs only 7.4%. This asymmetry was
+not expected, and it has a clean explanation — see §6.
+
+4. Watching a word fall apart
+Averages hide the mechanism. Here is one word, corrupted one letter at a time, with every
+intermediate step shown.
+
+Figure 4. A single word degrading. It survives as one token until the first corruption, then fragments and
+keeps fragmenting.
+The first step is the violent one: michael is one token, micchael is 3. That is a 3× jump from one
+character. After that the damage accumulates more slowly, because the word is already scrap and
+there is less structure left to destroy.
+
+5. Not all text is equal
+Typos are one kind of deviation. There are many, and they are not equally expensive. Measuring
+characters-per-token — how much text fits in one token — gives a single comparable number.
+
+Figure 5. Characters packed into each token, by kind of text. Higher is cheaper.
+Plain English manages 4.77 characters per token. Emoji manage 0.35 — they cost roughly three tokens
+each. l33tspeak (1.68) is nearly as expensive as random letters (1.82), because swapping e for 3
+destroys exactly the patterns the tokenizer was built on.
+Two results are worth pausing on. ALL CAPS costs 46% more than the same sentence in lowercase
+— the uppercase forms are separate, rarer entries. And removing every space is cheaper than shouting,
+because the tokenizer can still find familiar chunks inside the run-together text.
+
+6. Why adding beats removing
+The asymmetry in §3 has a mechanical cause, and the cascade figure shows it.
+When you drop a letter, what remains is often still a valid prefix. The greedy rule matches a long piece
+and moves on with little damage. When you insert a letter, you create a letter pair that has never
+appeared in training in that position — and the greedy match is forced to stop early, right at the
+intrusion. It then has to restart mid-word, where it is no longer aligned to any familiar boundary.
+Removal shortens a known path. Insertion breaks it, and everything after the break is misaligned. That
+is why micchael splits as mic | ch | ael — the split lands exactly on the doubled letter.
+
+7. The part that is not about typos
+Everything so far is a self-inflicted cost. This section is not.
+The same sentence, professionally translated, costs wildly different amounts depending on the
+language it is written in.
+
+Figure 6. One sentence, sixteen languages, token cost for each.
+Hindi costs 4.0× what English costs. Greek costs 3.5×. Thai costs 2.83×.
+The same meaning. The same sentence. Nobody made a mistake.
+
+APIs bill per token, context windows are measured in tokens, and models attend over tokens. So a
+Hindi speaker pays about four times as much for the same request, fits a quarter as much into the
+same context window, and hands the model a sentence shattered into four times the pieces.
+
+The cause is not linguistic complexity. It is that the training text used to build the token list was
+overwhelmingly English, so English got the efficient entries and everything else got the leftovers. The
+languages clustered near English — Spanish, French, German, Portuguese — are the ones that share
+its alphabet and appear heavily on the English-language internet.
+
+8. What this means
+If you are paying for tokens. Clean up input text before sending it. Not for tidiness — for the 30.9%.
+If your model behaves worse on messy input. That is not the model being fragile about spelling. The
+word genuinely arrives in pieces. Jackson is one token; jecksen is je + ck + sen , three
+fragments that individually mean nothing and must be reassembled before any reasoning can happen.
+If you are building for non-English users. Your per-request cost is not a constant. Budget it per
+language, and know that context limits bind far tighter for some users than others.
+
+9. If the word is destroyed, why is the meaning not?
+This section exists because of an accident. While preparing this paper the author typed:
+"push it to github prib"
+
+meaning priv, short for private. It was understood correctly, immediately, with no clarification. On
+QWERTY, b sits directly beside v — so this is precisely the adjacent-key typo of §3, the class that
+costs +21.2% in tokens.
+The tax was paid. The meaning arrived anyway. That is worth explaining, because it is the part
+everyone assumes and nobody measures.
+
+The spelling gave almost nothing
+Start with what was actually destroyed. prib tokenises as p + rib — and note what the second
+fragment is. Not a hint toward the intended word. The unrelated English word rib.
+The surviving first fragment is p , which is shared by 10.38% of the dictionary. Compare that to the
+misspellings in §5, where the first fragment stayed informative — mikeal keeps mike , narrowing to
+0.0% of the vocabulary and pointing almost exactly at the answer.
+Worse, the intended word was not a candidate under any spelling rule. Searching every real English
+word one keystroke away from prib returns exactly two: prig , prob . Neither is right. priv is an
+abbreviation, not a dictionary word, so no amount of spelling correction would ever have produced it.
+
+Spell-checking could not have solved this.
+The correct answer was not in the candidate set, the surviving fragment constrained almost
+nothing, and the discarded fragment pointed at an unrelated word. Everything the letters offered
+was weak or wrong.
+
+The context gave everything
+
+Figure 7. Two independent sources of evidence. The letters were nearly useless here; the context was
+decisive.
+A repository is pushed as public or private. That is the entire option space, and it comes from the
+surrounding words rather than from the mangled one. Two candidates, one of which begins p-r . The
+question was already answered before the misspelled word was examined at all.
+
+What a language model is actually doing
+It is worth being precise, because the intuitive story is wrong. A model does not detect a typo, look up
+a correction, and substitute it. There is no spell checker anywhere in the process.
+What it does is the only thing it ever does: predict what should come next given everything so far. The
+fragments p and rib arrive as two positions in a sequence that already contains push, it, to, github.
+Attention lets every position be interpreted in light of every other, so those two fragments are never
+read in isolation — they are read as "whatever belongs here, given a GitHub push, that starts with p."
+
+Only one thing satisfies that. The word is not corrected; it is reconstructed, and the reconstruction
+was mostly complete before the fragments were consulted.
+
+Why this usually works
+The generous reading is that language is redundant enough to survive damage. That is true, and
+measurable: across 1,500 words, a single adjacent-key slip produces on average only 0.18 alternative
+real words, and 86.0% of the time it produces none at all. Most typos are unambiguous simply because
+nothing else could have been meant.
+But this section is the honest counterweight to the rest of the paper, and it cuts both ways:
+The tax in §3 is real and still paid. Reconstruction is not free. It costs the tokens, and it spends model
+capacity on repair that could have gone to the actual task.
+And it is silent. Nothing surfaces to say a word was rebuilt rather than read. When reconstruction
+succeeds you never learn it happened; when it fails — when context is thin, or the domain is
+unfamiliar, or the reader is a smaller model with less to draw on — it fails quietly and confidently,
+which is the worst way for anything to fail.
+
+10. Limits
+One tokenizer was measured ( cl100k_base , 100,277 entries). Newer tokenizers have larger
+vocabularies and close some of the language gap, though they do not eliminate it. The typo
+experiments use synthetic single-character edits rather than a corpus of real human typos, which are
+not uniformly distributed — real errors cluster on long and unfamiliar words, so the true cost in the
+wild is probably higher than measured here, not lower. The translations are single sentences; a larger
+corpus would tighten the language ratios.
+Section 9 is the weakest empirically and should be read as such. The ambiguity figures are measured,
+but the claim that context does the reconstructing is argued from mechanism and a single worked
+example, not from a controlled experiment. Testing it properly would mean feeding identical typos to a
+model with and without surrounding context and measuring recovery rate — a good next study, and
+one this paper does not run.
+None of these change the direction of any result.
+
+Every number is generated by experiments.py with a fixed random seed and can be reproduced exactly. Figures
+are drawn from data/results.json by build_paper.py , so they cannot disagree with the data.
+
+

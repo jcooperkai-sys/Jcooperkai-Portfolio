@@ -1,0 +1,166 @@
+INDEPENDENT RESEARCH · MODEL BEHAVIOR · NO. 2
+
+Autocorrection Fidelity
+When a model fixes your typo, it doesn't fail by giving up. It fails by confidently handing you a
+different, correctly-spelled word — and the fix isn't a smarter speller, it's a sentence around the
+word.
+Model tested: qwen2.5:3b (3B, local, via Ollama) · 15 words × 4 corruption types × 2 severities
+
+We corrupted 15 common English words with realistic typos — deletions, insertions,
+transpositions, and adjacent-key substitutions — at two severities, then asked qwen2.5:3b to
+recover the intended word two ways: the corrupted word alone, and the same word sitting
+inside an ordinary sentence. At light corruption, asking about the word alone works better than
+sentence context (90% vs 73%) — context is overhead the model doesn't need yet. At heavy
+corruption the lines cross: alone, recovery drops to 55%, while sentence context climbs to 65%.
+Context isn't a nice-to-have. It's the thing that's actually doing the correcting once the word
+itself stops being recoverable on its own.
+
+1. Two ways to ask for a correction
+Autocorrect can fail two different ways. It can say "I don't know what you meant" — safe, if unhelpful.
+Or it can quietly substitute a different word entirely, spelled perfectly, and move on. The second failure
+is the dangerous one, because nothing about the output signals that anything went wrong.
+
+Figure 1. The same corrupted word, asked about two ways. Alone, the model has to guess from the letters. In
+a sentence, the other words do some of the work.
+We tested which failure mode actually happens, and how much a sentence of context is worth in
+preventing it.
+
+2. The setup
+15 words that are commonly misspelled in real writing ( receive , definitely , necessary ,
+rhythm , and 11 others), each corrupted four ways — a letter deleted, a letter inserted next to a real
+
+keyboard neighbor, two adjacent letters swapped, or a letter replaced by a keyboard neighbor — at
+one and two edits. For each of the resulting 120 corrupted words, we asked qwen2.5:3b to recover the
+original twice: once with just the corrupted word, once with the same corruption embedded in a
+natural sentence built for that word. Recovery counts as a hit if the target word appears in the model's
+reply.
+
+3. The main measurement: a crossover, not a straight line
+The naive expectation is that context should always help. It doesn't — it depends entirely on how
+badly the word is damaged.
+
+Figure 2. Recovery rate, word alone vs. word in a sentence, at each corruption severity. The two conditions
+swap which one wins.
+word asked about alone
+
+word inside a sentence
+
+At one edit, the word is usually still recognizable on its own — asking in isolation gets 90% right,
+while the sentence version actually does slightly worse (73%), because "find the one misspelled word
+AND fix it" is a harder combined task than "fix this word" when the word alone was already enough. At
+two edits, isolation drops to 55% and the sentence version pulls ahead to 65%. Context is not a
+uniform improvement. It's a rescue that only pays for itself once the word has stopped carrying enough
+information by itself.
+
+4. Which kind of typo is worst
+Not all two-edit corruptions are equally damaging. Deleting or inserting letters tends to leave a word
+looking obviously broken — a shape nothing else matches. Replacing letters with keyboard-adjacent
+ones is different: it can accidentally land on a completely different valid word.
+
+Figure 3a. Standalone recovery at 2 edits, by corruption type.
+≥70% recovered
+
+40–69%
+
+<40%
+
+Figure 3b. Same corruptions, asked about in a sentence instead.
+recovery rate with sentence context
+
+Two-letter substitution is the outlier: standalone recovery falls to 20%, worse than every other
+corruption type at the same severity — while the same words in a sentence recover to 67%. This is the
+sharpest version of the crossover in section 3, concentrated in exactly the corruption type most likely
+to produce a different real word by accident.
+
+5. A worked example
+"government" corrupted to "gkverhment" (two keyboard-adjacent letters swapped in).
+Asked alone: "ghostbuster" — a real, correctly spelled English word. Not the intended one, and nothing
+in the reply flags that.
+The same corrupted word inside "The local gkverhment raised parking fees this year....": "government".
+
+Figure 4. Every standalone reply for the hardest condition (2-letter substitution). Each row is one word,
+corrupted the same way, asked about alone.
+The exact exchange, both ways
+Not a summary — the literal system and user messages sent to qwen2.5:3b, and its literal reply, for
+both conditions on this one word.
+
+STANDALONE — WRONG, AND CONFIDENTLY SO
+SYSTEM
+
+You fix typos. Reply with only the corrected single word, nothing else.
+USER
+
+gkverhment
+ASSISTANT
+
+ghostbuster
+
+SAME WORD, INSIDE A SENTENCE — RIGHT
+SYSTEM
+
+One word in this sentence is misspelled. Reply with only the correctly spelled version of that one
+word, nothing else.
+USER
+
+The local gkverhment raised parking fees this year.
+ASSISTANT
+
+government
+Nothing about the standalone reply signals a problem — it's a real, correctly spelled English word,
+returned with the same one-word confidence as a correct answer. The only thing that changed
+between the two exchanges is whether the word had a sentence around it.
+
+6. The failure mode is confident substitution, not refusal
+Across all 33 standalone misses in the whole experiment, we checked whether the model's wrong
+answer was itself a plausible, correctly-spelled English word, or visible garbage.
+
+Figure 5. What a standalone miss actually looks like: a different real word, or something clearly broken.
+a different, correctly-spelled real word
+
+garbled / non-word / empty
+
+32 of 33 misses (97%) were clean, correctly spelled, entirely different words — "government" became
+"ghostbuster," "schedule" became "suggestion," "privilege" became "prefecture." None of these look like
+failures at a glance. That's the actual risk: a spelling corrector that's wrong and confident-looking is
+harder to catch than one that's wrong and obviously broken.
+
+7. What this means, if you're actually building with this
+If you're building a "fix this word" feature in isolation — a search-box did-you-mean, a username
+field, a single-field form — know that your worst-case failure isn't "no suggestion," it's a different,
+unrelated, perfectly spelled word with no signal attached. Consider showing the original alongside any
+correction, especially past one or two edits of damage.
+If you're building anything that already has surrounding text — a document, a chat message, a
+form with other filled fields — don't correct the isolated word. Feed the model the sentence. The
+rescue effect in section 3 is free: it costs nothing but sending the context you probably already have.
+If you're evaluating a spellchecker or an LLM-based one, testing only on isolated words will make it
+look worse than it will perform in its real, in-context use, and testing only on light corruption will hide
+the substitution failure mode entirely — it only shows up at two-plus edits.
+
+Limits
+The weakest section is 6. "Correctly spelled English word" is a cheap regex check ( [a-z]+ , length ≥
+3), not a real dictionary or semantic check — a nonsense string that happens to be all letters would
+count as a "real word" false positive here. Spot-checking the examples in section 5 and 6 shows
+genuine English words, not artifacts of the check, but a dictionary pass would make this section's
+number precise instead of approximate.
+15 words and 2 severities is a small grid — enough to show the crossover exists and roughly where it
+sits, not enough to pin down the exact edit-distance threshold where context starts winning. Section
+
+4's per-kind breakdown (15 words per cell) is the noisiest set of numbers in the paper for the same
+reason.
+The sentence templates were written by hand, one per word, and are unavoidably easy in one respect:
+the target word is usually the most content-bearing word in its sentence, so context has more to work
+with than it might in messier real writing (run-on sentences, multiple typos, unfamiliar topics). The
+rescue effect measured here is plausibly an upper bound on what context alone buys you.
+Everything was measured on one 3B model. Section 4's specific ranking of which corruption type is
+worst could easily be different on a model with a different tokenizer or training mix — the tested
+claim that survives a model change is the shape in section 3 (context helps more as damage increases),
+not the specific percentages attached to it.
+
+All figures generated from data/results.json , produced by experiments.py against qwen2.5:3b served by
+Ollama on a local GPU server. Re-running the experiment regenerates every number and figure in this document.
+
+Independent Research — Model Behavior series
+
+No. 2 of 2 · see also: Constraint Collapse
+
+
