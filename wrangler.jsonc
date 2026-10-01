@@ -59,6 +59,15 @@
       "name": "ASSET_LIMIT",
       "namespace_id": "1003",
       "simple": { "limit": 120, "period": 60 }
+    },
+    {
+      // Image generation runs on Cooper's own single 6GB-VRAM GPU (trump). This is the second
+      // layer of defense on top of that box's own tunnel-level rate limit -- this one is per
+      // client key rather than per edge colocation, so it actually throttles one abusive visitor
+      // instead of everyone sharing a colo.
+      "name": "IMAGEGEN_LIMIT",
+      "namespace_id": "1004",
+      "simple": { "limit": 6, "period": 60 }
     }
   ]
   // The visit counter's store. Created with `wrangler kv namespace create VISITS`.

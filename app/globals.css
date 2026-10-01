@@ -1272,6 +1272,88 @@ blockquote {
   font: 9px "Courier New", monospace;
 }
 
+.buddy-mode-toggle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin: 0 0 10px;
+}
+
+.buddy-mode-toggle button {
+  padding: 6px 14px;
+  cursor: pointer;
+  color: #000064;
+  background: #ccd6ff;
+  border: 3px outset #fff;
+  font: 900 10px/1.2 Arial, sans-serif;
+  letter-spacing: 0.04em;
+}
+
+.buddy-mode-toggle button[aria-pressed="true"] {
+  color: #000;
+  background: #ffd400;
+  border-style: inset;
+}
+
+.buddy-mode-toggle small {
+  flex-basis: 100%;
+  color: #00eaff;
+  font: 9px "Courier New", monospace;
+}
+
+.buddy-mode-toggle small a {
+  color: #fff700;
+}
+
+.buddy-image-gen {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.buddy-image-gen img {
+  width: 100%;
+  max-width: 320px;
+  border: 3px solid currentColor;
+  image-rendering: auto;
+}
+
+/* Still denoising: a faint pulse + slight blur so an in-progress preview visibly
+   reads as "not final yet" rather than looking like a finished, low-quality image. */
+.buddy-image-denoising {
+  filter: blur(0.4px) saturate(1.05);
+  animation: buddy-denoise-pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes buddy-denoise-pulse {
+  0%, 100% { opacity: 0.82; }
+  50% { opacity: 1; }
+}
+
+.buddy-image-final {
+  animation: none;
+  filter: none;
+}
+
+.buddy-image-placeholder {
+  width: 100%;
+  max-width: 320px;
+  aspect-ratio: 1 / 1;
+  background: repeating-linear-gradient(
+    45deg,
+    #001b08 0 10px,
+    #002d10 10px 20px
+  );
+  border: 3px dashed #00ff4c;
+}
+
+.buddy-image-progress {
+  color: #ffd400;
+  font: 9px "Courier New", monospace;
+  letter-spacing: 0.04em;
+}
+
 .buddy-form {
   display: grid;
   gap: 6px;

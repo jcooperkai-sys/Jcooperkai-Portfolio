@@ -32,6 +32,8 @@ interface Env {
   VISITS_LIMIT?: RateLimiter;
   /** 120 requests per minute per client, for the buffered read-back routes. */
   ASSET_LIMIT?: RateLimiter;
+  /** 6 requests per minute per client -- image generation is real GPU time on one 6GB card. */
+  IMAGEGEN_LIMIT?: RateLimiter;
 }
 
 /**
@@ -106,7 +108,7 @@ const MAX_URL_LENGTH = 4_096;
 // finding. Left out on purpose so an old bookmark 404s instead of serving a paper the site no
 // longer lists.
 const PAPER_NUMBERS = new Set([
-  "001", "002", "003", "004", "005", "006", "008", "009", "010", "011",
+  "001", "002", "003", "004", "005", "006", "008", "009", "010", "011", "012",
 ]);
 
 const READABLE_TEXT: Record<string, string> = {
@@ -523,6 +525,39 @@ async function hermesReply(message: string, token: string): Promise<string | nul
   }
 }
 
+/**
+ * Ducky Diffusion -- a from-scratch latent diffusion model (real U-Net /
+ * VAE / CLIP text encoder we instantiate ourselves, pretrained weights
+ * loaded in from Hugging Face), running on Cooper's own GPU (trump) and
+ * reached the same way Hermes is: through that box's own public tunnel
+ * hostname rather than exposing trump's LAN IP directly. Proxied
+ * server-to-server so the browser never needs CORS and the tunnel's own
+ * rate limit + this Worker's IMAGEGEN_LIMIT both apply.
+ */
+const IMAGEGEN_ORIGIN = "https://images.jcooperkai.com";
+
+async function imagegenStart(prompt: string): Promise<Response> {
+  const upstream = await fetch(
+    `${IMAGEGEN_ORIGIN}/generate/start?prompt=${encodeURIComponent(prompt)}`,
+    { signal: AbortSignal.timeout(15_000) },
+  );
+  return new Response(await upstream.text(), {
+    status: upstream.status,
+    headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" },
+  });
+}
+
+async function imagegenProgress(jobId: string): Promise<Response> {
+  const upstream = await fetch(
+    `${IMAGEGEN_ORIGIN}/generate/progress/${encodeURIComponent(jobId)}`,
+    { signal: AbortSignal.timeout(15_000) },
+  );
+  return new Response(await upstream.text(), {
+    status: upstream.status,
+    headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" },
+  });
+}
+
 function textResponse(
   url: URL,
   body: string,
@@ -591,6 +626,40 @@ const worker = {
         }),
         url,
       );
+    }
+
+    // Buddy's "generate an image" option. Both are GET, proxied to trump's tunnel hostname.
+    if (decodedPathname === "/api/imagegen/start" && request.method === "GET") {
+      if (await overLimit(env?.IMAGEGEN_LIMIT, request, "imagegen_start")) {
+        return textResponse(url, "Too many requests. Try again shortly.", 429, {
+          "Retry-After": "60",
+        });
+      }
+      const prompt = url.searchParams.get("prompt")?.slice(0, 500) ?? "";
+      if (!prompt.trim()) {
+        return textResponse(url, "Missing prompt.", 400);
+      }
+      try {
+        return applySecurityHeaders(await imagegenStart(prompt), url);
+      } catch {
+        return textResponse(url, "Image generator is unavailable right now.", 502);
+      }
+    }
+    if (decodedPathname === "/api/imagegen/progress" && request.method === "GET") {
+      if (await overLimit(env?.IMAGEGEN_LIMIT, request, "imagegen_progress")) {
+        return textResponse(url, "Too many requests. Try again shortly.", 429, {
+          "Retry-After": "60",
+        });
+      }
+      const jobId = url.searchParams.get("job_id") ?? "";
+      if (!/^[a-f0-9]{32}$/.test(jobId)) {
+        return textResponse(url, "Missing or invalid job_id.", 400);
+      }
+      try {
+        return applySecurityHeaders(await imagegenProgress(jobId), url);
+      } catch {
+        return textResponse(url, "Image generator is unavailable right now.", 502);
+      }
     }
 
     if (request.method !== "GET" && request.method !== "HEAD") {

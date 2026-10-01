@@ -14,9 +14,22 @@ import {
 
 const papers = [
   {
-    number: "003",
+    number: "012",
     year: "2026",
     isNew: true,
+    title: "DUCKY DIFFUSION: A FROM-SCRATCH LATENT DIFFUSION MODEL ON ONE CONSUMER GPU",
+    venue: "INDEPENDENT RESEARCH — GENERATIVE MODELS NO. 1",
+    authors: "COOPER E.",
+    abstract:
+      "We built an image generator the honest way: instantiate the real architecture ourselves (a U-Net, a VAE, a CLIP text encoder), then load a pretrained checkpoint's weights into it from Hugging Face rather than training from zero. The interesting part was the failures. fp16 silently produced NaN through the VAE decode — an all-black image with no error. Trying to improve the model with reinforcement learning (DDPO), we caught a bug that would have made the entire training loop a no-op: using the scheduler's own sampling step made the \"sample\" and the \"mean\" the same tensor, so the loss's gradient was exactly zero everywhere — a silent failure indistinguishable from a real, unsuccessful run. After fixing that and a second bug (a single-sample baseline dividing by an undefined standard deviation), 60 real policy-gradient steps ran cleanly, and reward still didn't move: 0.314 vs 0.318 between the two halves of training, a gap smaller than either half's own noise. Along the way, moving one model off the GPU made training 31x faster. Live: ask Buddy on this site to generate an image.",
+    view: "/api/paper/012",
+    paper: "/downloads/paper-012.txt",
+    citation: "/downloads/paper-012.bib",
+  },
+  {
+    number: "003",
+    year: "2026",
+    isNew: false,
     title: "CONSTRAINT COLLAPSE: WHY A ONE-TOKEN ANSWER ISN'T THE MODEL'S REAL OPINION",
     venue: "INDEPENDENT RESEARCH NOTE — MODEL BEHAVIOR NO. 1",
     authors: "COOPER E.",
@@ -282,6 +295,14 @@ type BuddyMessage = {
   id: number;
   speaker: "buddy" | "visitor";
   text: string;
+  /** Present while an image-gen job is running or finished on this message. */
+  image?: {
+    dataUrl: string | null;
+    step: number;
+    total: number;
+    done: boolean;
+    error?: string;
+  };
 };
 
 type BuddyAttachment = {
@@ -318,7 +339,7 @@ function getBuddyReply(message: string, attachment: BuddyAttachment | null) {
   }
 
   if (/(paper|research|publication|arxiv)/.test(question)) {
-    return "10 notes are up, newest first: Constraint Collapse (why a forced Y/N answer isn't the model's real opinion), Autocorrection Fidelity (a model's typo-fix fails by confidently handing you a different real word), Causal-State Interpretability v1.0 (a network feature as a causal state, not a direction, plus a method that finds the exact number of them 15 of 15 times), a red-team of a small local LLM, a Busy Beaver pipeline that completely decides four classical classes, two notes on tokenization cost, and a negative result showing short-horizon price direction is unpredictable across 258,737 real minute bars (AUC 0.5105). Open any abstract, view the full text, or download the citation.";
+    return "11 notes are up, newest first: Ducky Diffusion (a from-scratch latent diffusion model on one 6GB GPU — a silent NaN bug, a zero-gradient RL bug caught before it wasted a training run, and an honest negative result trying to improve it with reinforcement learning), Constraint Collapse (why a forced Y/N answer isn't the model's real opinion), Autocorrection Fidelity (a model's typo-fix fails by confidently handing you a different real word), Causal-State Interpretability v1.0 (a network feature as a causal state, not a direction, plus a method that finds the exact number of them 15 of 15 times), a red-team of a small local LLM, a Busy Beaver pipeline that completely decides four classical classes, two notes on tokenization cost, and a negative result showing short-horizon price direction is unpredictable across 258,737 real minute bars (AUC 0.5105). Open any abstract, view the full text, or download the citation — or ask me to generate an image with Ducky Diffusion right here.";
   }
   if (/(project|code|github|build)/.test(question)) {
     return "HisokaOS is a 32-bit x86 operating system that boots on its own kernel with 27 bundled applications. The Lazy Driver is an autonomous-driving perception stack over dashcam footage. Bill and Oneiro are local-first systems: a conversational runtime with a from-scratch core, and a continuously learning pixel-art generator. Every project has a README download and a public repository.";
@@ -460,6 +481,7 @@ export default function Home() {
   const [buddyNotice, setBuddyNotice] = useState(
     "FILES STAY LOCAL TO THIS BROWSER",
   );
+  const [imageGenMode, setImageGenMode] = useState(false);
   const buddyIdRef = useRef(2);
   /** Synchronous in-flight guard. See the note in sendBuddyMessage on why state is not enough. */
   const buddySendingRef = useRef(false);
@@ -560,16 +582,112 @@ export default function Home() {
     }
   };
 
+  /**
+   * Buddy's "generate an image" option: Ducky Diffusion, Cooper's own
+   * from-scratch latent diffusion model, running on his GPU. Starts a job
+   * through the Worker's proxy, then polls progress once a second and
+   * paints each intermediate preview into the same message bubble, so the
+   * image visibly denoises in the chat instead of appearing all at once
+   * after a long silent wait.
+   */
+  const sendImageGenMessage = async (rawPrompt: string) => {
+    const prompt = rawPrompt.trim();
+    if (!prompt || buddySendingRef.current) return;
+    buddySendingRef.current = true;
+
+    const visitorId = buddyIdRef.current;
+    buddyIdRef.current += 2;
+    setBuddyMessages((current) => [
+      ...current,
+      { id: visitorId, speaker: "visitor", text: `🎨 ${prompt}` },
+      {
+        id: visitorId + 1,
+        speaker: "buddy",
+        text: "Generating with Ducky Diffusion (Cooper's from-scratch latent diffusion model)…",
+        image: { dataUrl: null, step: 0, total: 1, done: false },
+      },
+    ]);
+    setBuddyInput("");
+    setBuddyThinking(true);
+
+    const updateImage = (patch: Partial<NonNullable<BuddyMessage["image"]>>) =>
+      setBuddyMessages((current) =>
+        current.map((m) =>
+          m.id === visitorId + 1 && m.image ? { ...m, image: { ...m.image, ...patch } } : m,
+        ),
+      );
+    const settleText = (text: string) =>
+      setBuddyMessages((current) => current.map((m) => (m.id === visitorId + 1 ? { ...m, text } : m)));
+
+    try {
+      const startRes = await fetch(`/api/imagegen/start?prompt=${encodeURIComponent(prompt)}`);
+      if (startRes.status === 429) {
+        settleText("Image generation is busy right now — try again in a minute.");
+        updateImage({ done: true, error: "rate limited" });
+        return;
+      }
+      const startData = (await startRes.json()) as { job_id?: string };
+      if (!startData.job_id) {
+        settleText("The image generator didn't start. Try again shortly.");
+        updateImage({ done: true, error: "no job_id" });
+        return;
+      }
+
+      // Poll until done, or give up after ~2 minutes so a stuck job doesn't spin forever.
+      const deadline = Date.now() + 120_000;
+      while (Date.now() < deadline) {
+        await new Promise((resolve) => window.setTimeout(resolve, 1_000));
+        const progRes = await fetch(
+          `/api/imagegen/progress?job_id=${encodeURIComponent(startData.job_id)}`,
+        );
+        if (!progRes.ok) continue;
+        const prog = (await progRes.json()) as {
+          step?: number; total?: number; preview_b64?: string | null; done?: boolean; error?: string;
+        };
+        updateImage({
+          step: prog.step ?? 0,
+          total: prog.total ?? 1,
+          dataUrl: prog.preview_b64 ? `data:image/png;base64,${prog.preview_b64}` : undefined,
+        });
+        if (prog.done) {
+          settleText(
+            prog.error
+              ? `Something went wrong generating that: ${prog.error}`
+              : `Done — "${prompt}", generated live by Ducky Diffusion.`,
+          );
+          updateImage({ done: true, error: prog.error });
+          return;
+        }
+      }
+      settleText("That's taking longer than expected — the box may be busy. Try again shortly.");
+      updateImage({ done: true, error: "timed out" });
+    } catch {
+      settleText("Couldn't reach the image generator. Try again shortly.");
+      updateImage({ done: true, error: "network error" });
+    } finally {
+      setBuddyThinking(false);
+      buddySendingRef.current = false;
+    }
+  };
+
   const handleBuddySubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    void sendBuddyMessage(buddyInput);
+    if (imageGenMode) {
+      void sendImageGenMessage(buddyInput);
+    } else {
+      void sendBuddyMessage(buddyInput);
+    }
   };
 
   // A textarea swallows Enter, so the form never submitted. Enter sends; Shift+Enter newlines.
   const handleBuddyKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
-      void sendBuddyMessage(buddyInput);
+      if (imageGenMode) {
+        void sendImageGenMessage(buddyInput);
+      } else {
+        void sendBuddyMessage(buddyInput);
+      }
     }
   };
 
@@ -706,6 +824,14 @@ export default function Home() {
                 WEBBIFY.BUILD
               </a>{" "}
               — AI-BUILT SMALL BUSINESS WEBSITES &nbsp; ::&nbsp;
+              <a href="#buddy">
+                CLICK HERE TO TRY OUT COOPER&apos;S NEW FROM SCRATCH LATENT DIFFUSION MODEL
+              </a>
+              &nbsp; ::&nbsp;
+              <a href="/api/paper/012" rel="noopener noreferrer" target="_blank">
+                READ THE PAPER HERE
+              </a>
+              &nbsp; ::&nbsp;
               <a href="#papers">CLICK HERE TO CHECK OUT MY NEW RESEARCH PAPERS</a>
               &nbsp; ::&nbsp;
             </span>
@@ -715,6 +841,14 @@ export default function Home() {
                 WEBBIFY.BUILD
               </a>{" "}
               — AI-BUILT SMALL BUSINESS WEBSITES &nbsp; ::&nbsp;
+              <a href="#buddy" tabIndex={-1}>
+                CLICK HERE TO TRY OUT COOPER&apos;S NEW FROM SCRATCH LATENT DIFFUSION MODEL
+              </a>
+              &nbsp; ::&nbsp;
+              <a href="/api/paper/012" rel="noopener noreferrer" target="_blank" tabIndex={-1}>
+                READ THE PAPER HERE
+              </a>
+              &nbsp; ::&nbsp;
               <a href="#papers" tabIndex={-1}>CLICK HERE TO CHECK OUT MY NEW RESEARCH PAPERS</a>
               &nbsp; ::&nbsp;
             </span>
@@ -1201,6 +1335,30 @@ export default function Home() {
                   ))}
                 </div>
 
+                <div className="buddy-mode-toggle" role="group" aria-label="Buddy mode">
+                  <button
+                    aria-pressed={!imageGenMode}
+                    onClick={() => setImageGenMode(false)}
+                    type="button"
+                  >
+                    💬 CHAT
+                  </button>
+                  <button
+                    aria-pressed={imageGenMode}
+                    onClick={() => setImageGenMode(true)}
+                    type="button"
+                  >
+                    🎨 GENERATE IMAGE
+                  </button>
+                  {imageGenMode ? (
+                    <small>
+                      Live from Ducky Diffusion — Cooper&apos;s from-scratch latent diffusion
+                      model, running on his own GPU.{" "}
+                      <a href="#papers">Read the paper</a>.
+                    </small>
+                  ) : null}
+                </div>
+
                 <div
                   aria-live="polite"
                   aria-relevant="additions"
@@ -1217,6 +1375,30 @@ export default function Home() {
                         {message.speaker === "buddy" ? "BUDDY>" : "VISITOR>"}
                       </strong>
                       <p>{message.text}</p>
+                      {message.image ? (
+                        <div className="buddy-image-gen" aria-live="polite">
+                          {message.image.dataUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element -- a live-generated
+                            // data: URL, not a static asset next/image can optimize.
+                            <img
+                              alt="Live generation from Ducky Diffusion"
+                              className={
+                                message.image.done
+                                  ? "buddy-image-final"
+                                  : "buddy-image-denoising"
+                              }
+                              src={message.image.dataUrl}
+                            />
+                          ) : (
+                            <div className="buddy-image-placeholder" aria-hidden="true" />
+                          )}
+                          {!message.image.done ? (
+                            <small className="buddy-image-progress">
+                              denoising… step {message.image.step}/{message.image.total}
+                            </small>
+                          ) : null}
+                        </div>
+                      ) : null}
                     </div>
                   ))}
                 </div>
@@ -1235,10 +1417,13 @@ export default function Home() {
                 ) : null}
 
                 <form className="buddy-form" onSubmit={handleBuddySubmit}>
-                  <label htmlFor="buddy-message">MESSAGE TO BUDDY</label>
+                  <label htmlFor="buddy-message">
+                    {imageGenMode ? "DESCRIBE AN IMAGE" : "MESSAGE TO BUDDY"}
+                  </label>
                   <small id="buddy-message-help">
-                    Ask about AI research, agents, papers, projects, or an
-                    attached file.
+                    {imageGenMode
+                      ? "Describe anything — Ducky Diffusion generates it live, right here, in this chat."
+                      : "Ask about AI research, agents, papers, projects, or an attached file."}
                   </small>
                   <textarea
                     aria-describedby="buddy-message-help"
@@ -1246,6 +1431,7 @@ export default function Home() {
                     maxLength={600}
                     onChange={(event) => setBuddyInput(event.target.value)}
                     onKeyDown={handleBuddyKeyDown}
+                    placeholder={imageGenMode ? "a lighthouse at sunset, oil painting…" : undefined}
                     rows={3}
                     value={buddyInput}
                   />
