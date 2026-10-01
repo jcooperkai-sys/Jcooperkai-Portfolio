@@ -1,36 +1,35 @@
-COOPER E.'S AI LAB — RESPONSIBLE DISCLOSURE POLICY
-===================================================
+RESPONSIBLE DISCLOSURE, jcooperkai.com
+======================================
 
-Last updated: July 28, 2026
+Last updated: September 30, 2026
 
 SCOPE
 
-This policy covers the public website and files served from jcooperkai.com.
-Third-party services linked from the portfolio are outside its scope.
+This policy covers the website and files served from jcooperkai.com and
+www.jcooperkai.com. Linked third-party services (GitHub, X, Webbify) are
+outside its scope.
 
 HOW TO REPORT
 
 Email jcooperkai@gmail.com with the subject "Security report". Include the
-affected URL, clear reproduction steps, the observed impact, and any supporting
-screenshots or request details. Do not include another person's private data.
+affected URL, steps to reproduce, the impact you observed, and any screenshots
+or request details. Do not include another person's private data.
 
 GOOD-FAITH TESTING
 
 Please:
 
-- stop after demonstrating the minimum necessary impact;
+- stop once you have shown the minimum impact needed;
 - avoid denial of service, traffic floods, destructive testing, social
-  engineering, physical attacks, and automated scanning that harms availability;
-- do not access, change, download, retain, or disclose data that is not yours;
-- do not send malicious files to other people or external services;
-- allow reasonable time to investigate before publishing details.
+  engineering, physical attacks and scanning that harms availability;
+- do not access, change, download, keep or share data that is not yours;
+- give me reasonable time to fix the issue before publishing details.
 
-To the extent within Cooper's control, good-faith research that follows this
-policy will not trigger legal action from Cooper. This policy does not authorize
-testing of third-party infrastructure and does not create a bug-bounty promise.
+If your research follows this policy in good faith, I will not take legal
+action over it. This policy does not authorize testing third-party
+infrastructure and is not a bug bounty.
 
-CURRENT ARCHITECTURE
+HOW THE SITE IS BUILT
 
-The site is read-only. It has no account system, database, remote file-upload
-endpoint, server-side Buddy chat, or state-changing public API. Buddy files stay
-inside the visitor's browser tab.
+The site is read-only. It has no accounts, database, upload endpoint, chat or
+public API that changes state. It accepts GET and HEAD requests only.

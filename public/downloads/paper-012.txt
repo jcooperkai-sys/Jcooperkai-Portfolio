@@ -1,0 +1,188 @@
+INDEPENDENT RESEARCH · GENERATIVE MODELS · NO. 1
+
+Ducky Diffusion:
+A From-Scratch Latent Diffusion Model on One Consumer GPU
+Cooper E.
+Independent researcher · jcooperkai@gmail.com
+
+ABSTRACT
+
+We built an image generator the honest way: instantiate the real architecture ourselves
+(UNet2DConditionModel + AutoencoderKL + CLIPTextModel), then load a pretrained checkpoint's
+weights into it from Hugging Face rather than training from zero -- a from-scratch training run
+would need thousands of GPU-hours this hardware doesn't have. The interesting part of building
+it was the failures. Running the model in fp16, the standard choice for every tutorial, silently
+produced NaN through this checkpoint's VAE decode -- an all-black image with no error. We then
+tried to make the model better with reinforcement learning (DDPO: treating each denoising step
+as an action, rewarding CLIP-alignment with REINFORCE), and caught a bug that would have made
+the entire training loop a no-op -- using the scheduler's own sampling step made the "sample" and
+the "mean" the same tensor, so the loss's gradient was exactly zero everywhere, a silent failure
+that would have looked identical to a real, if unsuccessful, training run. After fixing that and a
+second bug (a single-sample reward baseline that divides by an undefined standard deviation),
+training ran cleanly for 60 real policy-gradient steps -- and reward still didn't move: 0.314 +/-
+0.030 in the first half of training versus 0.318 +/- 0.023 in the second half, a difference smaller
+than either half's own noise. Along the way, moving one model off the GPU and freeing it up made
+training 31x faster -- not because the GPU had less to do, but because it had been running with as
+little as 198MB of 6144MB free.
+
+1. What "from scratch" means here, and what it doesn't
+A real from-scratch diffusion model -- architecture and weights both trained from random
+initialization -- needs a dataset of millions of images and enough compute to make thousands of
+passes over it. On a single NVIDIA GeForce GTX 1660 Ti with 6GB of VRAM, that's not a smaller
+version of the same project; it's a different project with a different answer. So this one draws the
+line differently: the model code is ours -- we write out the U-Net, the VAE, and the CLIP text
+encoder as real, local PyTorch modules, and the training loop that adjusts them is ours too -- but
+the initial weights come from a published, ungated checkpoint (segmind/tiny-sd, 323,816,580
+parameters). That's the honest version of "built from scratch on a gaming GPU": we own every
+line that runs, we just didn't pay for the weeks of compute that would be needed to also own every
+number inside them.
+
+Figure 1. The full path from a text prompt to a displayed image: write the model ourselves -> load
+pretrained weights -> serve on-demand on a 6GB GPU -> expose publicly via a rate-limited tunnel ->
+generate live in chat. Nothing here is a hosted API call.
+
+2. The first bug: a silent NaN, not a crash
+fp16 is the default recommendation for running Stable-Diffusion-family models on limited VRAM,
+and it's what we used first. The model loaded, the denoising loop ran to completion with no error,
+and the output was an 843-byte PNG -- for comparison, a real generated photo from the same
+model is 425,265 bytes. A file that small is a near-solid-colour image, and it was: pure black. The
+VAE decode had produced NaN, and casting NaN to an 8-bit pixel value silently rounds to zero --
+no exception, no warning worth noticing, just a technically-valid black square where a photo
+should be.
+Switching the whole pipeline to fp32 fixed it immediately, at the cost of more VRAM per
+generation -- a cost this specific checkpoint's numerical instability made worth paying. The lesson
+isn't "fp16 is bad"; every other model we've run in fp16 has been fine. It's that a precision choice
+can fail in a way that produces a complete, well-formed file with no diagnostic signal at all, and the
+only way to catch it was to notice the output was suspiciously small before trusting it was a real
+image.
+
+3. Trying to make it better: reinforcement learning for diffusion
+DDPO (Denoising Diffusion Policy Optimization) treats each step of the denoising process as an
+action in a reinforcement-learning sense: the U-Net's noise prediction parameterizes a Gaussian
+policy over what the next, slightly-less-noisy image should look like, a full generation is a
+multi-step trajectory, and a reward model scores the finished image. Ours is CLIP cosine
+similarity between the generated image and the prompt that produced it -- a real, honest, if
+imperfect, proxy for "does this look like what was asked," including punishing the
+garbled-anatomy failures this small model is prone to. We trained LoRA adapters on the U-Net's
+attention layers only (431,616 trainable parameters of 323,816,580 total, 0.133%) via plain
+REINFORCE, keeping every other weight frozen.
+
+4. The second bug: a loss that trains nothing, and looks fine
+The first version of the training loop used the diffusion library's own scheduler.step() to advance
+from one noisy image to the next. That function samples its own random noise internally and
+returns a single, already-finished tensor -- which meant the "actual sample we continue with" and
+the "differentiable mean the loss is supposed to pull toward" were the exact same object in
+memory. The policy-gradient loss is log N(sample; mean, std), evaluated at sample == mean --
+and that expression's derivative with respect to mean is exactly zero, everywhere, by construction.
+Every gradient computed by that loop was a correctly-shaped zero. Loss went down on paper (its
+absolute value shrank each step, which reads exactly like convergence), nothing about the run
+threw an error, and nothing was being learned.
+The fix was to stop treating the scheduler as a black box: compute the DDPM posterior mean and
+variance by hand from the model's noise prediction, sample the actual next latent separately from
+that mean using a fixed, un-differentiated noise draw, and evaluate the log-probability of that fixed
+sample under the still-differentiable mean. Two tensors, not one, is what makes the gradient real.
+A second, smaller bug of the same shape followed immediately: at batch size 1 (forced by the 6GB
+VRAM budget), the standard advantage formula (reward - batch_mean) / batch_std divides by the
+standard deviation of a single number, which is undefined, and the resulting NaN propagated
+straight into the model's weights on the very first optimizer step -- after which every subsequent
+rollout was generated by an already-corrupted model. The fix was a running baseline updated
+across iterations instead of within one undersized batch, plus a guard that skips the optimizer step
+outright if the loss is ever NaN or infinite, so a bad step can't silently poison every step after it.
+
+5. What training actually looked like, once the gradient was real
+With both bugs fixed, 60 iterations of single-sample REINFORCE ran cleanly -- finite loss
+throughout, no corruption. The honest result: reward did not trend upward.
+
+Figure 2. CLIP-alignment reward across all 60 real training iterations -- a noisy series around a
+fixed point, not a climb.
+Figure 3. The same result as one comparison: mean reward, first half of training (0.3137) versus
+second half (0.3181). The gap between the two is smaller than either half's own standard
+deviation.
+
+First-half mean reward was 0.3137 +/- 0.0302; second-half was 0.3181 +/- 0.0233. Those are
+statistically indistinguishable. Single-sample REINFORCE is a genuinely high-variance gradient
+estimator -- with one rollout per update, 60 steps is not enough signal to reliably climb a reward
+surface, regardless of how correct the gradient computation is. Fixing the zero-gradient bug was
+necessary for training to do anything at all; it was not sufficient to make 60 noisy single-sample
+steps add up to visible improvement.
+
+6. A fix that mattered more than it looked like it would
+Before the two correctness fixes, we also found a performance problem: each training iteration
+took 270 seconds. The CLIP reward model -- used only to score a finished image, never part of the
+differentiable training graph -- was sharing the GPU with the training computation, and at points
+left as little as 198MB of the card's 6GB free. Moving CLIP to the CPU (it's a small model and
+scoring is cheap) and cutting the denoising steps per rollout from 10 to 6 brought that down to 8.7
+seconds per iteration.
+
+Figure 4. Seconds per training iteration, before (270.0s) and after (8.7s) moving one model off the
+shared GPU -- 31x faster. The GPU wasn't asked to do more work; it simply stopped fighting for its
+own memory.
+
+31x is a bigger gain than the change sounds like it should produce, which is the point worth
+keeping: on a single small GPU, a card sitting near its VRAM ceiling doesn't fail cleanly by
+refusing work, it quietly does the same work much more slowly. The fix looks like a memory
+optimization; it was actually the difference between a 20-minute experiment and a multi-hour
+one.
+
+7. Shipping it: on-demand, not always-on
+The finished model is served the same way LM Studio serves local language models -- load on
+request, unload after idle -- rather than sitting permanently in the 6GB of VRAM this GPU also
+runs other services on. A request loads the model, generates, and after 60 seconds of no further
+requests the weights are freed automatically. It's reachable publicly through a Cloudflare Tunnel
+rather than by exposing the machine's home IP address directly, with a rate limit of 2 requests per
+10 seconds per client at the tunnel and a second, independent limit of 6 requests per 60 seconds in
+front of it -- because unlike a static page, every request here costs real, non-trivial GPU time on
+hardware one person owns. The same endpoint now also streams its own intermediate, still-noisy
+previews step by step, so asking Buddy (this site's chat assistant) to generate an image shows it
+visibly denoising in the chat window instead of appearing all at once after a silent wait.
+
+8. What this means
+If you're running a small diffusion model on a single consumer GPU: check what else is sharing
+the card before concluding a slow step is intrinsic to the model -- a few hundred megabytes of
+contention cost us 31x, and the model itself never got any faster or slower. And check output file
+size before trusting a generation succeeded; a near-blank image compresses to almost nothing,
+and a bad numerical precision choice can produce exactly that with no other symptom.
+
+If you're implementing DDPO or any other policy-gradient method against a diffusion scheduler:
+do not call the library's step() function inside the part of the loop you intend to differentiate
+through, unless you have specifically checked what it returns. A scheduler designed for inference
+is optimized to hand you one finished sample, not two separable tensors -- which is exactly what a
+policy gradient needs and exactly what such a function has no reason to provide. A loss that
+appears to converge while training nothing is the single most expensive failure mode in this kind
+of project, because the only way to catch it is to already suspect it.
+
+If you're hoping RLHF-style fine-tuning will meaningfully improve a small model's known
+weaknesses after a short run: our data says not at these numbers. Whether more iterations, a
+larger batch, or a better baseline would change that is exactly the open question this paper didn't
+settle -- this result rules out "60 steps of single-sample REINFORCE" as sufficient, not RL
+fine-tuning in general.
+
+LIMITS
+The weakest section is 5. Sixty iterations at batch size 1 is a small experiment by the standard of
+published DDPO work, which typically runs hundreds to low-thousands of steps with meaningfully
+larger batches -- we were bound by a single 6GB card, not by a considered choice of sample size. It
+is entirely possible that reward would begin climbing at 300 or 600 iterations, or with a batch size
+of 4 instead of 1; we did not run either comparison, and this paper should not be read as "DDPO
+doesn't work on small models," only as "60 noisy single-sample steps didn't move this specific
+reward on this specific model."
+The reward model itself is a limit worth naming directly: CLIP similarity rewards prompt
+alignment, not anatomical coherence specifically. It is plausible for CLIP score to improve while a
+hand-count of duplicated limbs gets no better, or the reverse. We used CLIP because it's cheap,
+honest, and requires no additional labeled data -- not because it's the ideal reward for the failure
+mode we most wanted to fix.
+The speed fix in section 6 is solid -- before/after timings on the same hardware, same code,
+isolating one change -- but it is a single measurement, not an average over repeated runs, so the
+exact 31x figure has more measurement noise in it than the headline number suggests. The
+direction and the rough magnitude are not in doubt.
+None of these limits change the two results that matter most: the zero-gradient bug was real and
+would have silently wasted every hour of training that followed it, and the honest, corrected
+training run did not produce a detectable improvement at the scale we could afford to run it.
+
+--
+All figures generated from data/results.json, produced by experiments.py from measurements
+taken while building and deploying the model on 2026-09-11 -- the DDPO log is the literal output
+of that training run, not a re-simulation. Model code, server, and deployment configuration:
+github.com/jcooperkai-sys/Ducky-Diffusion (private). Live: ask Buddy on jcooperkai.com to
+generate an image.
+
+Independent Research -- Generative Models series, No. 1

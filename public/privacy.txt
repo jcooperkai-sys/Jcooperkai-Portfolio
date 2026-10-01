@@ -1,53 +1,36 @@
-COOPER E.'S AI LAB — PRIVACY AND LOCAL FILE NOTICE
-==================================================
+PRIVACY AND LOCAL FILES, jcooperkai.com
+=======================================
 
-Last updated: July 28, 2026
+Last updated: September 30, 2026
 
-This portfolio does not operate user accounts, a server-side chat service,
-advertising trackers, analytics tags, or a remote file-upload endpoint.
+This site has no accounts, forms, chat, comments, analytics, advertising
+trackers, cookies or visitor counter. It does not use localStorage,
+sessionStorage or any other browser storage.
 
-LOCAL BROWSER STORAGE
+WHAT THE PAGE LOADS
 
-The retro visitor counter is decorative and does not write a tracking cookie,
-localStorage value, or sessionStorage value.
+Every file the page loads (fonts, icons, badges, images, scripts) is served
+from jcooperkai.com itself. The page makes no requests to any third party.
 
-BUDDY FILES AND MESSAGES
+LOCAL FILES
 
-Buddy runs in your browser. A file selected for Buddy is read only in that
-browser tab, limited to 2 MB, and is not transmitted to or stored by this
-website. Text files are truncated to a small local preview. Buddy messages are
-not sent to a server and disappear when the page is reloaded.
+Nothing is uploaded to this site and it accepts no files. Images in the
+gallery are opened from this site's own copies.
 
-HOSTING AND SECURITY
+HOSTING
 
-Like nearly every public website, the hosting and network providers may process
-ordinary request metadata such as IP address, browser details, requested path,
-and time of access to deliver the page, prevent abuse, and operate the service.
-This site does not add its own persistent visitor log or sell personal data.
+The site runs on Cloudflare. Like any web host, Cloudflare processes ordinary
+request data (IP address, browser details, requested path and time) to deliver
+the page and block abuse. A short-lived rate limit uses your IP address in
+memory to decide whether a request is allowed. I keep no visitor log of my own
+and sell nothing.
 
-EXTERNAL LINKS AND EMAIL
+LINKS AND EMAIL
 
-External profile links are governed by their destination's privacy policy.
-Choosing an electronic-mail link opens your mail application; the resulting
-message is handled by your email provider and the recipient's email provider.
+Links to GitHub, X and Webbify follow those sites' own privacy policies. The
+email link opens your mail app, and the message is then handled by your email
+provider and mine.
 
 CONTACT
 
-Privacy or security questions: jcooperkai@gmail.com
-
-VISIT COUNTING
---------------
-The visitor number on this page reflects unique visits per day. Your network address is never
-stored. It is combined with 32 random bytes generated fresh each day, hashed with SHA-256, and only
-that digest is kept, expiring automatically after 24 hours.
-
-The random value is the reason the digest cannot be worked backwards. There are only about four
-billion possible addresses, so a digest of an address plus a predictable value -- a date, for
-instance -- could be reversed by simply trying all of them. Against an unknown random value there is
-nothing to try. That value is never sent to your browser and is never included in any response.
-
-Stated plainly, because a privacy claim should be checkable: this protects the stored digests if they
-alone were ever exposed. Someone with full read access to the counting store would also be able to
-read the random value. No cookie or browser storage is used, nothing about a visit is shared with any
-third party, and because the random value is replaced daily, a digest from one day cannot be matched
-against another. Where no counting store is configured the number shown is zero.
+jcooperkai@gmail.com
