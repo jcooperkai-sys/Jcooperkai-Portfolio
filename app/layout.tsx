@@ -3,53 +3,38 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://jcooperkai.com"),
-  title: "Cooper E.’s AI Lab — jcooperkai",
+  title: "jcooperkai, Agentic Engineer",
   description:
-    "Cooper E. researches agentic AI systems, tool use, memory, and human-centered controls from San Diego.",
-  applicationName: "Cooper E.’s AI Lab",
-  authors: [{ name: "Cooper E.", url: "https://jcooperkai.com/" }],
-  keywords: [
-    "AI research",
-    "Cooper E.",
-    "jcooperkai",
-    "AI agents",
-    "agentic systems",
-    "machine learning",
-    "research papers",
-    "artificial intelligence",
-    "portfolio",
-  ],
-  alternates: {
-    canonical: "/",
-  },
+    "I'm jcooperkai, an agentic engineer in San Diego. My company Webbify, the projects I've made public on GitHub, and how to reach me.",
+  applicationName: "jcooperkai",
+  authors: [{ name: "jcooperkai", url: "https://jcooperkai.com/" }],
+  alternates: { canonical: "/" },
   icons: {
-    icon: "/assets/jc-wordmark.png",
-    shortcut: "/assets/jc-wordmark.png",
+    icon: [
+      { url: "/assets/favicon-48.png", sizes: "48x48", type: "image/png" },
+      { url: "/assets/favicon-96.png", sizes: "96x96", type: "image/png" },
+    ],
+    apple: "/assets/favicon-192.png",
   },
   openGraph: {
     type: "website",
-    title: "Cooper E.’s AI Lab",
-    description:
-      "AI research, agentic systems, and open experiments from San Diego.",
+    title: "jcooperkai, Agentic Engineer",
+    description: "My company, my open-source projects, and how to reach me.",
     url: "/",
     siteName: "jcooperkai",
   },
   twitter: {
     card: "summary",
-    title: "Cooper E.’s AI Lab",
-    description:
-      "AI research, agentic systems, and open experiments from San Diego.",
+    title: "jcooperkai, Agentic Engineer",
+    description: "My company, my open-source projects, and how to reach me.",
   },
-  robots: {
-    index: true,
-    follow: true,
-  },
+  robots: { index: true, follow: true },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#020402",
+  themeColor: "#404147",
   colorScheme: "dark",
 };
 
