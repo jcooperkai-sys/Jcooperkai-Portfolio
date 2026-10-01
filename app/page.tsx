@@ -178,20 +178,19 @@ function Icon({ name, className }: { name: IconName; className?: string }) {
   );
 }
 
-/* The hero art: an off-white sky, a grey slope and a charcoal hill. Drawn twice, wide and
-   narrow, so the slope stays readable on a phone. The charcoal hill becomes the page below it. */
+/* The hero art: the hero itself is the off-white sky; this is the grey slope and charcoal hill, pinned to the
+   bottom at a fixed height so it never runs into the text. Drawn twice, wide and narrow, so the angle stays
+   gentle on a phone. The charcoal hill becomes the page below it. */
 function HeroArt() {
   return (
     <>
-      <svg className="hero-art hero-art-wide" viewBox="0 0 1600 640" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
-        <rect width="1600" height="640" fill="var(--sky)" />
-        <polygon points="0,372 1600,548 1600,640 0,640" fill="var(--slope)" />
-        <polygon points="0,452 1600,600 1600,640 0,640" fill="var(--ground)" />
+      <svg className="hero-art hero-art-wide" viewBox="0 0 1600 268" preserveAspectRatio="none" aria-hidden="true">
+        <polygon points="0,0 1600,176 1600,268 0,268" fill="var(--slope)" />
+        <polygon points="0,80 1600,228 1600,268 0,268" fill="var(--ground)" />
       </svg>
-      <svg className="hero-art hero-art-narrow" viewBox="0 0 600 760" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
-        <rect width="600" height="760" fill="var(--sky)" />
-        <polygon points="0,560 600,652 600,760 0,760" fill="var(--slope)" />
-        <polygon points="0,628 600,712 600,760 0,760" fill="var(--ground)" />
+      <svg className="hero-art hero-art-narrow" viewBox="0 0 600 200" preserveAspectRatio="none" aria-hidden="true">
+        <polygon points="0,0 600,92 600,200 0,200" fill="var(--slope)" />
+        <polygon points="0,68 600,152 600,200 0,200" fill="var(--ground)" />
       </svg>
     </>
   );
@@ -240,8 +239,7 @@ export default function Home() {
                   <a href="https://webbify.build/" rel="noopener noreferrer">Webbify</a>
                 </h3>
                 <p>
-                  My company. Webbify rebuilds small businesses&apos; websites and runs them with a live client dashboard
-                  and automations, operated by AI agents.
+                  AI agents rebuild and run small-business websites, each with a live client dashboard.
                 </p>
                 <p className="badges">
                   <img src="/badges/status-live.svg" height={20} alt="Status: live" />

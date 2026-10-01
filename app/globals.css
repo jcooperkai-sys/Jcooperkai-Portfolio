@@ -24,10 +24,11 @@ a:focus-visible, button:focus-visible { outline: 3px solid var(--text); outline-
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* ---- hero: the art fills the header, the text sits in the sky */
-.hero { position: relative; overflow: hidden; color: var(--ground); min-height: 640px; }
-.hero-art { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+/* Height follows the content: the bottom padding is a little sky plus the band the slope is drawn in. */
+.hero { position: relative; overflow: hidden; color: var(--ground); background: var(--sky); }
+.hero-art { position: absolute; left: 0; bottom: 0; width: 100%; height: 140px; display: block; }
 .hero-art-narrow { display: none; }
-.hero-inner { position: relative; max-width: 760px; margin: 0 auto; padding: 56px 16px 0; text-align: center; }
+.hero-inner { position: relative; max-width: 760px; margin: 0 auto; padding: 56px 16px 164px; text-align: center; }
 .hero-logo { display: block; margin: 0 auto 12px; width: 128px; height: auto; }
 .hero h1 { margin: 0; font-size: 56px; line-height: 1.1; font-weight: 600; letter-spacing: -0.01em; }
 .role { margin: 6px 0 0; font-size: 22px; font-weight: 600; }
@@ -46,7 +47,7 @@ a:focus-visible, button:focus-visible { outline: 3px solid var(--text); outline-
 .link-icon { width: 18px; height: 18px; fill: var(--text); flex: none; }
 
 /* ---- page */
-.page { max-width: 760px; margin: 0 auto; padding: 40px 16px 0; }
+.page { max-width: 760px; margin: 0 auto; padding: 24px 16px 0; }
 section { margin-bottom: 64px; }
 h2 { margin: 0 0 18px; font-size: 26px; font-weight: 600; text-align: center; }
 
@@ -108,10 +109,10 @@ h2 { margin: 0 0 18px; font-size: 26px; font-weight: 600; text-align: center; }
 
 @media (max-width: 640px) {
   body { font-size: 16px; }
-  .hero { min-height: 700px; }
   .hero-art-wide { display: none; }
   .hero-art-narrow { display: block; }
-  .hero-inner { padding-top: 36px; }
+  .hero-inner { padding-top: 36px; padding-bottom: 116px; }
+  .hero-art { height: 96px; }
   .hero h1 { font-size: 40px; }
   .role { font-size: 19px; }
   .link-button { font-size: 15px; padding: 0 12px; }

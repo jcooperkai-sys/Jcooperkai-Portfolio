@@ -9,7 +9,7 @@
 
 ## Company
 
-- [Webbify](https://webbify.build/): my company. Webbify rebuilds small businesses' websites and runs them with a live client dashboard and automations, operated by AI agents.
+- [Webbify](https://webbify.build/): my company. AI agents rebuild and run small-business websites, each with a live client dashboard.
 
 ## Projects
 
