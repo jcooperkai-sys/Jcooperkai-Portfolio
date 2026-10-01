@@ -3,53 +3,36 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://jcooperkai.com"),
-  title: "Cooper E.’s AI Lab — jcooperkai",
-  description:
-    "Cooper E. researches agentic AI systems, tool use, memory, and human-centered controls from San Diego.",
-  applicationName: "Cooper E.’s AI Lab",
-  authors: [{ name: "Cooper E.", url: "https://jcooperkai.com/" }],
-  keywords: [
-    "AI research",
-    "Cooper E.",
-    "jcooperkai",
-    "AI agents",
-    "agentic systems",
-    "machine learning",
-    "research papers",
-    "artificial intelligence",
-    "portfolio",
-  ],
-  alternates: {
-    canonical: "/",
-  },
+  title: "jcooperkai, Agentic Engineer",
+  applicationName: "jcooperkai",
+  authors: [{ name: "jcooperkai", url: "https://jcooperkai.com/" }],
+  alternates: { canonical: "/" },
   icons: {
-    icon: "/assets/jc-wordmark.png",
-    shortcut: "/assets/jc-wordmark.png",
+    icon: [
+      { url: "/assets/favicon-48.png", sizes: "48x48", type: "image/png" },
+      { url: "/assets/favicon-96.png", sizes: "96x96", type: "image/png" },
+    ],
+    apple: "/assets/favicon-192.png",
   },
   openGraph: {
     type: "website",
-    title: "Cooper E.’s AI Lab",
-    description:
-      "AI research, agentic systems, and open experiments from San Diego.",
+    title: "jcooperkai, Agentic Engineer",
     url: "/",
     siteName: "jcooperkai",
+    images: [{ url: "/assets/og.png", width: 1200, height: 630, alt: "The JC logo above jcooperkai, Agentic Engineer" }],
   },
   twitter: {
-    card: "summary",
-    title: "Cooper E.’s AI Lab",
-    description:
-      "AI research, agentic systems, and open experiments from San Diego.",
+    card: "summary_large_image",
+    title: "jcooperkai, Agentic Engineer",
+    images: ["/assets/og.png"],
   },
-  robots: {
-    index: true,
-    follow: true,
-  },
+  robots: { index: true, follow: true },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#020402",
+  themeColor: "#404147",
   colorScheme: "dark",
 };
 

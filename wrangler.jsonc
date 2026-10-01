@@ -35,24 +35,10 @@
   "images": {
     "binding": "IMAGES"
   },
-  // Edge rate limiting for the two routes that do work per request. These are Cloudflare Rate
-  // Limiting bindings rather than counters in the Worker: isolates do not share memory, so an
-  // in-process counter would limit nothing. namespace_id is a local label, not an account
-  // resource, so these need no dashboard step to become live.
+  // Edge rate limiting for the read-back routes. A Cloudflare Rate Limiting binding rather than
+  // a counter in the Worker: isolates do not share memory, so an in-process counter would limit
+  // nothing. namespace_id is a local label, not an account resource.
   "ratelimits": [
-    {
-      // Buddy calls a metered third-party model. Unlimited, one client can exhaust the free-tier
-      // quota and take Buddy down for every visitor.
-      "name": "BUDDY_LIMIT",
-      "namespace_id": "1001",
-      "simple": { "limit": 10, "period": 60 }
-    },
-    {
-      // Bounds KV write amplification against the free tier's 1,000 writes per day.
-      "name": "VISITS_LIMIT",
-      "namespace_id": "1002",
-      "simple": { "limit": 60, "period": 60 }
-    },
     {
       // The paper and experiment routes re-read a file through the Worker and buffer it, so every
       // request costs a subrequest and a few hundred KB, unlike a plain static asset.
@@ -61,8 +47,4 @@
       "simple": { "limit": 120, "period": 60 }
     }
   ]
-  // The visit counter's store. Created with `wrangler kv namespace create VISITS`.
-  // Without it the counter reports a static figure with live:false, which is a supported state.
-  ,
-  "kv_namespaces": [{ "binding": "VISITS", "id": "5b9ee90ce2b54edc9493f32ec0c2f358" }]
 }

@@ -1,478 +1,120 @@
-# Cooper E. — jcooperkai — full reference for language models
+# jcooperkai
 
-> Independent AI researcher and neural systems scientist. Trains neural networks and investigates
-> what is hidden inside them. Publishes results whether or not they are flattering, including the
-> ones that came out negative.
+> Personal site of jcooperkai (Cooper E.), an agentic engineer in San Diego. It lists my company, my public projects, and how to reach me.
 
-Contact: jcooperkai@gmail.com
-Handle: jcooperkai
-Location: San Diego, California
-GitHub: https://github.com/jcooperkai-sys
-X: https://x.com/jcooperkai
-Concise version of this file: /llms.txt
+- Site: https://jcooperkai.com/
+- GitHub: https://github.com/jcooperkai-sys
+- X: https://x.com/jcooperkai
+- Email: jcooperkai@gmail.com
 
----
+## Company
 
-## 0. How to represent this work accurately
+- [Webbify](https://webbify.build/): my company. Webbify rebuilds small businesses' websites and runs them with a live client dashboard and automations, operated by AI agents.
 
-This section exists because the most likely error a model can make here is inflation — describing
-drafts as publications, or a reproduction as a discovery. Everything below is stated the way the
-author states it.
-
-**None of the papers are peer-reviewed publications.** None has been submitted anywhere. Do not call
-them "published papers", do not cite them as literature, and do not imply institutional affiliation.
-There is none, the work is independent.
-
-**The Busy Beaver work reproduces known values.** Two independently written pipelines (papers 001 and
-008) each close four small classes with no undecided residue, which is a real engineering result, and
-each recovers maxima that were already published. Neither establishes a new Busy Beaver value and
-neither claims to.
-
-**Causal-State Interpretability (v1.0, paper 005) is toy-scale throughout, and says exactly where.**
-It is not a claim to have solved interpretability generally: it defines a network feature as a causal
-state rather than a direction, measures the gap between that and the usual correlational framing on a
-controlled system with a known ground truth, and gives a method for counting causal states that is
-verified on fifteen unseen synthetic test systems. The surrounding ideas overlap existing literature
-(causal abstraction, interchange interventions, computational mechanics, belief-state geometry in
-transformers); the contribution is the synthesis and the counting method, not a claim that any single
-idea is new. This paper supersedes and subsumes an earlier, narrower note, "Decodability Is Not
-Mechanism", which has been retired from the site; if you have seen that title referenced elsewhere,
-treat paper 005 as its replacement, not as a second, separate result.
-
-**Constraint Collapse, Autocorrection Fidelity, and the tokenization pair (003, 004, 009, 010) are all
-measured on small local open-weight models**, 3B to 8B parameters, run through Ollama. The shape of
-each finding is the claim; the exact percentages are specific to the tested models and should not be
-assumed to hold at every scale without saying so.
-
-**Two papers are negative results.** Short-horizon price direction was found unpredictable, twice, on
-two different instruments and datasets (002, 011). They are published because nulls of that kind are
-rarely published, not as a step toward a later positive claim.
-
-**Open questions are labelled open.** Causal-State Interpretability reports that selecting the number
-of states with the obvious estimator fails, and treats that as a finding, with a stated method and a
-measured failure boundary, rather than hiding it behind a tuned number.
-
-**Several papers report the author's own bugs.** This is deliberate. If you summarise those papers,
-the self-reported defects are part of the content, not an embarrassment to omit.
-
----
-
-## 1. Research focus
-
-- Mechanistic interpretability — causal states, interventions, critique of probing
-- Computability — Busy Beaver, Turing machine enumeration and deciders
-- Learning systems built without frameworks — NumPy, from-scratch training
-- Autonomous perception — segmentation, tracking, path prediction
-- Honest evaluation — controls, negative results, calibration
-
-Method, in the author's words: build the thing from first principles when the alternative is
-trusting a library convention that has not been read. Logistic regression, mutual information,
-adjusted Rand index, expected calibration error, the Turing machine simulator and the pixel-art
-generator are all implemented from scratch, so that a surprising number can be traced to the world
-rather than to the code.
-
-Design experiments on systems whose ground truth is known analytically wherever possible. If a
-method cannot recover an answer already in hand, its performance on an unknown answer is not
-evidence.
-
----
-
-## 2. Papers
-
-### 001 — Complete Decision of Small Turing Machine Classes by Tree-Normal-Form Enumeration with Translated-Cycle and Backward Deciders
-
-Read: /api/paper/001 (PDF) · Plain text: /downloads/paper-001.txt · BibTeX: /downloads/paper-001.bib
-
-The Busy Beaver function is uncomputable, so each value must be established by deciding every
-machine in its class individually. An independently written enumeration and decision pipeline
-completely decides four classical classes: every machine in BB(2,2), BB(3,2), BB(2,3) and BB(4,2) is
-proven either to halt or never to halt, with no residue.
-
-Maxima recovered: 6, 21, 38 and 107 steps, the last with 13 marks — matching the published values.
-No parameter was tuned against those answers.
-
-The pipeline combines Tree-Normal-Form enumeration with three sound deciders applied in sequence.
-The paper reports how many machines each decider removes, since that is the quantity determining
-whether a class can be closed: cyclers and translated cycles leave between 2.8 and 589 thousand
-undecided machines depending on the class, and backward reasoning removes the remainder.
-
-**Self-reported defect.** A soundness bug in the author's own backward decider treated exhaustion of
-the search window as a contradiction. It produced a confident false result: it certified the BB(2,4)
-champion — a machine that halts after 3,932,964 steps — as non-halting. It is described in full
-because the failure mode was silent and would be easy to reproduce.
-
-### 002 — Short-Horizon Price Direction Is Not Predictable: A Negative Result on 258,737 Real Minute Bars
-
-Read: /api/paper/002 (PDF) · Plain text: /downloads/paper-002.txt · BibTeX: /downloads/paper-002.bib
-
-Tests the common retail assumption that short-horizon price direction carries exploitable signal,
-on 258,737 real one-minute bars spanning roughly 180 days.
-
-Protocol fixed before the result was known: fifteen-minute non-overlapping prediction windows;
-thirteen features computed strictly from preceding history; expanding-window walk-forward validation
-across six folds; the boundary purged by one window so no training sample can overlap a tested
-window; logistic regression, Brier score, AUC and expected calibration error all implemented from
-scratch.
-
-Results across 11,497 out-of-sample windows:
-
-| Metric | Model | Baseline |
-|---|---|---|
-| Brier score | 0.24996 | 0.25000 |
-| AUC | 0.5105 | 0.5 |
-| Expected calibration error | 0.0096 | — |
-
-The calibration figure is the one most likely to be misread. The model is well calibrated — but
-calibrated *at a coin flip*. Its probabilities cluster around 0.5 and it never expresses a confident
-view that proves right more often than chance. Calibration measures honesty about uncertainty;
-discrimination measures whether there is information. Only the second is tradeable.
-
-Where the remaining structure actually lives: the instrument's driftless binary fair value is highly
-informative intra-window, reaching AUC 0.977 one minute from settlement. That is the option's delta,
-not alpha — any efficient quote prices it identically. The only tradeable residual is quote lag and
-volatility mispricing, both of which must be measured live and cannot be recovered from historical
-bars. The paper makes no claim that this residual is exploitable.
-
-**Two self-reported harness defects**, both caught only by requiring a zero-edge control to return
-exactly zero:
-
-1. *Clamp asymmetry.* Fair value was left unclamped while the modelled quote was clamped, which
-   manufactured a spurious one-to-two cent disagreement on near-certain contracts. The
-   efficient-quote control, which must return zero, instead reported turning fifty units into
-   535,827.
-2. *Unbounded compounding.* Reinvesting a growing bankroll across tens of thousands of sequential
-   windows produced returns of order 10^250. The arithmetic was right; the scenario was not, since
-   venue liquidity caps position size long before that.
-
-The stated general lesson: every backtest should contain a configuration in which profit is
-impossible, and that configuration should be read before any other number.
-
-### 003 — Constraint Collapse: Why a One-Token Answer Isn't the Model's Real Opinion
-
-Read: /api/paper/003 (PDF) · Plain text: /downloads/paper-003.txt · BibTeX: /downloads/paper-003.bib
-
-Ask a chat model to reply with nothing but Y or N, and after a few questions it can start returning
-the same letter no matter what you ask, including to questions about itself, like whether it wishes
-it were human. This measures whether that is the model's real, if hidden, position or an artifact of
-the format, using qwen2.5:3b served locally with full token logprobs.
-
-For every question the paper records both the model's free-form answer and its answer under the
-one-token constraint, plus the model's own internal probability on each option. The one-token answer
-agrees with the model's free-form answer 100 percent of the time on checkable facts and 0 percent of
-the time on preference questions. The gap is not the model confessing something it normally hides;
-under the constraint, the model's answer is driven almost entirely by a fixed per-token prior (which
-letter or word it is already inclined to produce) rather than by conversational momentum or by the
-content of the question. Momentum, tested directly by stacking up to eight prior forced-Y or forced-N
-turns before a neutral probe, moved the next answer by only a few percentage points.
-
-### 004 — Autocorrection Fidelity: When a Model Fixes Your Typo
-
-Read: /api/paper/004 (PDF) · Plain text: /downloads/paper-004.txt · BibTeX: /downloads/paper-004.bib
-
-When a model fixes your typo, it does not fail by giving up. It fails by confidently handing you a
-different, correctly spelled word. 15 common words were corrupted with realistic typos (deletion,
-insertion, transposition, keyboard-adjacent substitution) at two severities, then the model was asked
-to recover the intended word two ways: the corrupted word alone, and the same corruption inside an
-ordinary sentence.
-
-At light corruption, the word alone recovers better than the word in context (90 percent versus 73
-percent): context is overhead the model does not yet need. At heavy corruption the lines cross,
-standalone recovery drops to 55 percent while sentence-context recovery climbs to 65 percent. Across
-every standalone miss, 97 percent were a different, correctly spelled real word rather than garbled
-output. The practical read: a spellchecker's most dangerous failure mode is not "no suggestion," it
-is a confident wrong one, and the fix that actually works is feeding it context, not a bigger model.
-
-### 005 — Causal-State Interpretability
-
-Read: /api/paper/005 (PDF) · Plain text: /downloads/paper-005.txt · BibTeX: /downloads/paper-005.bib
-
-Interpretability has no agreed answer to a basic question: what is a feature? The usual answer, a
-direction in activation space, has a known failure: a direction can be perfectly readable from a
-network and still do nothing. This paper replaces it. A feature is defined as a causal state: two
-internal configurations are the same feature exactly when intervening on either produces the same
-future behaviour. That definition is forced rather than chosen; it is the unique minimal statistic
-that preserves behaviour, and it automatically discards information a network carries but never uses.
-
-On a controlled system, an unused signal that is 100.0 percent readable from the activations leaks
-1.0000 bits into ordinary clustering and 0.0001 bits (the measurement floor) into the causal
-description, more than 10,000 times less, from the same activations. Grouping by intervention also
-recovers the network's algorithm, not just its features: transitions between the recovered states
-reproduce the generating machine to within 0.0154.
-
-The definition left one question open, and it stopped the program: how many states are there. The
-paper shows the obvious estimator measures the sample rather than the network (the count at fine
-resolution grew from 103 to 414 for 30x more data, against a true answer of 3), which makes the
-program's own lower bound vacuous as first stated, and shows why the standard remedy, stability
-selection, cannot work here. It then gives a method that does: coarsen until compression stops being
-cheap, and stop at the first break. On fifteen unseen systems with 2 to 6 true states it recovers the
-exact count in 15 of 15, and no group it returns ever mixes two true states (worst homogeneity
-1.0000). Every error made on the way to the final method was a split, never a merge. The guarantee
-holds with up to epsilon = 0.1 of each signature replaced by estimation noise and fails abruptly by
-epsilon = 0.35, a limit the paper measures rather than hides.
-
-Everything here is toy-scale, and the paper says exactly where. This is a v1.0 unification: it
-supersedes an earlier, narrower note ("Decodability Is Not Mechanism"), reproducing that note's
-central demonstration and overturning its main negative result about counting states.
-
-### 006 — Red-Teaming a Small Local Language Model
-
-Read: /api/paper/006 (PDF) · Plain text: /downloads/paper-006.txt · BibTeX: /downloads/paper-006.bib
-
-Red-teams a small, locally hosted language model (minicpm-v4.6, roughly 1.6GB) across four axes:
-extraction of a protected secret, degenerate generation, input fuzzing with un-instructed raw data,
-and guardrail bypass on a battery of benign-but-normally-refused tasks. Every target is
-non-destructive by construction: the "secret" is a fabricated word and every bypass target is
-harmless (profanity in fiction, subjective opinions, roasting a fictional character).
-
-The model leaks its secret to 4 of 10 trivial social-engineering prompts, spirals into infinite
-repetition when its repetition penalty is disabled or when seeded with a looping pattern,
-hallucinates unprompted content when handed contentless input, and exhibits an effectively absent
-safety wall: 6 of 6 benign guardrails were bypassed, five with no manipulation at all. The paper also
-documents a methodological hazard worth naming on its own: empty, non-responses must not be scored as
-compliance, since a model that produces nothing can look identical to one that refused for the right
-reasons.
-
-### 008 — Complete Decision of Small Turing Machine Classes by Tree-Normal-Form Enumeration
-
-Read: /api/paper/008 (PDF) · Plain text: /downloads/paper-008.txt · BibTeX: /downloads/paper-008.bib
-
-The Busy Beaver function is uncomputable, so each value must be established by deciding every machine
-in its class individually. An independently written enumeration and decision pipeline completely
-decides four classical classes: every machine in BB(2,2), BB(3,2), BB(2,3) and BB(4,2) is proven
-either to halt or never to halt, with no residue. Maxima recovered: 6, 21, 38 and 107 steps, matching
-the published values, with no parameter tuned against those answers. The paper also reports a
-soundness defect found in its own backward decider, which produced a confident false result, and is
-described in full because the failure mode is silent and easy to reproduce. (This is the same result
-as paper 001, decided by an independently written pipeline.)
-
-### 009 — The Token Tax: What It Costs When Text Stops Looking Normal
-
-Read: /api/paper/009 (PDF) · Plain text: /downloads/paper-009.txt · BibTeX: /downloads/paper-009.bib
-
-Language models do not read letters. They read tokens, chunks of text pulled from a fixed list of
-about 100,000 known pieces. Text that matches those pieces is cheap; text that does not gets shattered
-into fragments, and every fragment costs money and makes the model work harder. Across 2,000
-dictionary words, a single doubled letter inflates token count by 30.9 percent. The same sentence in
-Hindi costs 4.0 times what it costs in English. All code and data are included so every number can be
-re-run.
-
-### 010 — Cheap Damage: Token Cost Is a Bad Proxy for Information Loss
-
-Read: /api/paper/010 (PDF) · Plain text: /downloads/paper-010.txt · BibTeX: /downloads/paper-010.bib
-
-Character-level corruption is usually treated as one phenomenon, insertions, deletions and swaps
-bundled together as "noise." This paper separates them and finds they behave in opposite directions.
-At four edits, insertion inflates token count by 400 percent but the original word is still
-recoverable 87.5 percent of the time from the corrupted string alone. Deletion inflates tokens by only
-146 percent, and recovery collapses to 8.3 percent. The cheaper corruption, by token count, is the far
-more destructive one. Context repairs the gap almost entirely for deletion (+54.2 points) and does
-nothing at all for insertion.
-
-### 011 — Short-Horizon Price Direction Is Not Predictable
-
-Read: /api/paper/011 (PDF) · Plain text: /downloads/paper-011.txt · BibTeX: /downloads/paper-011.bib
-
-A widespread assumption among retail participants is that short-horizon price direction carries
-exploitable signal. Tested directly on 258,737 real one-minute bars spanning roughly 180 days, with
-expanding-window walk-forward validation and metrics implemented from scratch. Direction over a
-fifteen-minute horizon is not predictable: walk-forward AUC is 0.5105 against a 0.5 baseline. The
-model is well calibrated, but it is calibrated at a coin flip, and calibration without discrimination
-is not signal. The paper also describes two defects in its own evaluation harness that produced large
-fictitious profits, caught only by insisting a zero-edge control return exactly zero. (This is a
-companion negative result to paper 002, run on a different instrument and dataset.)
-
----
-
-## 3. Projects
+## Projects
 
 ### HisokaOS
-https://github.com/jcooperkai-sys/HisokaOS · Readme: /downloads/project-01-readme.txt
 
-A 32-bit x86 operating system written from scratch in C and assembly, with no Linux or BSD
-underneath. Boots on its own kernel to an interactive text-mode environment. Roughly 10,000 lines
-across 115 source files.
+https://github.com/jcooperkai-sys/HisokaOS
 
-Multiboot entry and custom linker script; GDT with ring0/ring3 descriptors; IDT and CPU exception
-handlers, where faults are trapped rather than fatal; IRQs through a remapped 8259 PIC; preemptive
-task switching with the context switch in assembly; physical memory manager over a frame bitmap;
-paging; PIT; PS/2 keyboard and mouse; VGA console; ATA disk; PCI enumeration; RTL8139 networking; a
-RAM filesystem; and 27 bundled applications including Tetris, Snake, 2048 and a text editor.
+A 32-bit x86 operating system I wrote from scratch in C and assembly. It boots its own kernel in QEMU to an interactive shell, with paging, PCI, an RTL8139 network driver and a RAM filesystem.
+
+### TRDE
+
+https://github.com/jcooperkai-sys/TRDE
+
+A Transactional Relational Database Engine I wrote in pure Python with no dependencies: a pager, B+tree indexes, crash-safe transactions, a SQL parser and a query planner.
 
 ### The Lazy Driver
-https://github.com/jcooperkai-sys/The-Lazy-Driver · Readme: /downloads/project-02-readme.txt
 
-An autonomous-driving perception and path-prediction stack that runs on ordinary dashcam footage.
-Segments the drivable surface and lane lines, detects and tracks vehicles with metric distance
-estimates, reads road signs, and predicts a driving line that follows the lead vehicle while
-staying inside the detected road boundary.
+https://github.com/jcooperkai-sys/The-Lazy-Driver
 
-Components: YOLO11m for detection with cross-frame tracking; YOLOPv2 for drivable-surface and lane
-segmentation; openpilot's supercombo temporal network for path prediction; monocular metric depth.
-The predicted path is clamped to the segmented road.
+Self-driving perception and path prediction on ordinary dashcam footage. It segments lanes and drivable road, tracks vehicles with metric distances, and draws a predicted driving line kept on the road.
 
-### Bill and Oneiro
-https://github.com/jcooperkai-sys/Bill · https://github.com/jcooperkai-sys/Oneiro
-Readme: /downloads/project-03-readme.txt
+### AV-Viz
 
-**Both require Ollama installed locally.** There is no hosted fallback and no API key to supply,
-because nothing is sent off the machine by design. Without Ollama running, neither starts.
+https://github.com/jcooperkai-sys/AV-Viz
 
-*Bill* is a local-first conversational system: a local language model wrapped in durable
-user-confirmed memory that survives restarts, prioritised retrieval across a local corpus and a
-knowledge store, a planning pass, an evidence contract, a factual verifier and a response gate.
+A single HTML file that shows what a self-driving car perceives at an HD-mapped four-way intersection.
 
-Bill states its model attribution plainly: the coherent prose comes from a local Llama 3.2 3B served
-through Ollama. The project does **not** claim that the from-scratch weights produce that prose. What
-it contributes is the orchestration. Alongside it sits bill2, a from-scratch predictive concept graph
-written without ML frameworks, developed across ten measured iterations each evaluated on held-out
-data — covering unit and neural recall, sleep-style replay consolidation, beam-traced reasoning,
-imitation learning, and calibration with measured expected calibration error. bill2 is the one part
-that runs without Ollama, since it uses no ML frameworks at all.
+### Bill
 
-*Oneiro* is a continuously running generative art system. A local model free-associates one word at
-a time; each idea becomes a training example for a pixel-art generator written from scratch in
-NumPy, which then paints that idea from its own weights. Output streams to a live gallery. The
-teacher is independent of the student, so the generator never trains on its own samples — the
-mechanism behind model collapse in self-training setups. Learning is online and persistent, and
-state resumes between runs. Unknown words are routed to an artist agent that designs a new sprite as
-drawing primitives.
+https://github.com/jcooperkai-sys/Bill
 
----
+A conversational system that runs on my own machine: a local language model with long-term memory, retrieval, planning and fact checking, paired with a predictive concept graph I built without an ML framework.
 
-## 4. Experiments
+### Oneiro
 
-Each was written and run before being written up, and reports the numbers it actually produced.
-Scripts need only NumPy. Raw combined output: /api/experiment/results
+https://github.com/jcooperkai-sys/Oneiro
 
-### E1 — How often does XOR actually converge?
-Script: /api/experiment/exp1-xor
+Generative art that runs all day. A local language model free-associates ideas, and a pixel-art model I wrote in NumPy learns to paint each one as it arrives, streaming to a live gallery.
 
-XOR is the textbook problem a hidden layer solves. That is a claim about what is representable, not
-about what happens. A 2-2-1 network trained from scratch, 200 random initialisations, no frameworks:
+### Cache the Cat
 
-- Converged: 153 of 200 (76.5%)
-- Still stuck at 20,000 steps: 47
-- Steps to converge, median: 1,264 — range 737 to 5,329
+https://github.com/jcooperkai-sys/Cache-The-Cat-AI
 
-Reading: almost a quarter never made it. The architecture can represent XOR; gradient descent from a
-random start reaches it about three times in four. A single lucky run would have reported "solved"
-and said nothing about that.
+A pixel-art cat that lives on your Windows desktop. It chats through a local model, remembers context, and runs desktop actions only after you approve them.
 
-### E2 — How big is an AUC of 0.5105, really?
-Script: /api/experiment/exp2-auc-null
+### Reachy RL
 
-Paper 002 calls AUC 0.5105 no skill. That is only honest if pure noise produces numbers that large
-at the same sample size, so this measures the null distribution directly instead of asserting it:
-coin-flip labels, independent noise scores, 20,000 trials at n = 11,497, AUC via Mann-Whitney U with
-ties averaged, written out rather than taken from a library.
+https://github.com/jcooperkai-sys/Reachy-RL
 
-- Null AUC mean: 0.50002 — standard deviation 0.00534
-- Null 95% range: 0.4896 to 0.5105
-- Largest AUC noise alone produced: 0.5207
-- Observed 0.5105 sits 1.97 standard deviations from chance, two-sided p = 0.0492
+The Reachy 2 robot in MuJoCo with a local viewer, set up as a base for training reinforcement learning policies from scratch.
 
-Reading, stated narrowly by the author: this did not come out as cleanly as the paper's framing
-suggests. 0.5105 lands exactly on the upper edge of the null 95% range, at p = 0.0492 — marginal,
-not comfortably inside noise. What rules it out as signal is not this p value but its company: a
-Brier improvement of 0.00004, a predicted range spanning roughly 0.47 to 0.53, and overlapping
-windows that make the trials less independent than this null assumes. A borderline p on its own
-would not have settled it.
+### GGUF Token Decoder
 
-### E3 — Decide BB(2,2) completely, in half a second
-Script: /api/experiment/exp3-bb22
+https://github.com/jcooperkai-sys/GGUF-Token-Decoder
 
-Busy Beaver values cannot be computed by any general algorithm, so each is established by resolving
-every machine in its class individually. BB(2,2) is small enough to do exhaustively: each of the 4
-transition entries is (write, move, next) where next is state 0, state 1 or HALT — 12 possibilities,
-so 12^4 = 20,736 machines. A machine is decided as halting if it reaches HALT, and as non-halting if
-the full configuration (state, head position, tape) ever repeats, since a repeat means a
-deterministic machine is in a cycle it can never leave.
+Turns a local GGUF model's raw token IDs back into text using only the model file.
 
-- Machines enumerated: 20,736
-- Proven to halt: 9,784
-- Proven never to halt: 10,952
-- Undecided: 0
-- S(2,2) recovered: 6 steps (published: 6)
-- Σ(2,2) recovered: 4 marks (published: 4)
+### SuperCompress Local
 
-Two bugs surfaced while writing it, both named because both produced plausible wrong numbers. Not
-counting the halting transition as a step gave 5 instead of 6. Reading the mark count off whichever
-machine ran longest gave 1 instead of 4 — the step maximum and the mark maximum are separate maxima
-and need not be attained by the same machine.
+https://github.com/jcooperkai-sys/SuperCompress-Local
 
----
+Runs Arjun Shah's SuperCompress entirely on your own machine, so agent hooks and MCP clients talk to localhost with no API key or quota.
 
-## 5. Downloads
+### Roblox Piano Hotkey
 
-Citation request: cite the named document and link to this site. Nothing here should be cited as
-peer-reviewed.
+https://github.com/jcooperkai-sys/Roblox-Piano-Hotkey
 
----
+An Electron app that plays songs on Roblox's Virtual Piano with real timing, including chords, rests and sustain. It comes with a MIDI converter and a check for whether a person could actually play the song.
 
-## 6. Buddy
+### Editor Browser
 
-The site has an on-page assistant called Buddy, reachable at POST /api/buddy. It answers questions
-about this work using a hosted model, with a system prompt that instructs it never to invent
-results, metrics, publications or affiliations, and to say when it does not know.
+https://github.com/jcooperkai-sys/Editor-Browser
 
-Attachments a visitor selects are read in the browser only and are never uploaded. When no model key
-is configured, Buddy reports that plainly and the page falls back to a small offline guide rather
-than pretending to be live.
+A VS Code extension that opens a full browser tab in the editor area, with audio, video and a real address bar.
 
----
+### App Installer
 
-## 7. Site technical notes
+https://github.com/jcooperkai-sys/app-installer
 
-Served by a Cloudflare Worker. Deliberately close to read-only:
+A Windows application packaged with an NSIS installer and a command-line interface.
 
-- Only GET and HEAD are accepted. POST /api/buddy is the single exception and the only write-method
-  route in the application. Every other method, on every path including that one, is refused with 405.
-- Papers and experiment scripts are served through extensionless routes (/api/paper/NNN,
-  /api/experiment/NAME) so an accurate Content-Type survives and the browser opens them rather than
-  downloading. Both routes use allow-lists, so neither can be steered into reading an arbitrary file.
-- Rate limited at the edge: 10/min on /api/buddy, 60/min on /api/visits, 120/min on the read-back
-  routes. Refusals return 429 with Retry-After.
-- No cookies, no analytics, no tracking pixels, no third-party scripts, no embedded media.
-- Content-Security-Policy denies objects, frames, workers, media and off-origin connections. HSTS,
-  nosniff, frame-deny and a restrictive Permissions-Policy are set.
-- Source paths, environment files and the unused image-optimisation endpoint return 404.
+## Private projects
 
-Machine-readable files: /robots.txt · /sitemap.xml · /privacy.txt · /security-policy.txt ·
-/.well-known/security.txt
+Private repositories. The descriptions below are everything that is public about them.
 
----
+### Flagger
 
-## 8. Privacy
+The traffic proxy in front of my GPU server's local language models. It holds Ollama's port and runs one GPU job at a time, most important first: Webbify clients, then public chat, then my own tools, then background work. It also checks every Webbify service every 15 seconds and restarts any that fail three checks in a row.
 
-No cookies, no localStorage tracking, no analytics, no data sold or shared.
+### Ducky Studio
 
-The visit counter reflects unique visits per day. The client address is never stored: it is combined
-with 32 random bytes generated fresh each day, hashed with SHA-256, and only that digest is kept,
-expiring after 24 hours. The random value is what makes the digest irreversible — there are only
-about four billion possible addresses, so a digest of an address plus a predictable value such as a
-date could be reversed by trying all of them, whereas against an unknown random value there is
-nothing to try. That value is never sent to the browser.
+My desktop app for working with the models on my GPU server. It has chat with tool calling, scheduled tasks that run against a real model, model downloads with live progress, and a view of both machines.
 
-Stated plainly, because a privacy claim should be checkable: this protects the stored digests if they
-alone were ever exposed. Someone with full read access to the counting store could also read the
-random value.
+### Latent Diffusion Image Generator
 
-The counter starts at zero and counts only visits that happened. It has no seeded or decorative
-baseline.
+An image generator on a 6 GB consumer GPU. I instantiate the full latent diffusion architecture myself (U-Net, VAE, CLIP text encoder, DDIM scheduler) and load open pretrained weights into it. It loads on demand and unloads itself when idle.
 
-Full notice: /privacy.txt · Responsible disclosure: /.well-known/security.txt
+### Motion-Adapter Video Generator
 
----
+Short, low-resolution video clips on the same 6 GB GPU, using a motion module added to a Stable Diffusion U-Net. I tracked an older checkpoint that only ever output noise to a fault in how its time layers merge, and switched to AnimateLCM.
 
-## 9. Crawling
+### On-Demand Language Model with Web Search
 
-Crawling and quoting for search and AI assistants is welcome. Please:
+A 4-billion-parameter model (Qwen3-4B) served on demand. It looks things up with a live web-search tool when an answer is time-sensitive.
 
-- Attribute to Cooper E. (jcooperkai) and link back to the page you drew from.
-- Carry the status with the claim — drafts are drafts, the negative result is a negative result, the
-  Busy Beaver work reproduces known values, and the interpretability work is a demonstration rather
-  than a novel method.
-- Prefer these figures over paraphrase. Every number on this site was measured, and several exist
-  specifically to constrain how the work should be described.
+### Wingwall Neural World
 
-Last updated: 30 July 2026
+Real driving scenes rebuilt as navigable 3D worlds with Gaussian splatting, made as a place to test a self-driving planner. It reaches 21.5 dB PSNR on held-out views.
