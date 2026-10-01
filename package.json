@@ -1,7 +1,7 @@
 {
-  "name": "jcooperkai-ai-lab",
+  "name": "jcooperkai-portfolio",
   "version": "1.0.0",
-  "description": "Cooper E.'s 1996-style AI research portfolio.",
+  "description": "jcooperkai's personal site.",
   "private": true,
   "engines": {
     "node": ">=22.13.0"
@@ -17,35 +17,36 @@
     "typecheck": "tsc --noEmit --incremental false"
   },
   "dependencies": {
-    "next": "16.2.12",
+    "next": "16.3.8",
     "react": "19.2.8",
     "react-dom": "19.2.8"
   },
   "devDependencies": {
-    "@cloudflare/vite-plugin": "1.48.0",
+    "@cloudflare/vite-plugin": "1.62.3",
     "@cloudflare/workers-types": "^5.20260729.1",
     "@tailwindcss/postcss": "4.2.1",
     "@types/node": "22.19.19",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "6.0.2",
-    "@vitejs/plugin-rsc": "0.5.26",
+    "@vitejs/plugin-rsc": "0.5.35",
     "oxlint": "1.76.0",
     "react-server-dom-webpack": "19.2.8",
     "tailwindcss": "4.2.1",
     "typescript": "5.9.3",
-    "vinext": "0.0.50",
+    "vinext": "1.0.0",
     "vite": "8.1.5",
-    "wrangler": "4.115.0"
+    "wrangler": "4.145.0"
   },
   "overrides": {
     "postcss": "8.5.24",
-    "sharp": "0.35.3"
+    "sharp": "0.35.4",
+    "fflate": "0.8.3"
   },
   "type": "module",
   "allowScripts": {
     "esbuild@0.28.1": true,
     "fsevents@2.3.3": true,
-    "workerd@1.20260722.1": true
+    "workerd@1.20260930.2": true
   }
 }

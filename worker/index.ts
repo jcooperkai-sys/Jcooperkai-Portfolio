@@ -1,4 +1,4 @@
-/** Cloudflare Worker entry point for Cooper E.'s AI Lab. */
+/** Cloudflare Worker entry point for jcooperkai.com. */
 import handler from "vinext/server/app-router-entry";
 
 /**
@@ -12,35 +12,14 @@ interface RateLimiter {
 
 interface Env {
   ASSETS: Fetcher;
-  /** Optional KV namespace for unique-visit counting. Absent locally and on hosts without KV. */
-  VISITS?: KVNamespace;
-  /**
-   * Server-side only. Set as a Cloudflare secret; never exposed to the browser. Kept as a
-   * fallback -- if LAB_BUDDY_TOKEN is absent or the Hermes route fails, Buddy still answers via
-   * Groq rather than going fully offline.
-   */
-  GROQ_API_KEY?: string;
-  /**
-   * Shared secret for Cooper's own Hermes 3 8B, run on his hardware and reached through an
-   * unrelated project's already-deployed API (webbify.build/v1/lab/buddy) rather than standing
-   * up a second model. Server-side only. Absent means Buddy falls back to Groq.
-   */
-  LAB_BUDDY_TOKEN?: string;
-  /** 10 requests per minute per client. Absent under the local dev server. */
-  BUDDY_LIMIT?: RateLimiter;
-  /** 60 requests per minute per client. Absent under the local dev server. */
-  VISITS_LIMIT?: RateLimiter;
   /** 120 requests per minute per client, for the buffered read-back routes. */
   ASSET_LIMIT?: RateLimiter;
-  /** 6 requests per minute per client -- image generation is real GPU time on one 6GB card. */
-  IMAGEGEN_LIMIT?: RateLimiter;
 }
 
 /**
  * The rate-limit key. CF-Connecting-IP is set by the edge and cannot be spoofed by the client;
  * anything client-supplied (X-Forwarded-For) would make the limit trivially bypassable. The IP is
- * used transiently for this decision and never stored — the visit counter still only ever persists
- * a salted digest.
+ * used transiently for this decision and never stored.
  */
 function clientKey(request: Request) {
   return request.headers.get("CF-Connecting-IP") ?? "unknown";
@@ -57,7 +36,7 @@ async function overLimit(
 ) {
   // Each outcome is logged by name. Failing open is deliberate, but a silently unbound or throwing
   // limiter is indistinguishable from a working one at the HTTP layer, which is exactly how an
-  // unlimited /api/buddy would go unnoticed. `wrangler tail` now shows which case occurred. No
+  // unlimited route would go unnoticed. `wrangler tail` now shows which case occurred. No
   // request content is logged.
   if (!limiter) {
     console.error(JSON.stringify({ event: "ratelimit_binding_absent", route }));
@@ -172,7 +151,7 @@ function applySecurityHeaders(response: Response, url: URL) {
   );
 
   if (!localPreview) {
-    headers.set("Strict-Transport-Security", "max-age=31536000");
+    headers.set("Strict-Transport-Security", "max-age=63072000; includeSubDomains");
     headers.set(
       "Content-Security-Policy",
       [
@@ -228,336 +207,6 @@ function applySecurityHeaders(response: Response, url: URL) {
   });
 }
 
-/**
- * Visitor counting.
- *
- * Counts unique visits without retaining personal data. The client address is never stored: it is
- * combined with 32 random bytes generated per day and hashed with SHA-256, and only that digest is
- * written, with a 24-hour expiry. Because the salt is random rather than derived from anything
- * public, the digest cannot be reversed by hashing candidate addresses, and because it is replaced
- * daily, today's digests cannot be correlated with yesterday's. See dailySalt for the full reasoning
- * and the residual exposure.
- *
- * Recording happens on a GET so the Worker keeps accepting only GET and HEAD; no write method is
- * exposed. When no KV binding is present (local preview, or a host without KV) the endpoint reports
- * zero with live:false, rather than inventing a figure.
- *
- * KV is eventually consistent and the increment is a read-modify-write, so simultaneous first-time
- * visits can occasionally coalesce into one. For a personal site that is an acceptable trade against
- * the cost and complexity of a strongly consistent counter.
- */
-/**
- * The counter starts at zero and only ever reports visits that actually happened.
- *
- * It used to seed from a decorative 13,581, so the first real visitor was displayed as 13,582 —
- * a real count stacked on top of an invented baseline, which is just a fake number that moves.
- * If there is nothing to report, it reports nothing.
- */
-const NO_VISITS = 0;
-
-/**
- * The per-day salt, and the reason it exists.
- *
- * An earlier version used the calendar date as the "salt". That is not a salt — it is public,
- * predictable input, so the stored digest was SHA-256("2026-07-29:1.2.3.4") and anyone holding the
- * stored keys could recover the addresses by hashing all 2^32 IPv4 candidates, which takes seconds.
- * The privacy notice's claim of an irreversible digest was false as written.
- *
- * This generates 32 random bytes per day instead, keeps them in the counting store, and never sends
- * them anywhere. Without the salt the digest cannot be reversed by brute force, because there is
- * nothing to guess. The residual exposure is honest and worth stating: anyone who can read the
- * counting store can read the salt too, so this protects a leak of the visit keys alone, not a full
- * compromise of the namespace.
- *
- * The 48-hour expiry is deliberately longer than the day the salt is used for, so a visit arriving
- * either side of midnight still finds the salt its digest was built with.
- */
-async function dailySalt(store: KVNamespace, day: string): Promise<string> {
-  const key = `salt:${day}`;
-  const existing = await store.get(key);
-  if (existing) return existing;
-  const fresh = [...crypto.getRandomValues(new Uint8Array(32))]
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-  await store.put(key, fresh, { expirationTtl: 172_800 });
-  return fresh;
-}
-
-async function dailyDigest(ip: string, salt: string, day: string): Promise<string> {
-  const bytes = new TextEncoder().encode(`${salt}:${day}:${ip}`);
-  const digest = await crypto.subtle.digest("SHA-256", bytes);
-  return [...new Uint8Array(digest)]
-    .slice(0, 16)
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
-
-async function recordVisit(request: Request, env: Env): Promise<Response> {
-  // env itself is absent under some local runtimes, not merely the binding.
-  const store = env?.VISITS;
-  if (!store) {
-    return Response.json({ count: NO_VISITS, live: false });
-  }
-  try {
-    const ip = request.headers.get("CF-Connecting-IP") ?? "unknown";
-    const day = new Date().toISOString().slice(0, 10);
-    const key = `v:${await dailyDigest(ip, await dailySalt(store, day), day)}`;
-    const seen = await store.get(key);
-    let total = Number.parseInt((await store.get("total")) ?? "", 10);
-    if (!Number.isFinite(total)) total = NO_VISITS;
-    if (!seen) {
-      // Read-modify-write on a single key, so simultaneous first-time visitors can both read the
-      // same total and one increment is lost. KV is also eventually consistent, so a fresh visitor
-      // may briefly read a stale figure. Both are accepted here: this is a visit counter, an
-      // undercount of a few is harmless, and the alternative is a Durable Object for a number in
-      // the page footer. Two writes per new visitor also bound usage against the free tier's
-      // 1,000 writes per day — roughly 500 unique visitors before it stops incrementing.
-      total += 1;
-      await store.put(key, "1", { expirationTtl: 86_400 });
-      await store.put("total", String(total));
-    }
-    return Response.json({ count: total, live: true });
-  } catch {
-    // Counting must never take the page down.
-    return Response.json({ count: NO_VISITS, live: false });
-  }
-}
-
-/**
- * Buddy's model-backed reply.
- *
- * The API key is read from a server-side binding only. It is never sent to the browser, never
- * placed in a NEXT_PUBLIC_ variable, and never logged. The request body is capped before parsing,
- * the conversation sent upstream is truncated, and the reply length is bounded. If no key is
- * configured the route reports that plainly and the page falls back to its offline guide.
- *
- * This is the only route accepting POST; every other path still rejects non-GET/HEAD.
- */
-const BUDDY_MAX_BODY = 4_096;
-const BUDDY_SYSTEM = [
-  "You are Buddy, the research guide on Cooper E.'s personal site (handle: jcooperkai).",
-  "Answer as a knowledgeable assistant about Cooper's work. Be concise, concrete and friendly.",
-  "Never invent results, metrics, publications or affiliations. If you do not know, say so.",
-  "",
-  "Cooper's work:",
-  "- HisokaOS: a 32-bit x86 operating system written from scratch in C and assembly. Boots on its",
-  "  own kernel in QEMU to an interactive shell. Paging, GDT/IDT, remapped PIC, PIT, PS/2 keyboard",
-  "  and mouse, VGA console, ATA disk, RTL8139 networking, RAM filesystem, preemptive task",
-  "  switching, and 27 bundled applications including Tetris, Snake, 2048 and a text editor.",
-  "- The Lazy Driver: an autonomous-driving perception stack over ordinary dashcam footage.",
-  "  YOLO11m detection with cross-frame tracking and metric distances, YOLOPv2 drivable-surface and",
-  "  lane segmentation, openpilot supercombo path prediction, monocular metric depth. The predicted",
-  "  path is clamped to the segmented road.",
-  "- Bill: a local-first conversational system. A local language model wrapped in durable memory,",
-  "  retrieval, planning, grounding and verification. Paired with bill2, a from-scratch predictive",
-  "  concept graph built without ML frameworks. Cooper is explicit that the fluent prose comes from",
-  "  the local model, not from bill2.",
-  "- Oneiro: a continuously running generative art system. A local model free-associates concepts",
-  "  that train a from-scratch NumPy pixel-art generator online.",
-  "- Busy Beaver research: an enumeration and decision pipeline that completely decides BB(2,2)=6,",
-  "  BB(3,2)=21, BB(2,3)=38 and BB(4,2)=107, proving every machine halts or never halts. These",
-  "  reproduce known values; Cooper claims no new Busy Beaver value.",
-  "- Market microstructure: on 258,737 real minute bars, short-horizon direction was shown to be",
-  "  unpredictable (AUC 0.5105). Cooper publishes negative results deliberately.",
-  "- Constraint Collapse: a forced one-token Y/N answer from a language model agrees with that",
-  "  model's own free-form answer only 0% of the time on preference questions vs 100% on checkable",
-  "  facts -- driven by a fixed per-token prior, not conversational momentum.",
-  "- Autocorrection Fidelity: when a model corrects a typo in isolation it fails 97% of the time by",
-  "  confidently returning a different, correctly-spelled real word -- not by refusing. Sentence",
-  "  context only helps once corruption is heavy enough to need it.",
-  "- Causal-State Interpretability (v1.0): defines a network feature as a causal state, not a",
-  "  direction in activation space -- two configurations are the same feature exactly when",
-  "  intervening on either produces the same future behaviour. An unused signal that is 100%",
-  "  readable from activations leaks 10,000x less into a causal description than a correlational",
-  "  one. Also gives a method that recovers the exact number of a network's causal states on 15 of",
-  "  15 unseen test systems without ever merging two different ones. Supersedes and subsumes",
-  "  Cooper's earlier 'Decodability Is Not Mechanism' note, which is retired.",
-  "- Red-teamed a small local LLM (minicpm-v4.6) across secret extraction, degenerate generation,",
-  "  fuzzing and guardrail bypass; found an effectively absent safety wall (6/6 bypassed).",
-  "- The Token Tax / Cheap Damage: tokenizers shatter unfamiliar text into fragments. A doubled",
-  "  letter inflates token count 30.9%; Hindi costs 4x the tokens of the same English sentence;",
-  "  deletion and insertion typos damage recoverability in opposite, non-obvious ways.",
-  "- Webbify (webbify.build) is Cooper's new startup: AI-built small business websites.",
-  "",
-  "Cooper is at jcooperkai@gmail.com, on GitHub as jcooperkai-sys, and on X as @jcooperkai.",
-  "Keep replies under about 130 words unless asked for more.",
-].join("\n");
-
-function readApiKey(env: Env): string {
-  const fromBinding = env?.GROQ_API_KEY;
-  if (fromBinding) return fromBinding;
-  // Local preview convenience only; absent in the Workers runtime.
-  const proc = (globalThis as { process?: { env?: Record<string, string> } }).process;
-  return proc?.env?.GROQ_API_KEY ?? "";
-}
-
-async function buddyReply(request: Request, env: Env): Promise<Response> {
-  const key = readApiKey(env);
-  // The old "no Groq key configured" early-out moved below the Hermes attempt -- Hermes is now
-  // the primary route and needs no Groq key at all. See the unconfigured check further down.
-  // Refuse on the declared length before reading anything. Checking only after `text()` still
-  // returns 413, but the body has been buffered in full by then — a 100 MB request (the platform
-  // ceiling) was being held in memory purely to reject it. The post-read check below stays, because
-  // Content-Length is absent on a chunked request and a client can understate it.
-  const declared = Number(request.headers.get("Content-Length") ?? "");
-  if (Number.isFinite(declared) && declared > BUDDY_MAX_BODY) {
-    return Response.json({ ok: false, reason: "too_large" }, { status: 413 });
-  }
-  const raw = await request.text();
-  if (raw.length > BUDDY_MAX_BODY) {
-    return Response.json({ ok: false, reason: "too_large" }, { status: 413 });
-  }
-  let message = "";
-  let history: { role: string; content: string }[] = [];
-  try {
-    const parsed = JSON.parse(raw) as {
-      message?: unknown;
-      history?: unknown;
-    };
-    message = typeof parsed.message === "string" ? parsed.message.slice(0, 1_500) : "";
-    if (Array.isArray(parsed.history)) {
-      history = parsed.history
-        .slice(-6)
-        .filter(
-          (m): m is { role: string; content: string } =>
-            typeof (m as { role?: unknown })?.role === "string" &&
-            typeof (m as { content?: unknown })?.content === "string",
-        )
-        .map((m) => ({ role: m.role === "user" ? "user" : "assistant", content: m.content.slice(0, 800) }));
-    }
-  } catch {
-    return Response.json({ ok: false, reason: "bad_request" }, { status: 400 });
-  }
-  if (!message.trim()) {
-    return Response.json({ ok: false, reason: "empty" }, { status: 400 });
-  }
-
-  const hermesToken = env?.LAB_BUDDY_TOKEN;
-  if (hermesToken) {
-    const hermes = await hermesReply(message, hermesToken);
-    if (hermes) return Response.json({ ok: true, reply: hermes });
-    // Falls through to Groq below rather than surfacing an error -- Hermes runs on Cooper's own
-    // hardware through an unrelated project's API and can be offline for reasons that have
-    // nothing to do with this site (a redeploy over there, the model unloaded, etc).
-    console.error(JSON.stringify({ event: "hermes_unavailable_falling_back_to_groq" }));
-  }
-
-  if (!key) {
-    return Response.json({ ok: false, reason: "unconfigured" }, { status: 503 });
-  }
-  try {
-    const upstream = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${key}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        // llama-3.3-70b-versatile moved behind Groq's enterprise/contact-sales tier at some
-        // point and now 404s for a standard key -- confirmed live via wrangler tail on
-        // 2026-09-10, which is why Buddy silently fell back to the offline guide on every
-        // request. This model is on Groq's regular production tier.
-        model: "llama-3.1-8b-instant",
-        messages: [
-          { role: "system", content: BUDDY_SYSTEM },
-          ...history,
-          { role: "user", content: message },
-        ],
-        temperature: 0.6,
-        max_tokens: 320,
-      }),
-      // Without this a hung upstream connection holds the request open until the platform kills
-      // it, burning wall-clock on every stalled call. 15s is well past a normal completion.
-      signal: AbortSignal.timeout(15_000),
-    });
-    if (!upstream.ok) {
-      // Status only. Upstream bodies can echo the request and must not be logged.
-      console.error(JSON.stringify({ event: "buddy_upstream_error", status: upstream.status }));
-      return Response.json({ ok: false, reason: "upstream" }, { status: 502 });
-    }
-    const data = (await upstream.json()) as {
-      choices?: { message?: { content?: string } }[];
-    };
-    const reply = data.choices?.[0]?.message?.content?.trim() ?? "";
-    if (!reply) return Response.json({ ok: false, reason: "empty_reply" }, { status: 502 });
-    return Response.json({ ok: true, reply: reply.slice(0, 2_000) });
-  } catch {
-    console.error(JSON.stringify({ event: "buddy_request_failed" }));
-    return Response.json({ ok: false, reason: "unavailable" }, { status: 502 });
-  }
-}
-
-/**
- * Buddy's primary route: Cooper's own Hermes 3 8B, run on his hardware, reached through an
- * unrelated project's already-deployed API rather than standing up a second model. That route
- * (POST /v1/lab/buddy) carries a hardcoded system prompt on its own side -- BUDDY_SYSTEM above is
- * kept identical there by hand, since the two codebases are otherwise independent.
- *
- * Single-turn only (no history) to match that route's contract. Returns null on any failure so
- * the caller falls back to Groq instead of erroring.
- */
-const HERMES_ENDPOINT = "https://api.webbify.build/v1/lab/buddy";
-
-async function hermesReply(message: string, token: string): Promise<string | null> {
-  try {
-    const upstream = await fetch(HERMES_ENDPOINT, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ message }),
-      // Hermes on local hardware is slower than a hosted API (cold load ~12s, ~13 tok/s), and
-      // this request also crosses an extra hop through the other project's API -- generous but
-      // still bounded so a stalled call doesn't hold this Worker's request open indefinitely.
-      signal: AbortSignal.timeout(40_000),
-    });
-    if (!upstream.ok) {
-      console.error(JSON.stringify({ event: "hermes_upstream_error", status: upstream.status }));
-      return null;
-    }
-    const data = (await upstream.json()) as { ok?: boolean; reply?: string };
-    const reply = data?.ok && typeof data.reply === "string" ? data.reply.trim() : "";
-    return reply ? reply.slice(0, 2_000) : null;
-  } catch {
-    console.error(JSON.stringify({ event: "hermes_request_failed" }));
-    return null;
-  }
-}
-
-/**
- * Ducky Diffusion -- a from-scratch latent diffusion model (real U-Net /
- * VAE / CLIP text encoder we instantiate ourselves, pretrained weights
- * loaded in from Hugging Face), running on Cooper's own GPU (trump) and
- * reached the same way Hermes is: through that box's own public tunnel
- * hostname rather than exposing trump's LAN IP directly. Proxied
- * server-to-server so the browser never needs CORS and the tunnel's own
- * rate limit + this Worker's IMAGEGEN_LIMIT both apply.
- */
-const IMAGEGEN_ORIGIN = "https://images.jcooperkai.com";
-
-async function imagegenStart(prompt: string): Promise<Response> {
-  const upstream = await fetch(
-    `${IMAGEGEN_ORIGIN}/generate/start?prompt=${encodeURIComponent(prompt)}`,
-    { signal: AbortSignal.timeout(15_000) },
-  );
-  return new Response(await upstream.text(), {
-    status: upstream.status,
-    headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" },
-  });
-}
-
-async function imagegenProgress(jobId: string): Promise<Response> {
-  const upstream = await fetch(
-    `${IMAGEGEN_ORIGIN}/generate/progress/${encodeURIComponent(jobId)}`,
-    { signal: AbortSignal.timeout(15_000) },
-  );
-  return new Response(await upstream.text(), {
-    status: upstream.status,
-    headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" },
-  });
-}
-
 function textResponse(
   url: URL,
   body: string,
@@ -606,65 +255,9 @@ const worker = {
       return textResponse(url, "Invalid request path.", 400);
     }
 
-    // Buddy's model route is the single exception to the read-only rule, and only for POST.
-    // Every other path, and every other method on this path, is still refused.
-    const isBuddyRoute = decodedPathname === "/api/buddy";
-    if (isBuddyRoute && request.method === "POST") {
-      if (await overLimit(env?.BUDDY_LIMIT, request, "buddy")) {
-        return textResponse(url, "Too many requests. Try again shortly.", 429, {
-          "Retry-After": "60",
-        });
-      }
-      const replied = await buddyReply(request, env);
-      return applySecurityHeaders(
-        new Response(replied.body, {
-          status: replied.status,
-          headers: {
-            "Content-Type": "application/json; charset=utf-8",
-            "Cache-Control": "no-store",
-          },
-        }),
-        url,
-      );
-    }
-
-    // Buddy's "generate an image" option. Both are GET, proxied to trump's tunnel hostname.
-    if (decodedPathname === "/api/imagegen/start" && request.method === "GET") {
-      if (await overLimit(env?.IMAGEGEN_LIMIT, request, "imagegen_start")) {
-        return textResponse(url, "Too many requests. Try again shortly.", 429, {
-          "Retry-After": "60",
-        });
-      }
-      const prompt = url.searchParams.get("prompt")?.slice(0, 500) ?? "";
-      if (!prompt.trim()) {
-        return textResponse(url, "Missing prompt.", 400);
-      }
-      try {
-        return applySecurityHeaders(await imagegenStart(prompt), url);
-      } catch {
-        return textResponse(url, "Image generator is unavailable right now.", 502);
-      }
-    }
-    if (decodedPathname === "/api/imagegen/progress" && request.method === "GET") {
-      if (await overLimit(env?.IMAGEGEN_LIMIT, request, "imagegen_progress")) {
-        return textResponse(url, "Too many requests. Try again shortly.", 429, {
-          "Retry-After": "60",
-        });
-      }
-      const jobId = url.searchParams.get("job_id") ?? "";
-      if (!/^[a-f0-9]{32}$/.test(jobId)) {
-        return textResponse(url, "Missing or invalid job_id.", 400);
-      }
-      try {
-        return applySecurityHeaders(await imagegenProgress(jobId), url);
-      } catch {
-        return textResponse(url, "Image generator is unavailable right now.", 502);
-      }
-    }
-
     if (request.method !== "GET" && request.method !== "HEAD") {
       return textResponse(url, "Method not allowed.", 405, {
-        Allow: isBuddyRoute ? "POST" : "GET, HEAD",
+        Allow: "GET, HEAD",
       });
     }
 
@@ -678,8 +271,7 @@ const worker = {
      * HEAD is a legal method here and monitors and crawlers use it, but the HTTP layer discards the
      * body afterwards, so any work spent producing one is wasted. Two concrete consequences before
      * this existed: HEAD /api/paper/001 made the Worker fetch and buffer 196 KB per request purely
-     * to throw it away, and HEAD /api/visits performed two KV writes — inflating the count and
-     * spending the free tier's 1,000 daily writes on requests nobody was reading.
+     * to throw it away, which was pure waste.
      *
      * The declared Content-Type is still accurate, which is the part of a HEAD response that
      * matters. Content-Length is omitted rather than guessed, since knowing it would mean doing
@@ -694,9 +286,6 @@ const worker = {
           }),
           url,
         );
-      if (decodedPathname === "/api/visits") {
-        return headOnly("application/json; charset=utf-8");
-      }
       const headPaper = /^\/api\/paper\/(\d{3})$/.exec(decodedPathname);
       if (headPaper) {
         return PAPER_NUMBERS.has(headPaper[1])
@@ -718,27 +307,6 @@ const worker = {
       decodedPathname === "/_next/image"
     ) {
       return textResponse(url, "Not found.", 404);
-    }
-
-    // Unique-visit counter. A GET, so the GET/HEAD-only rule above still holds and no write
-    // method is exposed. Never cached, so each visit is actually seen.
-    if (decodedPathname === "/api/visits") {
-      if (await overLimit(env?.VISITS_LIMIT, request, "visits")) {
-        return textResponse(url, "Too many requests. Try again shortly.", 429, {
-          "Retry-After": "60",
-        });
-      }
-      const counted = await recordVisit(request, env);
-      return applySecurityHeaders(
-        new Response(counted.body, {
-          status: counted.status,
-          headers: {
-            "Content-Type": "application/json; charset=utf-8",
-            "Cache-Control": "no-store",
-          },
-        }),
-        url,
-      );
     }
 
     // Papers are served through an extensionless route on purpose. The local dev server derives a
