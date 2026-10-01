@@ -46,9 +46,12 @@ test("server-renders the portfolio", async () => {
     assert.match(html, new RegExp(`>${heading}<`), `missing section ${heading}`);
   }
   // Featured order: GGUF Token Decoder, TRDE, HisokaOS.
-  const order = ["GGUF Token Decoder", "TRDE", "HisokaOS"].map((n) => html.indexOf(n));
+  const order = ["GGUF Token Decoder", "Transactional Relational Database Engine", "HisokaOS"].map((n) => html.indexOf(n));
   assert.ok(order.every((n) => n > 0) && order[0] < order[1] && order[1] < order[2], "featured order");
   assert.match(html, /© 2026 Cooper\. E/);
+  assert.match(html, /See more projects on GitHub/);
+  // Pinned projects are not repeated in the list under them.
+  assert.equal(html.split('href="https://github.com/jcooperkai-sys/HisokaOS"').length - 1, 1);
   // The link preview: an image, and no description text at all.
   assert.match(html, /<meta property="og:image" content="https:\/\/jcooperkai\.com\/assets\/og\.png"/);
   assert.match(html, /<meta name="twitter:card" content="summary_large_image"/);
@@ -360,7 +363,7 @@ test("llms.txt files describe the current site", async () => {
   for (const [name, text] of [["llms.txt", brief], ["llms-full.txt", full]]) {
     assert.match(text, /jcooperkai/, `${name}: missing the handle`);
     assert.match(text, /Agentic Engineer|agentic engineer/, `${name}: missing the role`);
-    for (const project of ["GGUF Token Decoder", "TRDE", "HisokaOS", "Wingwall Neural World"]) {
+    for (const project of ["GGUF Token Decoder", "Transactional Relational Database Engine", "HisokaOS", "Wingwall Neural World"]) {
       assert.ok(text.includes(project), `${name}: missing ${project}`);
     }
     assert.doesNotMatch(text, /Buddy|AI Lab|visitor|—/, `${name}: carries retired content or an em dash`);
