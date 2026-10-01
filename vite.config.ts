@@ -11,7 +11,7 @@ const { d1, r2 } = hostingConfig;
 // macOS Seatbelt blocks FSEvents, so Codex previews need polling for HMR.
 const isCodexSeatbeltSandbox = process.env.CODEX_SANDBOX === "seatbelt";
 
-// Deploy-time bindings — rate limiting and the visit counter's KV namespace — live in
+// Deploy-time bindings (the rate limiter) live in
 // wrangler.jsonc, not here. Declaring them in both places put each binding into the generated
 // config twice. wrangler.jsonc is the single source of truth: `wrangler` and `vinext deploy` read
 // it directly, and the build merges it with the object below.

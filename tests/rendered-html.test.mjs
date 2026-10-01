@@ -1,6 +1,17 @@
 import assert from "node:assert/strict";
 import { access, readFile, readdir } from "node:fs/promises";
+import { register } from "node:module";
 import test from "node:test";
+
+// vinext 1.x's server bundle imports "cloudflare:workers", which only exists inside workerd. The
+// worker never touches it on these code paths, so Node gets an empty module in its place.
+register(
+  "data:text/javascript," +
+    encodeURIComponent(`export async function resolve(s, c, next) {
+      if (s === "cloudflare:workers") return { url: "data:text/javascript,export const env = {};", shortCircuit: true };
+      return next(s, c);
+    }`),
+);
 
 async function render(url = "http://localhost/", init = {}) {
   const workerUrl = new URL("../dist/server/index.js", import.meta.url);
@@ -23,42 +34,28 @@ async function render(url = "http://localhost/", init = {}) {
   );
 }
 
-test("server-renders the complete AI research portfolio", async () => {
+test("server-renders the portfolio", async () => {
   const response = await render();
   assert.equal(response.status, 200);
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
 
   const html = await response.text();
-  assert.match(html, /COOPER E\./);
-  assert.match(html, /Research Papers/);
-  assert.match(html, /Experiments &amp; Projects/);
-  assert.match(html, /Interesting Work/);
-  assert.match(html, /Talk to Buddy/);
-  assert.match(html, /Contact \/ Collaborate/);
-  assert.match(html, /© 1996 jcooperkai/i);
-  assert.match(html, /ticker-yellow/);
-  assert.match(html, /WEBBIFY\.BUILD/);
-  assert.match(html, /CLICK HERE TO CHECK OUT MY NEW RESEARCH PAPERS/);
-  assert.match(html, /VISITOR COUNTER/);
-  assert.match(html, /paper-tag-new/);
-  // Papers panel shows only the first two by default -- the rest are behind View More.
-  // Ducky Diffusion (012) is the newest and now occupies slot 1; Autocorrection Fidelity
-  // (004) shifted out of the default-visible pair when it was added, same as Causal-State
-  // Interpretability did before it.
-  assert.match(html, /DUCKY DIFFUSION/);
-  assert.match(html, /CONSTRAINT COLLAPSE/);
-  assert.doesNotMatch(html, /AUTOCORRECTION FIDELITY/);
-  assert.doesNotMatch(html, /CAUSAL-STATE INTERPRETABILITY/);
-  assert.doesNotMatch(html, /View more papers on arXiv/);
+  assert.match(html, /<title>jcooperkai, Agentic Engineer<\/title>/);
+  assert.match(html, /Agentic Engineer/);
+  for (const heading of ["Company", "Projects", "All projects", "Other projects", "Gallery"]) {
+    assert.match(html, new RegExp(`>${heading}<`), `missing section ${heading}`);
+  }
+  // Featured order: GGUF Token Decoder, TRDE, HisokaOS.
+  const order = ["GGUF Token Decoder", "TRDE", "HisokaOS"].map((n) => html.indexOf(n));
+  assert.ok(order.every((n) => n > 0) && order[0] < order[1] && order[1] < order[2], "featured order");
+  assert.match(html, /© 2026 Cooper\. E/);
+  // The link preview: an image, and no description text at all.
+  assert.match(html, /<meta property="og:image" content="https:\/\/jcooperkai\.com\/assets\/og\.png"/);
+  assert.match(html, /<meta name="twitter:card" content="summary_large_image"/);
+  assert.doesNotMatch(html, /name="description"|og:description|twitter:description/);
+  // Retired site content must never come back.
+  assert.doesNotMatch(html, /Buddy|VISITOR COUNTER|AI Lab|Research Papers|\/api\/visits|\/api\/buddy/i);
   assert.doesNotMatch(html, /\[(?:YOUR|PLACE|ADD|REPLACE)\b/i);
-  // Retired artwork and UI must never come back. Each term targets a class name, id, or asset
-  // filename — the hyphenated form these are always written in. "neural-net" therefore still
-  // blocks the rejected neural-network/computer scene assets (e.g. "neural-net-scene.png",
-  // class="neural-net-bg") while allowing the ordinary English phrase "neural networks" in copy.
-  assert.doesNotMatch(
-    html,
-    /guestbook-dialog|modal-backdrop|jc-panel|ascii-terminal|neural-net/i,
-  );
 });
 
 test("all authored local assets and downloadable files exist", async () => {
@@ -72,7 +69,8 @@ test("all authored local assets and downloadable files exist", async () => {
     ),
   );
 
-  assert.ok(references.size >= 35, "expected a complete set of local artifacts");
+  assert.ok(references.size >= 8, "expected a complete set of local artifacts");
+  await access(new URL("../public/assets/og.png", import.meta.url));
   await Promise.all(
     [...references].map((path) =>
       access(new URL(`../public${path}`, import.meta.url)),
@@ -91,15 +89,14 @@ test("interactive controls retain accessible names and safe external links", asy
     "utf8",
   );
 
-  assert.match(page, /aria-pressed=\{secretMode\}/);
-  assert.match(page, /aria-pressed=\{motionPaused\}/);
-  assert.match(page, /handleBuddyFile/);
-  assert.match(page, /FILES STAY LOCAL TO THIS BROWSER/);
+  const gallery = await readFile(new URL("../app/gallery.tsx", import.meta.url), "utf8");
   assert.match(page, /rel="noopener noreferrer"/);
-  assert.match(page, /target="_blank"/);
-  assert.match(page, /download\s+href=/);
-  assert.match(page, /onClick=\{\(\) => window\.print\(\)\}/);
-  assert.doesNotMatch(page, /dangerouslySetInnerHTML|\beval\s*\(|javascript:/i);
+  assert.match(page, /aria-label="Find me elsewhere"/);
+  assert.match(gallery, /ArrowRight/);
+  assert.match(gallery, /ArrowLeft/);
+  assert.match(gallery, /aria-label="Next image"/);
+  assert.doesNotMatch(gallery, /dangerouslySetInnerHTML|\beval\s*\(|javascript:/i);
+  assert.doesNotMatch(page, /dangerouslySetInnerHTML|\beval\s*\(|href=\S*javascript:/i);
 });
 
 test("production responses include defensive browser headers", async () => {
@@ -118,7 +115,7 @@ test("production responses include defensive browser headers", async () => {
   assert.match(csp, /upgrade-insecure-requests/);
   assert.equal(
     response.headers.get("strict-transport-security"),
-    "max-age=31536000",
+    "max-age=63072000; includeSubDomains",
   );
   assert.equal(response.headers.get("cross-origin-opener-policy"), "same-origin");
   assert.equal(
@@ -167,6 +164,14 @@ test("worker closes unused and unsafe request surfaces", async () => {
     await injection.text(),
     /<\/script><script>alert\(1\)<\/script>/i,
   );
+
+  // The old site's Buddy, image-generation and visit-counter routes are gone.
+  for (const route of ["/api/buddy", "/api/imagegen/start?prompt=x", "/api/imagegen/progress?job_id=" + "a".repeat(32), "/api/visits"]) {
+    const gone = await render(`https://portfolio.example${route}`);
+    assert.equal(gone.status, 404, `${route} should not exist`);
+  }
+  const buddyPost = await render("https://portfolio.example/api/buddy", { method: "POST", body: "{}" });
+  assert.equal(buddyPost.status, 405);
 
   const longUri = await render(
     `https://portfolio.example/?q=${"a".repeat(4_100)}`,
@@ -220,7 +225,11 @@ test("privacy and responsible-disclosure files are present", async () => {
     readFile(new URL("../public/robots.txt", import.meta.url), "utf8"),
   ]);
 
-  assert.match(privacy, /not transmitted to or stored by this\s+website/i);
+  assert.match(privacy, /no requests to any third party/i);
+  assert.doesNotMatch(privacy, /Buddy|visitor counter is decorative|digest/i);
+  assert.match(security, /^Expires: \d{4}-\d{2}-\d{2}T/m);
+  assert.ok(new Date(security.match(/^Expires: (.+)$/m)[1]) > new Date(), "security.txt has expired");
+  assert.match(security, /^Policy: https:\/\/jcooperkai\.com\/security-policy\.txt$/m);
   assert.match(security, /Contact: mailto:jcooperkai@gmail\.com/);
   assert.match(robots, /Sitemap: https:\/\/jcooperkai\.com\/sitemap\.xml/);
 });
@@ -266,52 +275,30 @@ test("papers are served for reading, not downloading", async () => {
   }
 });
 
-test("metered routes are rate limited by the edge binding", async () => {
+test("read-back routes are rate limited by the edge binding", async () => {
   // The limiter must be a binding, not a counter in the Worker: isolates do not share memory.
-  // These assertions prove the binding is consulted and that a refusal is honoured.
   const seenKeys = [];
-  const denying = {
-    limit: async ({ key }) => {
-      seenKeys.push(key);
-      return { success: false };
-    },
-  };
   const env = {
-    ASSETS: { fetch: async () => new Response("Not found", { status: 404 }) },
-    BUDDY_LIMIT: denying,
-    VISITS_LIMIT: denying,
+    ASSETS: { fetch: async () => new Response("x", { status: 200 }) },
+    ASSET_LIMIT: { limit: async ({ key }) => { seenKeys.push(key); return { success: false }; } },
   };
-
-  const buddy = await renderWithEnv("https://portfolio.example/api/buddy", env, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "CF-Connecting-IP": "203.0.113.7" },
-    body: JSON.stringify({ message: "hello" }),
+  const paper = await renderWithEnv("https://portfolio.example/api/paper/001", env, {
+    headers: { "CF-Connecting-IP": "203.0.113.7", "X-Forwarded-For": "198.51.100.1" },
   });
-  assert.equal(buddy.status, 429);
-  assert.equal(buddy.headers.get("retry-after"), "60");
-
-  const visits = await renderWithEnv("https://portfolio.example/api/visits", env, {
-    headers: { "CF-Connecting-IP": "203.0.113.7" },
-  });
-  assert.equal(visits.status, 429);
-
+  assert.equal(paper.status, 429);
+  assert.equal(paper.headers.get("retry-after"), "60");
   // Keyed on the edge-set client address, never on a client-supplied forwarding header.
-  assert.deepEqual(seenKeys, ["203.0.113.7", "203.0.113.7"]);
+  assert.deepEqual(seenKeys, ["203.0.113.7"]);
 
   // Absent binding (local preview) must fail open rather than take the route down.
-  const open = await renderWithEnv("https://portfolio.example/api/visits", {
-    ASSETS: env.ASSETS,
-  });
+  const open = await renderWithEnv("https://portfolio.example/api/paper/001", { ASSETS: env.ASSETS });
   assert.equal(open.status, 200);
 });
 
 test("HEAD is answered without doing the route's work", async () => {
   // HEAD is legal here and monitors use it, but the HTTP layer discards the body, so any work
-  // spent building one is wasted. Before this, HEAD /api/paper/001 buffered 196 KB per request and
-  // HEAD /api/visits performed two KV writes — inflating the count and spending the free tier's
-  // daily write budget on requests nobody read.
+  // spent building one is wasted. Before this, HEAD /api/paper/001 buffered 196 KB per request.
   let assetReads = 0;
-  const kvWrites = [];
   const env = {
     ASSETS: {
       fetch: async () => {
@@ -319,7 +306,6 @@ test("HEAD is answered without doing the route's work", async () => {
         return new Response(new Uint8Array(4096), { status: 200 });
       },
     },
-    VISITS: { get: async () => null, put: async (k) => { kvWrites.push(k); } },
   };
 
   const paper = await renderWithEnv("https://portfolio.example/api/paper/001", env, { method: "HEAD" });
@@ -328,10 +314,6 @@ test("HEAD is answered without doing the route's work", async () => {
   assert.equal((await paper.arrayBuffer()).byteLength, 0);
   assert.equal(assetReads, 0, "HEAD must not read the asset");
 
-  const visits = await renderWithEnv("https://portfolio.example/api/visits", env, { method: "HEAD" });
-  assert.equal(visits.status, 200);
-  assert.deepEqual(kvWrites, [], "HEAD must not write to KV");
-
   // HEAD must agree with GET about what exists, or a monitor reports a paper as present that GET
   // returns 404 for.
   for (const path of ["/api/paper/999", "/api/experiment/nope"]) {
@@ -339,56 +321,6 @@ test("HEAD is answered without doing the route's work", async () => {
     const head = await renderWithEnv(`https://portfolio.example${path}`, env, { method: "HEAD" });
     assert.equal(get.status, 404);
     assert.equal(head.status, get.status, `${path}: HEAD and GET disagree`);
-  }
-});
-
-test("the stored visit digest cannot be recomputed from public information", async () => {
-  // The earlier implementation used the calendar date as its "salt", so the stored key was
-  // SHA-256("YYYY-MM-DD:<ip>") — recoverable by hashing 2^32 candidates, which takes seconds. The
-  // privacy notice's claim of an irreversible digest was false as written. A random per-day salt
-  // makes it true: there is no longer anything to guess.
-  const ip = "203.0.113.7";
-  const day = new Date().toISOString().slice(0, 10);
-  const store = new Map();
-  const written = [];
-  const env = {
-    ASSETS: { fetch: async () => new Response("", { status: 404 }) },
-    VISITS: {
-      get: async (k) => store.get(k) ?? null,
-      put: async (k, v) => { written.push(k); store.set(k, v); },
-    },
-  };
-
-  const res = await renderWithEnv("https://portfolio.example/api/visits", env, {
-    headers: { "CF-Connecting-IP": ip },
-  });
-  assert.equal(res.status, 200);
-
-  const storedKey = written.find((k) => k.startsWith("v:"));
-  assert.ok(storedKey, "a visit key should have been written");
-
-  const digest = await crypto.subtle.digest(
-    "SHA-256",
-    new TextEncoder().encode(`${day}:${ip}`),
-  );
-  const publicGuess =
-    "v:" +
-    [...new Uint8Array(digest)]
-      .slice(0, 16)
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
-  assert.notEqual(storedKey, publicGuess, "digest is brute-forceable from date and address alone");
-
-  // The salt must be real randomness kept server-side, and never part of the response.
-  const salt = store.get(`salt:${day}`);
-  assert.equal(typeof salt, "string");
-  assert.equal(salt.length, 64, "expected 32 random bytes as hex");
-  assert.doesNotMatch(await res.text(), new RegExp(salt), "the salt must never reach the client");
-
-  // The address itself must never be stored, under any key.
-  for (const [k, v] of store) {
-    assert.doesNotMatch(k, /203\.0\.113\.7/, `address leaked into key ${k}`);
-    assert.doesNotMatch(String(v), /203\.0\.113\.7/, `address leaked into value at ${k}`);
   }
 });
 
@@ -412,46 +344,28 @@ test("the generated deploy config declares each binding exactly once", async () 
   // The limiters the worker consults must actually be present, or production silently has no
   // limits — the exact failure that shipped once already.
   const limiters = (generated.ratelimits ?? []).map((b) => b.name);
-  for (const required of ["BUDDY_LIMIT", "VISITS_LIMIT", "ASSET_LIMIT"]) {
-    assert.ok(limiters.includes(required), `${required} is missing from the deploy config`);
-  }
+  assert.deepEqual(limiters, ["ASSET_LIMIT"], "only the read-back limiter should be bound");
+  assert.equal((generated.kv_namespaces ?? []).length, 0, "the visit counter's KV store is retired");
 
   // The worker name is also the first label of its workers.dev hostname, so renaming it changes the
   // public URL. Pinned here so a rename is a deliberate edit rather than a surprise.
   assert.equal(generated.name, "www");
 });
 
-test("llms.txt files exist and carry the honesty constraints", async () => {
-  // These are the files an AI assistant reads before describing this work, so the constraints that
-  // keep it from being overstated matter more here than anywhere else on the site.
+test("llms.txt files describe the current site", async () => {
   const [brief, full] = await Promise.all([
     readFile(new URL("../public/llms.txt", import.meta.url), "utf8"),
     readFile(new URL("../public/llms-full.txt", import.meta.url), "utf8"),
   ]);
-
   for (const [name, text] of [["llms.txt", brief], ["llms-full.txt", full]]) {
     assert.match(text, /jcooperkai/, `${name}: missing the handle`);
-    // "Draft" was accurate while every paper carried a work-in-progress banner; that pipeline is
-    // retired and the papers are now finished, checked documents -- the honesty constraint that
-    // still matters is that they are not peer-reviewed, which this checks for directly instead.
-    assert.match(text, /peer-review/i, `${name}: must address peer-review status`);
-    assert.match(text, /reproduce[sd]? known values|reproduces known/i, `${name}: must not imply a new Busy Beaver value`);
-    assert.match(text, /negative result/i, `${name}: must flag the negative result`);
-    assert.match(text, /Ollama/, `${name}: must state the Ollama requirement`);
-    // The old fabricated counter baseline must never reappear in a machine-readable description.
-    assert.doesNotMatch(text, /13581/, `${name}: references the retired decorative visit baseline`);
+    assert.match(text, /Agentic Engineer|agentic engineer/, `${name}: missing the role`);
+    for (const project of ["GGUF Token Decoder", "TRDE", "HisokaOS", "Wingwall Neural World"]) {
+      assert.ok(text.includes(project), `${name}: missing ${project}`);
+    }
+    assert.doesNotMatch(text, /Buddy|AI Lab|visitor|—/, `${name}: carries retired content or an em dash`);
   }
-
-  // The full version is the one that carries the measured figures. "1600" (the old Decodability
-  // separation) was deliberately dropped when that note was retired into Causal-State
-  // Interpretability v1.0 -- the new paper states the same gap as "more than 10,000x" rather than
-  // a precise ratio, since the interventional value sits at the measurement floor and a precise
-  // ratio would be false precision. "10,000" is CSI's real replacement figure.
-  for (const figure of ["0.5105", "0.0492", "20,736", "76.5", "10,000"]) {
-    assert.ok(full.includes(figure), `llms-full.txt is missing the figure ${figure}`);
-  }
-  assert.ok(!full.includes("1600"), "llms-full.txt should not carry the retired 1600x figure");
-  assert.ok(full.length > brief.length * 3, "llms-full.txt should be substantially longer than llms.txt");
+  assert.ok(full.length > brief.length * 1.5, "llms-full.txt should be substantially longer than llms.txt");
 
   // robots.txt should point at them, or nothing will find them.
   const robots = await readFile(new URL("../public/robots.txt", import.meta.url), "utf8");
