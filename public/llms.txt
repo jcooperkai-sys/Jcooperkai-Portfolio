@@ -14,16 +14,12 @@
 ## Projects
 
 - [HisokaOS](https://github.com/jcooperkai-sys/HisokaOS): A from-scratch 32-bit x86 operating system in C and assembly.
-- [TRDE](https://github.com/jcooperkai-sys/TRDE): A transactional relational database engine in pure Python.
+- [Transactional Relational Database Engine](https://github.com/jcooperkai-sys/TRDE): A transactional relational database engine in pure Python.
 - [The Lazy Driver](https://github.com/jcooperkai-sys/The-Lazy-Driver): Self-driving perception and path prediction on dashcam footage.
-- [AV-Viz](https://github.com/jcooperkai-sys/AV-Viz): A one-file viewer for self-driving perception at an intersection.
 - [Bill](https://github.com/jcooperkai-sys/Bill): A local conversational system with memory, retrieval and fact checking.
-- [Oneiro](https://github.com/jcooperkai-sys/Oneiro): A pixel-art model that paints a language model's ideas all day.
 - [Cache the Cat](https://github.com/jcooperkai-sys/Cache-The-Cat-AI): A pixel-art cat assistant that lives on your Windows desktop.
 - [Reachy RL](https://github.com/jcooperkai-sys/Reachy-RL): Reachy 2 in MuJoCo, set up for reinforcement learning.
 - [GGUF Token Decoder](https://github.com/jcooperkai-sys/GGUF-Token-Decoder): Decodes a GGUF model's token IDs using only the model file.
-- [SuperCompress Local](https://github.com/jcooperkai-sys/SuperCompress-Local): SuperCompress running fully on your own machine.
-- [Roblox Piano Hotkey](https://github.com/jcooperkai-sys/Roblox-Piano-Hotkey): Plays songs on Roblox's Virtual Piano with real timing.
 - [Editor Browser](https://github.com/jcooperkai-sys/Editor-Browser): A full browser tab inside the VS Code editor.
 - [App Installer](https://github.com/jcooperkai-sys/app-installer): A Windows application with an NSIS installer.
 

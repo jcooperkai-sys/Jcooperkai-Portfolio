@@ -19,11 +19,11 @@ https://github.com/jcooperkai-sys/HisokaOS
 
 A 32-bit x86 operating system I wrote from scratch in C and assembly. It boots its own kernel in QEMU to an interactive shell, with paging, PCI, an RTL8139 network driver and a RAM filesystem.
 
-### TRDE
+### Transactional Relational Database Engine
 
 https://github.com/jcooperkai-sys/TRDE
 
-A Transactional Relational Database Engine I wrote in pure Python with no dependencies: a pager, B+tree indexes, crash-safe transactions, a SQL parser and a query planner.
+TRDE, a database engine I wrote in pure Python with no dependencies: a pager, B+tree indexes, crash-safe transactions, a SQL parser and a query planner.
 
 ### The Lazy Driver
 
@@ -31,23 +31,11 @@ https://github.com/jcooperkai-sys/The-Lazy-Driver
 
 Self-driving perception and path prediction on ordinary dashcam footage. It segments lanes and drivable road, tracks vehicles with metric distances, and draws a predicted driving line kept on the road.
 
-### AV-Viz
-
-https://github.com/jcooperkai-sys/AV-Viz
-
-A single HTML file that shows what a self-driving car perceives at an HD-mapped four-way intersection.
-
 ### Bill
 
 https://github.com/jcooperkai-sys/Bill
 
 A conversational system that runs on my own machine: a local language model with long-term memory, retrieval, planning and fact checking, paired with a predictive concept graph I built without an ML framework.
-
-### Oneiro
-
-https://github.com/jcooperkai-sys/Oneiro
-
-Generative art that runs all day. A local language model free-associates ideas, and a pixel-art model I wrote in NumPy learns to paint each one as it arrives, streaming to a live gallery.
 
 ### Cache the Cat
 
@@ -66,18 +54,6 @@ The Reachy 2 robot in MuJoCo with a local viewer, set up as a base for training 
 https://github.com/jcooperkai-sys/GGUF-Token-Decoder
 
 Turns a local GGUF model's raw token IDs back into text using only the model file.
-
-### SuperCompress Local
-
-https://github.com/jcooperkai-sys/SuperCompress-Local
-
-Runs Arjun Shah's SuperCompress entirely on your own machine, so agent hooks and MCP clients talk to localhost with no API key or quota.
-
-### Roblox Piano Hotkey
-
-https://github.com/jcooperkai-sys/Roblox-Piano-Hotkey
-
-An Electron app that plays songs on Roblox's Virtual Piano with real timing, including chords, rests and sustain. It comes with a MIDI converter and a check for whether a person could actually play the song.
 
 ### Editor Browser
 

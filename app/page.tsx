@@ -33,12 +33,12 @@ const projects: { name: string; repo: string; short: string; icon: IconName; blu
     badges: [lang.c, mit],
   },
   {
-    name: "TRDE",
+    name: "Transactional Relational Database Engine",
     repo: "TRDE",
     short: "A transactional relational database engine in pure Python.",
     icon: "database",
     blurb:
-      "A Transactional Relational Database Engine I wrote in pure Python with no dependencies: a pager, B+tree indexes, crash-safe transactions, a SQL parser and a query planner.",
+      "TRDE, a database engine I wrote in pure Python with no dependencies: a pager, B+tree indexes, crash-safe transactions, a SQL parser and a query planner.",
     badges: [lang.python, mit],
   },
   {
@@ -51,14 +51,6 @@ const projects: { name: string; repo: string; short: string; icon: IconName; blu
     badges: [lang.python, mit],
   },
   {
-    name: "AV-Viz",
-    repo: "AV-Viz",
-    short: "A one-file viewer for self-driving perception at an intersection.",
-    icon: "road",
-    blurb: "A single HTML file that shows what a self-driving car perceives at an HD-mapped four-way intersection.",
-    badges: [lang.html, mit],
-  },
-  {
     name: "Bill",
     repo: "Bill",
     short: "A local conversational system with memory, retrieval and fact checking.",
@@ -66,15 +58,6 @@ const projects: { name: string; repo: string; short: string; icon: IconName; blu
     blurb:
       "A conversational system that runs on my own machine: a local language model with long-term memory, retrieval, planning and fact checking, paired with a predictive concept graph I built without an ML framework.",
     badges: [lang.cpp, mit],
-  },
-  {
-    name: "Oneiro",
-    repo: "Oneiro",
-    short: "A pixel-art model that paints a language model's ideas all day.",
-    icon: "palette",
-    blurb:
-      "Generative art that runs all day. A local language model free-associates ideas, and a pixel-art model I wrote in NumPy learns to paint each one as it arrives, streaming to a live gallery.",
-    badges: [],
   },
   {
     name: "Cache the Cat",
@@ -100,24 +83,6 @@ const projects: { name: string; repo: string; short: string; icon: IconName; blu
     icon: "file-code",
     blurb: "Turns a local GGUF model's raw token IDs back into text using only the model file.",
     badges: [lang.python, mit],
-  },
-  {
-    name: "SuperCompress Local",
-    repo: "SuperCompress-Local",
-    short: "SuperCompress running fully on your own machine.",
-    icon: "file-zipper",
-    blurb:
-      "Runs Arjun Shah's SuperCompress entirely on your own machine, so agent hooks and MCP clients talk to localhost with no API key or quota.",
-    badges: [lang.python],
-  },
-  {
-    name: "Roblox Piano Hotkey",
-    repo: "Roblox-Piano-Hotkey",
-    short: "Plays songs on Roblox's Virtual Piano with real timing.",
-    icon: "music",
-    blurb:
-      "An Electron app that plays songs on Roblox's Virtual Piano with real timing, including chords, rests and sustain. It comes with a MIDI converter and a check for whether a person could actually play the song.",
-    badges: [lang.javascript, mit],
   },
   {
     name: "Editor Browser",
@@ -277,13 +242,19 @@ export default function Home() {
 
           <h3 className="sub" id="all-projects">All projects</h3>
           <ul className="plain-links" aria-labelledby="all-projects">
-            {projects.map((p) => (
+            {projects.filter((p) => !featured.some((f) => f.repo === p.repo)).map((p) => (
               <li key={p.repo}>
                 <a className="blue" href={`https://github.com/jcooperkai-sys/${p.repo}`} rel="noopener noreferrer">{p.name}</a>
                 <span>{p.short}</span>
               </li>
             ))}
           </ul>
+          <p className="more">
+            <a className="more-button" href="https://github.com/jcooperkai-sys?tab=repositories" rel="noopener noreferrer">
+              <Icon name="github" className="link-icon" />
+              See more projects on GitHub
+            </a>
+          </p>
         </section>
 
         <section aria-labelledby="private">

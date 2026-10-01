@@ -68,6 +68,13 @@ h2 { margin: 0 0 18px; font-size: 26px; font-weight: 600; text-align: center; }
 .plain-links { list-style: none; margin: 0; padding: 0; }
 .plain-links li { display: grid; grid-template-columns: 210px 1fr; gap: 16px; align-items: baseline; }
 .plain-links span { color: var(--muted); }
+.more { margin: 22px 0 0; }
+.more-button {
+  display: inline-flex; align-items: center; gap: 9px; min-height: 44px; padding: 0 16px; border-radius: 6px;
+  border: 2px solid var(--text); color: var(--text); text-decoration: none; font-size: 16px; font-weight: 500;
+}
+.more-button:hover { background: var(--text); color: var(--ground); }
+.more-button:hover .link-icon { fill: var(--ground); }
 .plain-links a, a.blue { color: var(--blue); display: inline-block; padding: 6px 0; }
 
 /* private projects: the blue name expands to its description */
