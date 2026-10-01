@@ -42,8 +42,12 @@ test("server-renders the complete AI research portfolio", async () => {
   assert.match(html, /VISITOR COUNTER/);
   assert.match(html, /paper-tag-new/);
   // Papers panel shows only the first two by default -- the rest are behind View More.
+  // Ducky Diffusion (012) is the newest and now occupies slot 1; Autocorrection Fidelity
+  // (004) shifted out of the default-visible pair when it was added, same as Causal-State
+  // Interpretability did before it.
+  assert.match(html, /DUCKY DIFFUSION/);
   assert.match(html, /CONSTRAINT COLLAPSE/);
-  assert.match(html, /AUTOCORRECTION FIDELITY/);
+  assert.doesNotMatch(html, /AUTOCORRECTION FIDELITY/);
   assert.doesNotMatch(html, /CAUSAL-STATE INTERPRETABILITY/);
   assert.doesNotMatch(html, /View more papers on arXiv/);
   assert.doesNotMatch(html, /\[(?:YOUR|PLACE|ADD|REPLACE)\b/i);
