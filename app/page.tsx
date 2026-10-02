@@ -60,15 +60,6 @@ const projects: { name: string; repo: string; short: string; icon: IconName; blu
     badges: [lang.cpp, mit],
   },
   {
-    name: "Cache the Cat",
-    repo: "Cache-The-Cat-AI",
-    short: "A pixel-art cat assistant that lives on your Windows desktop.",
-    icon: "cat",
-    blurb:
-      "A pixel-art cat that lives on your Windows desktop. It chats through a local model, remembers context, and runs desktop actions only after you approve them.",
-    badges: [lang.javascript],
-  },
-  {
     name: "Reachy RL",
     repo: "Reachy-RL",
     short: "Reachy 2 in MuJoCo, set up for reinforcement learning.",

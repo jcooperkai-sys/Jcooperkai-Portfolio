@@ -17,7 +17,6 @@
 - [Transactional Relational Database Engine](https://github.com/jcooperkai-sys/TRDE): A transactional relational database engine in pure Python.
 - [The Lazy Driver](https://github.com/jcooperkai-sys/The-Lazy-Driver): Self-driving perception and path prediction on dashcam footage.
 - [Bill](https://github.com/jcooperkai-sys/Bill): A local conversational system with memory, retrieval and fact checking.
-- [Cache the Cat](https://github.com/jcooperkai-sys/Cache-The-Cat-AI): A pixel-art cat assistant that lives on your Windows desktop.
 - [Reachy RL](https://github.com/jcooperkai-sys/Reachy-RL): Reachy 2 in MuJoCo, set up for reinforcement learning.
 - [GGUF Token Decoder](https://github.com/jcooperkai-sys/GGUF-Token-Decoder): Decodes a GGUF model's token IDs using only the model file.
 - [Editor Browser](https://github.com/jcooperkai-sys/Editor-Browser): A full browser tab inside the VS Code editor.

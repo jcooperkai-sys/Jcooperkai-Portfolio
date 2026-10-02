@@ -37,12 +37,6 @@ https://github.com/jcooperkai-sys/Bill
 
 A conversational system that runs on my own machine: a local language model with long-term memory, retrieval, planning and fact checking, paired with a predictive concept graph I built without an ML framework.
 
-### Cache the Cat
-
-https://github.com/jcooperkai-sys/Cache-The-Cat-AI
-
-A pixel-art cat that lives on your Windows desktop. It chats through a local model, remembers context, and runs desktop actions only after you approve them.
-
 ### Reachy RL
 
 https://github.com/jcooperkai-sys/Reachy-RL
