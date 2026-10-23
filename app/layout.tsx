@@ -29,6 +29,24 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
+/* Structured data for search engines and AI assistants. A fixed constant: no request data and no user
+   input reaches it, and "<" is escaped so it can never close the script tag. Every value here is
+   already public on the page. */
+const personJsonLd = JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "@id": "https://jcooperkai.com/#person",
+  name: "Cooper E.",
+  alternateName: "jcooperkai",
+  jobTitle: "Agentic Engineer",
+  url: "https://jcooperkai.com/",
+  image: "https://jcooperkai.com/assets/og.png",
+  email: "mailto:jcooperkai@gmail.com",
+  address: { "@type": "PostalAddress", addressLocality: "San Diego", addressRegion: "CA", addressCountry: "US" },
+  worksFor: { "@type": "Organization", name: "Webbify", url: "https://webbify.build/" },
+  sameAs: ["https://github.com/jcooperkai-sys", "https://x.com/jcooperkai"],
+}).replace(/</g, "\\u003c");
+
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
@@ -43,7 +61,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: personJsonLd }} />
+        {children}
+      </body>
     </html>
   );
 }
