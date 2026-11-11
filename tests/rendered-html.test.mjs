@@ -375,3 +375,17 @@ test("llms.txt files describe the current site", async () => {
   assert.match(robots, /llms\.txt/);
   assert.match(robots, /llms-full\.txt/);
 });
+
+test("favicons have transparent corners so browsers don't add a light plate behind them", async () => {
+  const { default: sharp } = await import("sharp");
+  for (const size of [48, 96, 192]) {
+    const { data, info } = await sharp(new URL(`../public/assets/favicon-${size}.png`, import.meta.url).pathname)
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    assert.equal(info.width, size);
+    for (const [x, y] of [[0, 0], [size - 1, 0], [0, size - 1], [size - 1, size - 1]]) {
+      assert.equal(data[(y * size + x) * 4 + 3], 0, `favicon-${size}.png corner (${x},${y}) is not transparent`);
+    }
+  }
+});
