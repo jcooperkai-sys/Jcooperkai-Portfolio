@@ -109,9 +109,16 @@ function isLocalPreview(url: URL) {
   );
 }
 
+const RETIRED_PATH =
+  /^\/(?:downloads|papers|badges|api\/paper|api\/experiment|assets\/(?:buttons|badges|profile))(?:\/|$)|^\/assets\/(?:fire-strip|jc-wordmark)\.png$/i;
+
 function applySecurityHeaders(response: Response, url: URL) {
   const headers = new Headers(response.headers);
   const localPreview = isLocalPreview(url);
+
+  if (RETIRED_PATH.test(url.pathname) || url.hostname.endsWith(".workers.dev")) {
+    headers.set("X-Robots-Tag", "noindex, noarchive, noimageindex");
+  }
 
   headers.delete("server");
   headers.delete("x-powered-by");

@@ -359,7 +359,7 @@ export default function Home() {
               <ul className="links" aria-label="Find me elsewhere">
                 {links.map((l) => (
                   <li key={l.label}>
-                    <a className="link-button" href={l.href} {...(l.href.startsWith("http") ? { rel: "noopener noreferrer" } : {})}>
+                    <a className="link-button" href={l.href} {...(l.href.startsWith("http") ? { rel: l.label === "GitHub" || l.label === "X" ? "me noopener noreferrer" : "noopener noreferrer" } : {})}>
                       {l.icon === "webbify" ? (
                         <img className="link-icon" src="/assets/webbify-mark.png" width={18} height={17} alt="" />
                       ) : l.icon === "resume" ? (

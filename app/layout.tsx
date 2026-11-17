@@ -2,9 +2,13 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import "./stars.css";
 
+const DESCRIPTION =
+  "jcooperkai is Cooper (Jeffery Eckert), an agentic engineer in Florida, USA. Head of Product & Engineering at Hyperlapse and maintainer of Webbify. Projects, skills, resume and live GitHub activity.";
+
 export const metadata: Metadata = {
   metadataBase: new URL("https://jcooperkai.com"),
   title: "jcooperkai, Agentic Engineer",
+  description: DESCRIPTION,
   applicationName: "jcooperkai",
   authors: [{ name: "jcooperkai", url: "https://jcooperkai.com/" }],
   alternates: { canonical: "/" },
@@ -37,17 +41,62 @@ export const metadata: Metadata = {
    can never close the script tag. */
 const personJsonLd = JSON.stringify({
   "@context": "https://schema.org",
-  "@type": "Person",
-  "@id": "https://jcooperkai.com/#person",
-  name: "Cooper E.",
-  alternateName: "jcooperkai",
-  jobTitle: "Agentic Engineer",
-  url: "https://jcooperkai.com/",
-  image: "https://jcooperkai.com/assets/share.png",
-  email: "mailto:jcooperkai@gmail.com",
-  address: { "@type": "PostalAddress", addressRegion: "FL", addressCountry: "US" },
-  worksFor: { "@type": "Organization", name: "Webbify", url: "https://webbify.build/" },
-  sameAs: ["https://github.com/jcooperkai-sys", "https://x.com/jcooperkai"],
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": "https://jcooperkai.com/#website",
+      url: "https://jcooperkai.com/",
+      name: "jcooperkai",
+      description: DESCRIPTION,
+      inLanguage: "en-US",
+      publisher: { "@id": "https://jcooperkai.com/#person" },
+    },
+    {
+      "@type": "ProfilePage",
+      "@id": "https://jcooperkai.com/#profile",
+      url: "https://jcooperkai.com/",
+      name: "jcooperkai, Agentic Engineer",
+      isPartOf: { "@id": "https://jcooperkai.com/#website" },
+      dateModified: "2026-11-17",
+      mainEntity: { "@id": "https://jcooperkai.com/#person" },
+      primaryImageOfPage: "https://jcooperkai.com/assets/share.png",
+    },
+    {
+      "@type": "Person",
+      "@id": "https://jcooperkai.com/#person",
+      name: "Jeffery Eckert",
+      alternateName: ["Cooper", "jcooperkai", "Cooper E."],
+      description: DESCRIPTION,
+      jobTitle: "Head of Product & Engineering",
+      hasOccupation: { "@type": "Occupation", name: "Agentic Engineer" },
+      url: "https://jcooperkai.com/",
+      image: "https://jcooperkai.com/assets/jc-avatar.png",
+      email: "mailto:jcooperkai@gmail.com",
+      address: { "@type": "PostalAddress", addressRegion: "FL", addressCountry: "US" },
+      homeLocation: { "@type": "Place", name: "Florida, USA" },
+      worksFor: [
+        { "@type": "Organization", name: "Hyperlapse", url: "https://hyperlapse.com/" },
+        { "@type": "Organization", name: "Webbify", url: "https://webbify.build/" },
+      ],
+      knowsAbout: [
+        "Agentic software engineering",
+        "Machine learning",
+        "Neural networks",
+        "Reinforcement learning",
+        "Computer vision",
+        "Self-driving and motion planning",
+        "Autonomous drones",
+        "Operating systems",
+        "Database engines",
+        "Python",
+        "C++",
+        "TypeScript",
+        "Rust",
+      ],
+      subjectOf: { "@type": "DigitalDocument", name: "Resume", url: "https://jcooperkai.com/resume" },
+      sameAs: ["https://github.com/jcooperkai-sys", "https://x.com/jcooperkai"],
+    },
+  ],
 }).replace(/</g, "\\u003c");
 
 export const viewport: Viewport = {
