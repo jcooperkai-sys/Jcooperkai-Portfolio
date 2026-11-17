@@ -1,26 +1,38 @@
 "use client";
-/* Square thumbnails that open the full image. Each tile is a plain link to the full file, so it works with
-   JavaScript off; with it on, the image opens over the page. Left and Right step through the images,
-   and Escape, the close button or a click outside closes it. */
-/* eslint-disable @next/next/no-img-element */
 import { useRef, useState } from "react";
 
-export type Shot = { thumb: string; full: string; width: number; height: number; title: string; alt: string };
+export type Media = { kind: "image" | "video"; thumb: string; full: string; width: number; height: number; title: string; alt: string };
+export type Bundle = { id: string; name: string; note: string; items: Media[] };
 
-export function Gallery({ shots }: { shots: Shot[] }) {
+function countLabel(items: Media[]) {
+  const videos = items.filter((m) => m.kind === "video").length;
+  const images = items.length - videos;
+  const parts: string[] = [];
+  if (videos) parts.push(`${videos} ${videos === 1 ? "clip" : "clips"}`);
+  if (images) parts.push(`${images} ${images === 1 ? "image" : "images"}`);
+  return parts.join(", ");
+}
+
+export function Gallery({ bundles }: { bundles: Bundle[] }) {
   const dialog = useRef<HTMLDialogElement>(null);
-  const [index, setIndex] = useState<number | null>(null);
-  const open = index === null ? null : shots[index];
+  const strips = useRef<Record<string, HTMLUListElement | null>>({});
+  const [at, setAt] = useState<{ bundle: number; item: number } | null>(null);
+  const bundle = at ? bundles[at.bundle] : null;
+  const open = at && bundle ? bundle.items[at.item] : null;
 
-  function show(i: number, e: React.MouseEvent) {
-    if (!dialog.current?.showModal) return;          // no <dialog> support: follow the link instead
+  function show(b: number, i: number, e: React.MouseEvent) {
+    if (!dialog.current?.showModal) return;
     e.preventDefault();
-    setIndex(i);
+    setAt({ bundle: b, item: i });
     dialog.current.showModal();
   }
 
   function step(by: number) {
-    setIndex((i) => (i === null ? i : (i + by + shots.length) % shots.length));
+    setAt((cur) => {
+      if (!cur) return cur;
+      const count = bundles[cur.bundle].items.length;
+      return { bundle: cur.bundle, item: (cur.item + by + count) % count };
+    });
   }
 
   function onKeyDown(e: React.KeyboardEvent) {
@@ -28,31 +40,74 @@ export function Gallery({ shots }: { shots: Shot[] }) {
     else if (e.key === "ArrowLeft") { e.preventDefault(); step(-1); }
   }
 
+  function slide(id: string, direction: number) {
+    const strip = strips.current[id];
+    if (!strip) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    strip.scrollBy({ left: direction * strip.clientWidth * 0.8, behavior: reduce ? "auto" : "smooth" });
+  }
+
   return (
-    <>
-      <ul className="gallery">
-        {shots.map((s, i) => (
-          <li key={s.full}>
-            <a href={s.full} onClick={(e) => show(i, e)} aria-label={`Open full size: ${s.title}`}>
-              <img src={s.thumb} width={512} height={512} alt={s.alt} loading="lazy" decoding="async" />
-            </a>
-            <p className="gallery-title">{s.title}</p>
-          </li>
-        ))}
-      </ul>
+    <div className="bundles">
+      {bundles.map((b, bi) => (
+        <section className="bundle" id={`gallery-${b.id}`} key={b.id} aria-labelledby={`gallery-${b.id}-name`}>
+          <div className="bundle-head">
+            <div>
+              <h3 id={`gallery-${b.id}-name`}>{b.name}</h3>
+              <p>{b.note} {countLabel(b.items)}.</p>
+            </div>
+            {b.items.length > 1 && (
+              <div className="bundle-nav">
+                <button type="button" onClick={() => slide(b.id, -1)} aria-label={`Scroll ${b.name} back`}>
+                  <span aria-hidden="true">&larr;</span>
+                </button>
+                <button type="button" onClick={() => slide(b.id, 1)} aria-label={`Scroll ${b.name} forward`}>
+                  <span aria-hidden="true">&rarr;</span>
+                </button>
+              </div>
+            )}
+          </div>
+          <ul className="strip" ref={(el) => { strips.current[b.id] = el; }} tabIndex={0} aria-label={`${b.name} media`}>
+            {b.items.map((m, i) => (
+              <li key={m.full}>
+                <a
+                  href={m.full}
+                  className={m.kind === "video" ? "tile tile-video" : "tile"}
+                  onClick={(e) => show(bi, i, e)}
+                  aria-label={`${m.kind === "video" ? "Play video" : "Open full size"}: ${m.title}`}
+                >
+                  <img src={m.thumb} width={m.width} height={m.height} alt={m.alt} decoding="async" fetchPriority="low" />
+                  {m.kind === "video" && (
+                    <svg className="tile-play" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+                      <circle cx="24" cy="24" r="23" />
+                      <path d="M19.5 15.5 33.5 24 19.5 32.5z" />
+                    </svg>
+                  )}
+                  <span className="tile-cue" aria-hidden="true">{m.kind === "video" ? "Play" : "View"}</span>
+                </a>
+                <p className="tile-title">{m.title}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
       <dialog
         ref={dialog}
         className="viewer"
-        aria-label={open ? open.title : "Image"}
-        onClose={() => setIndex(null)}
+        aria-label={open ? open.title : "Media"}
+        onClose={() => setAt(null)}
         onKeyDown={onKeyDown}
         onClick={(e) => { if (e.target === e.currentTarget) dialog.current?.close(); }}
       >
-        {open && (
+        {open && bundle && at && (
           <figure>
-            <img src={open.full} width={open.width} height={open.height} alt={open.alt} />
+            {open.kind === "video" ? (
+              <video key={open.full} src={open.full} poster={open.thumb.replace("-thumb.webp", ".webp")} width={open.width} height={open.height} controls autoPlay muted loop playsInline aria-label={open.alt} />
+            ) : (
+              <img src={open.full} width={open.width} height={open.height} alt={open.alt} />
+            )}
             <figcaption>
-              {open.title} <span className="viewer-count">{index! + 1} of {shots.length}</span>
+              {open.title} <span className="viewer-count">{bundle.name}, {at.item + 1} of {bundle.items.length}</span>
             </figcaption>
           </figure>
         )}
@@ -62,6 +117,6 @@ export function Gallery({ shots }: { shots: Shot[] }) {
           <button className="viewer-close" type="submit">Close</button>
         </form>
       </dialog>
-    </>
+    </div>
   );
 }

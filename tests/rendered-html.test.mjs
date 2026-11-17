@@ -42,12 +42,23 @@ test("server-renders the portfolio", async () => {
   const html = await response.text();
   assert.match(html, /<title>jcooperkai, Agentic Engineer<\/title>/);
   assert.match(html, /Agentic Engineer/);
-  for (const heading of ["Company", "Projects", "All projects", "Other projects", "Gallery"]) {
+  for (const heading of ["Experience", "Projects", "All projects", "Other projects", "Skills", "Interests", "Gallery"]) {
     assert.match(html, new RegExp(`>${heading}<`), `missing section ${heading}`);
   }
-  // Featured order: GGUF Token Decoder, TRDE, HisokaOS.
-  const order = ["GGUF Token Decoder", "Transactional Relational Database Engine", "HisokaOS"].map((n) => html.indexOf(n));
+  const order = ["Autonomous Drone Racing Policy", "GGUF Token Decoder", "HisokaOS"].map((n) => html.indexOf(n));
   assert.ok(order.every((n) => n > 0) && order[0] < order[1] && order[1] < order[2], "featured order");
+  assert.match(html, /Florida, USA/);
+  assert.match(html, /Head of Product &amp; Engineering/);
+  assert.match(html, /Personal Agent Harness/);
+  assert.doesNotMatch(html, /Ducky Studio|Editor Browser|App Installer|Transactional Relational|Live at webbify/);
+  assert.match(html, /href="#gallery-drone"/);
+  assert.match(html, /id="gallery-drone"/);
+  assert.match(html, /href="\/resume"/);
+  assert.match(html, /href="\/privacy"/);
+  assert.match(html, /href="\/security-policy"/);
+  assert.match(html, />Ask AI</);
+  assert.doesNotMatch(html, /San Diego/);
+  assert.match(html, />GitHub activity</);
   assert.match(html, /© 2026 Cooper\. E/);
   assert.match(html, /See more projects on GitHub/);
   // Pinned projects are not repeated in the list under them.
@@ -363,7 +374,7 @@ test("llms.txt files describe the current site", async () => {
   for (const [name, text] of [["llms.txt", brief], ["llms-full.txt", full]]) {
     assert.match(text, /jcooperkai/, `${name}: missing the handle`);
     assert.match(text, /Agentic Engineer|agentic engineer/, `${name}: missing the role`);
-    for (const project of ["GGUF Token Decoder", "Transactional Relational Database Engine", "HisokaOS", "Wingwall Neural World"]) {
+    for (const project of ["GGUF Token Decoder", "Sentinel", "HisokaOS", "Wingwall Neural World", "Hyperlapse"]) {
       assert.ok(text.includes(project), `${name}: missing ${project}`);
     }
     assert.doesNotMatch(text, /Buddy|AI Lab|visitor|—/, `${name}: carries retired content or an em dash`);
@@ -388,4 +399,130 @@ test("favicons have transparent corners so browsers don't add a light plate behi
       assert.equal(data[(y * size + x) * 4 + 3], 0, `favicon-${size}.png corner (${x},${y}) is not transparent`);
     }
   }
+});
+
+function contributionsFixture(counts) {
+  const start = Date.UTC(2025, 10, 16);
+  let cells = "";
+  let tips = "";
+  counts.forEach((count, i) => {
+    const date = new Date(start + i * 86_400_000).toISOString().slice(0, 10);
+    const level = count === 0 ? 0 : Math.min(4, count);
+    cells += `<td tabindex="0" data-ix="${i}" style="width: 10px" data-date="${date}" id="day-${i}" data-level="${level}" role="gridcell" class="ContributionCalendar-day"></td>`;
+    tips += `<tool-tip id="tip-${i}" for="day-${i}" popover="manual" class="sr-only">${count === 0 ? "No contributions" : `${count} contribution${count === 1 ? "" : "s"}`} on a day.</tool-tip>`;
+  });
+  return `<table><tbody><tr>${cells}</tr></tbody></table>${tips}`;
+}
+
+test("the GitHub activity route reads the public calendar and survives upstream failure", async (t) => {
+  const counts = Array.from({ length: 364 }, () => 0);
+  counts[10] = 2;
+  counts[11] = 5;
+  counts[12] = 1;
+  counts[200] = 9;
+  counts[362] = 3;
+  counts[363] = 0;
+
+  const realFetch = globalThis.fetch;
+  const upstream = [];
+  let mode = "down";
+  globalThis.fetch = async (input, init) => {
+    upstream.push({ url: String(input), redirect: init?.redirect });
+    if (mode === "down") throw new Error("connect failed");
+    if (mode === "garbage") return new Response("<html>signed out</html>", { status: 200 });
+    return new Response(contributionsFixture(counts), { status: 200 });
+  };
+  t.after(() => {
+    globalThis.fetch = realFetch;
+  });
+  t.mock.timers.enable({ apis: ["Date"], now: Date.UTC(2026, 10, 16, 12) });
+
+  const workerUrl = new URL("../dist/server/index.js", import.meta.url);
+  workerUrl.searchParams.set("test", `github-${process.pid}-${Date.now()}`);
+  const { default: worker } = await import(workerUrl.href);
+  const call = (env = {}, init = {}) =>
+    worker.fetch(new Request("https://portfolio.example/api/github?user=someone-else", init), env, {
+      waitUntil() {},
+      passThroughOnException() {},
+    });
+
+  const down = await call();
+  assert.equal(down.status, 502);
+  assert.equal(down.headers.get("cache-control"), "no-store");
+  assert.deepEqual(await down.json(), { error: "github_unavailable" });
+
+  mode = "garbage";
+  assert.equal((await call()).status, 502, "a page with no calendar is a failure, not an empty year");
+
+  mode = "up";
+  const ok = await call();
+  assert.equal(ok.status, 200);
+  assert.match(ok.headers.get("content-type") ?? "", /^application\/json/);
+  assert.equal(ok.headers.get("cache-control"), "public, max-age=60, stale-while-revalidate=600");
+  assert.equal(ok.headers.get("x-content-type-options"), "nosniff");
+  const body = await ok.json();
+  assert.equal(body.user, "jcooperkai-sys");
+  assert.equal(body.total, 20);
+  assert.equal(body.activeDays, 5);
+  assert.deepEqual(body.bestDay, { date: "2026-06-04", count: 9 });
+  assert.equal(body.longestStreak, 3);
+  assert.equal(body.currentStreak, 1);
+  assert.equal(body.days.length, 364);
+  assert.deepEqual(body.days[11], ["2025-11-27", 5, 4]);
+  assert.equal(body.stale, false);
+
+  // The upstream address is fixed: nothing in the request can point it elsewhere, and redirects are not followed.
+  assert.ok(upstream.every((u) => u.url === "https://github.com/users/jcooperkai-sys/contributions"));
+  assert.ok(upstream.every((u) => u.redirect === "manual"));
+
+  const before = upstream.length;
+  mode = "down";
+  const cached = await call();
+  assert.equal(cached.status, 200);
+  assert.equal(upstream.length, before, "a fresh copy is served without asking GitHub again");
+
+  t.mock.timers.tick(121_000);
+  const stale = await call();
+  assert.equal(stale.status, 200);
+  assert.equal(upstream.length, before + 1);
+  assert.equal(stale.headers.get("cache-control"), "no-store");
+  assert.equal((await stale.json()).stale, true);
+
+  const limited = await call({ ASSET_LIMIT: { limit: async () => ({ success: false }) } });
+  assert.equal(limited.status, 429);
+
+  const head = await call({}, { method: "HEAD" });
+  assert.equal(head.status, 200);
+  assert.equal((await head.arrayBuffer()).byteLength, 0);
+  assert.equal(upstream.length, before + 1, "HEAD must not call GitHub");
+
+  const post = await call({}, { method: "POST" });
+  assert.equal(post.status, 405);
+});
+
+test("policy and resume pages render as pages", async () => {
+  for (const [path, heading] of [
+    ["/privacy", "Privacy and local files"],
+    ["/security-policy", "Responsible disclosure"],
+    ["/resume", "Jeffery Eckert"],
+  ]) {
+    const response = await render(`http://localhost${path}`);
+    assert.equal(response.status, 200, path);
+    const html = await response.text();
+    assert.ok(html.includes(heading), `${path}: missing ${heading}`);
+    assert.match(html, /href="\/"/, `${path}: no way back home`);
+  }
+  await access(new URL("../public/assets/Jeffery-Eckert-Resume.pdf", import.meta.url));
+});
+
+test("every gallery file named in the page exists", async () => {
+  const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+  const files = [...page.matchAll(/"(\/assets\/gallery\/[^"]+)"/g)].map((m) => m[1]);
+  assert.ok(files.length >= 40, "expected the full gallery");
+  await Promise.all(files.map((file) => access(new URL(`../public${file}`, import.meta.url))));
+});
+
+test("video is allowed only from this site", async () => {
+  const response = await render("https://jcooperkai.com/");
+  assert.match(response.headers.get("content-security-policy") ?? "", /media-src 'self'/);
 });

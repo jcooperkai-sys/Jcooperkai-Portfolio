@@ -11,6 +11,8 @@ WHAT THE PAGE LOADS
 
 Every file the page loads (fonts, icons, badges, images, scripts) is served
 from jcooperkai.com itself. The page makes no requests to any third party.
+The GitHub activity chart is fetched by this site's own server from my public
+GitHub profile, so your browser never contacts GitHub to show it.
 
 LOCAL FILES
 

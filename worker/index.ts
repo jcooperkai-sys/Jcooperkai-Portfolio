@@ -1,5 +1,6 @@
 /** Cloudflare Worker entry point for jcooperkai.com. */
 import handler from "vinext/server/app-router-entry";
+import { loadActivity } from "./github";
 
 /**
  * Cloudflare Rate Limiting binding. Enforced at the edge across isolates, which is the reason it
@@ -165,7 +166,7 @@ function applySecurityHeaders(response: Response, url: URL) {
         "frame-src 'none'",
         "img-src 'self' data:",
         "manifest-src 'self'",
-        "media-src 'none'",
+        "media-src 'self'",
         "object-src 'none'",
         "script-src 'self' 'unsafe-inline'",
         "script-src-attr 'none'",
@@ -197,7 +198,7 @@ function applySecurityHeaders(response: Response, url: URL) {
   if (!response.ok) {
     headers.set("Cache-Control", "no-store");
   } else if (contentType.includes("text/html")) {
-    headers.set("Cache-Control", "public, max-age=0, must-revalidate");
+    headers.set("Cache-Control", "public, max-age=300, stale-while-revalidate=86400");
   }
 
   return new Response(response.body, {
@@ -292,12 +293,43 @@ const worker = {
           ? headOnly("application/pdf")
           : textResponse(url, "Not found.", 404);
       }
+      if (decodedPathname === "/api/github") {
+        return headOnly("application/json; charset=utf-8");
+      }
       const headText = /^\/api\/experiment\/([a-z0-9-]+)$/.exec(decodedPathname);
       if (headText) {
         return READABLE_TEXT[headText[1]]
           ? headOnly("text/plain; charset=utf-8")
           : textResponse(url, "Not found.", 404);
       }
+    }
+
+    if (decodedPathname === "/api/github") {
+      if (await overLimit(env?.ASSET_LIMIT, request, "github")) {
+        return textResponse(url, "Too many requests. Try again shortly.", 429, {
+          "Retry-After": "60",
+        });
+      }
+      const loaded = await loadActivity();
+      if (!loaded) {
+        return applySecurityHeaders(
+          new Response(JSON.stringify({ error: "github_unavailable" }), {
+            status: 502,
+            headers: { "Content-Type": "application/json; charset=utf-8" },
+          }),
+          url,
+        );
+      }
+      return applySecurityHeaders(
+        new Response(JSON.stringify({ ...loaded.activity, stale: loaded.stale }), {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json; charset=utf-8",
+            "Cache-Control": loaded.stale ? "no-store" : "public, max-age=60, stale-while-revalidate=600",
+          },
+        }),
+        url,
+      );
     }
 
     // This portfolio uses native local images. Closing the unused optimization
