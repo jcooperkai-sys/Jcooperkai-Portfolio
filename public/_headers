@@ -1,3 +1,29 @@
+# Files from earlier versions of the site. They stay reachable by direct link but are kept out of search
+# and AI indexes so answers about this site come from the current pages.
+/downloads/*
+  X-Robots-Tag: noindex, noarchive, noimageindex
+
+/papers/*
+  X-Robots-Tag: noindex, noarchive, noimageindex
+
+/badges/*
+  X-Robots-Tag: noindex, noarchive, noimageindex
+
+/assets/buttons/*
+  X-Robots-Tag: noindex, noarchive, noimageindex
+
+/assets/badges/*
+  X-Robots-Tag: noindex, noarchive, noimageindex
+
+/assets/profile/*
+  X-Robots-Tag: noindex, noarchive, noimageindex
+
+/assets/fire-strip.png
+  X-Robots-Tag: noindex, noarchive, noimageindex
+
+/assets/jc-wordmark.png
+  X-Robots-Tag: noindex, noarchive, noimageindex
+
 /_next/static/*
   Cache-Control: public, max-age=31536000, immutable
   X-Content-Type-Options: nosniff

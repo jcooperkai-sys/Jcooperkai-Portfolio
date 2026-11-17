@@ -65,13 +65,19 @@ test("server-renders the portfolio", async () => {
   assert.match(html, /See more projects on GitHub/);
   // Pinned projects are not repeated in the list under them.
   assert.equal(html.split('href="https://github.com/jcooperkai-sys/HisokaOS"').length - 1, 1);
-  // The link preview: an image, and no description text at all.
   assert.match(html, /<meta property="og:image" content="https:\/\/jcooperkai\.com\/assets\/share\.png"/);
   assert.match(html, /<meta name="twitter:image" content="https:\/\/jcooperkai\.com\/assets\/share\.png"/);
   assert.match(html, /rel="icon" href="\/favicon\.ico\?v=2"/);
   assert.match(html, /rel="apple-touch-icon" href="\/assets\/apple-touch-icon\.png"/);
   assert.match(html, /<meta name="twitter:card" content="summary_large_image"/);
-  assert.doesNotMatch(html, /name="description"|og:description|twitter:description/);
+  assert.match(html, /<meta name="description" content="jcooperkai is Cooper \(Jeffery Eckert\), an agentic engineer in Florida, USA\./);
+  assert.match(html, /<meta property="og:description" content="jcooperkai is Cooper/);
+  const ld = JSON.parse(html.match(/<script type="application\/ld\+json">(.*?)<\/script>/s)[1]);
+  const person = ld["@graph"].find((node) => node["@type"] === "Person");
+  assert.equal(person.name, "Jeffery Eckert");
+  assert.deepEqual(person.worksFor.map((org) => org.name), ["Hyperlapse", "Webbify"]);
+  assert.equal(person.address.addressRegion, "FL");
+  assert.ok(ld["@graph"].some((node) => node["@type"] === "ProfilePage"));
   // Retired site content must never come back.
   assert.doesNotMatch(html, /Buddy|VISITOR COUNTER|AI Lab|Research Papers|\/api\/visits|\/api\/buddy/i);
   assert.doesNotMatch(html, /\[(?:YOUR|PLACE|ADD|REPLACE)\b/i);
@@ -534,4 +540,21 @@ test("every gallery file named in the page exists", async () => {
 test("video is allowed only from this site", async () => {
   const response = await render("https://jcooperkai.com/");
   assert.match(response.headers.get("content-security-policy") ?? "", /media-src 'self'/);
+});
+
+test("files from earlier versions of the site are kept out of search indexes", async () => {
+  const env = { ASSETS: { fetch: async () => new Response("x", { status: 200 }) } };
+  for (const path of ["/api/paper/001", "/api/experiment/results"]) {
+    const response = await renderWithEnv(`https://jcooperkai.com${path}`, env);
+    assert.equal(response.headers.get("x-robots-tag"), "noindex, noarchive, noimageindex", path);
+  }
+  const home = await render("https://jcooperkai.com/");
+  assert.equal(home.headers.get("x-robots-tag"), null, "the current page must stay indexable");
+  const mirror = await render("https://www.jcooperkai.workers.dev/");
+  assert.equal(mirror.headers.get("x-robots-tag"), "noindex, noarchive, noimageindex", "the workers.dev mirror must not compete with the real domain");
+
+  const headers = await readFile(new URL("../public/_headers", import.meta.url), "utf8");
+  for (const path of ["/downloads/*", "/papers/*", "/assets/buttons/*", "/assets/profile/*"]) {
+    assert.match(headers, new RegExp(`^${path.replace(/[/*]/g, "\\$&")}\\n  X-Robots-Tag: noindex`, "m"), path);
+  }
 });
