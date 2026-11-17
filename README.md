@@ -1,9 +1,7 @@
-# Cooper E.'s AI Lab
+# jcooperkai.com
 
-A deliberately authentic 1996-style research portfolio for Cooper E.
-(`jcooperkai`). The site combines bitmap interface artwork, downloadable
-research notes, a working local-file research guide named Buddy, a visitor
-counter, accessibility controls, and responsive layouts.
+Personal site of Cooper E. (`jcooperkai`): company, projects, private projects, gallery and a live
+GitHub activity chart. Black page, faint star field, ruled grid with bracketed section labels.
 
 ## Local preview
 
@@ -24,16 +22,29 @@ npm run typecheck
 npm test
 ```
 
-Buddy is intentionally privacy-friendly: attached files are read only inside
-the visitor's browser and are not transmitted or stored by the site.
+`npm test` does a production build and runs the rendered-page, worker and security tests.
+
+After editing `app/resume/page.tsx`, regenerate the PDF with the dev server running:
+
+```bash
+"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --no-pdf-header-footer --print-to-pdf=public/assets/Jeffery-Eckert-Resume.pdf http://localhost:3001/resume
+```
 
 ## Site structure
 
-- `app/`: portfolio page, metadata, and the complete 1996 interface
-- `public/assets/`: generated bitmap artwork and badges
-- `public/downloads/`: Cooper's plain-text papers, project notes, citations,
-  CV, research statement, and selected-work bundle
-- `worker/`: production response headers and Cloudflare runtime entry point
-- `.openai/hosting.json`: Sites project and binding configuration
-- `SECURITY.md`: threat model, enforced boundaries, and hosting-account checklist
-- `HANDOFF-CLAUDE.md`: exact continuation brief and non-negotiable design decisions
+- `app/page.tsx`: the page and all of its content
+- `app/activity.tsx`: the GitHub activity chart (loads `/api/github`, refreshes every five minutes)
+- `app/gallery.tsx`: gallery bundles (one sideways strip per project) and the image and video viewer
+- `app/ask.tsx`: the Ask AI panel with copyable prompts
+- `app/resume/`, `app/privacy/`, `app/security-policy/`: the resume and policy pages (the policy pages render `public/*.txt`)
+- `app/logo.tsx`: the JC logo as inline SVG, used for the load animation
+- `app/globals.css`, `app/stars.css`: styles and the star field
+- `worker/index.ts`: Cloudflare Worker entry, response headers, read-back routes
+- `worker/github.ts`: reads the public GitHub contribution calendar for `/api/github`
+- `public/assets/`: logo, favicons, share image, project logos, gallery images
+- `SECURITY.md`: threat model, enforced boundaries and hosting-account checklist
+
+## Shipping
+
+Every change goes through a pull request. `main` is production (jcooperkai.com on Cloudflare,
+`npm run deploy`).

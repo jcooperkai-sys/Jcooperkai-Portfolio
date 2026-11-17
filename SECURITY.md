@@ -17,6 +17,10 @@ https://jcooperkai.com/security-policy.txt and /.well-known/security.txt). Good-
 - The only routes that do work per request are `/api/paper/NNN` and `/api/experiment/<name>`. They
   re-serve authored files, accept only an allow-listed identifier, and are rate limited to 120 requests
   per minute per client by a Cloudflare Rate Limiting binding (`wrangler.jsonc`).
+- `/api/github` returns my public GitHub contribution calendar as JSON. The Worker fetches one fixed
+  GitHub URL (no part of the request reaches it, redirects are not followed), keeps the result for two
+  minutes, serves the last good copy if GitHub fails, and shares the same rate limit. It uses no token
+  and the browser never contacts GitHub.
 - The earlier Buddy chat and visit counter routes are retired and return 404.
 
 ## Where the controls live

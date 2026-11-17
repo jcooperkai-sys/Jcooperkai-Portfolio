@@ -1,0 +1,106 @@
+.sky { position: fixed; inset: 0; z-index: 0; overflow: hidden; contain: strict; pointer-events: none; background-color: #000; }
+.sky-a, .sky-b, .sky-c { position: absolute; inset: -700px 0 0 0; background-repeat: repeat; will-change: transform, opacity; }
+.sky-a {
+  background-size: 620px 620px;
+  background-image:
+    radial-gradient(1px 1px at 199px 439px, rgb(255 255 255 / 0.4) 55%, transparent 60%),
+    radial-gradient(1px 1px at 52px 588px, rgb(255 255 255 / 0.19) 55%, transparent 60%),
+    radial-gradient(1px 1px at 16px 278px, rgb(255 255 255 / 0.28) 55%, transparent 60%),
+    radial-gradient(1px 1px at 448px 482px, rgb(255 255 255 / 0.36) 55%, transparent 60%),
+    radial-gradient(1px 1px at 248px 312px, rgb(255 255 255 / 0.23) 55%, transparent 60%),
+    radial-gradient(1px 1px at 548px 192px, rgb(255 255 255 / 0.23) 55%, transparent 60%),
+    radial-gradient(1px 1px at 582px 557px, rgb(255 255 255 / 0.21) 55%, transparent 60%),
+    radial-gradient(1px 1px at 143px 111px, rgb(255 255 255 / 0.43) 55%, transparent 60%),
+    radial-gradient(1px 1px at 284px 83px, rgb(255 255 255 / 0.38) 55%, transparent 60%),
+    radial-gradient(1px 1px at 245px 185px, rgb(255 255 255 / 0.19) 55%, transparent 60%),
+    radial-gradient(1px 1px at 518px 202px, rgb(255 255 255 / 0.28) 55%, transparent 60%),
+    radial-gradient(1px 1px at 249px 12px, rgb(255 255 255 / 0.22) 55%, transparent 60%),
+    radial-gradient(1px 1px at 159px 507px, rgb(255 255 255 / 0.18) 55%, transparent 60%),
+    radial-gradient(1px 1px at 483px 23px, rgb(255 255 255 / 0.38) 55%, transparent 60%),
+    radial-gradient(1px 1px at 451px 441px, rgb(255 255 255 / 0.42) 55%, transparent 60%),
+    radial-gradient(1px 1px at 543px 11px, rgb(255 255 255 / 0.41) 55%, transparent 60%),
+    radial-gradient(1px 1px at 551px 569px, rgb(255 255 255 / 0.33) 55%, transparent 60%),
+    radial-gradient(1px 1px at 417px 366px, rgb(255 255 255 / 0.39) 55%, transparent 60%),
+    radial-gradient(1px 1px at 365px 617px, rgb(255 255 255 / 0.45) 55%, transparent 60%),
+    radial-gradient(1px 1px at 48px 213px, rgb(255 255 255 / 0.25) 55%, transparent 60%),
+    radial-gradient(1px 1px at 302px 85px, rgb(255 255 255 / 0.32) 55%, transparent 60%),
+    radial-gradient(1px 1px at 106px 590px, rgb(255 255 255 / 0.44) 55%, transparent 60%),
+    radial-gradient(1px 1px at 86px 23px, rgb(255 255 255 / 0.33) 55%, transparent 60%),
+    radial-gradient(1px 1px at 300px 530px, rgb(255 255 255 / 0.19) 55%, transparent 60%),
+    radial-gradient(1px 1px at 521px 32px, rgb(255 255 255 / 0.21) 55%, transparent 60%),
+    radial-gradient(1px 1px at 414px 192px, rgb(255 255 255 / 0.28) 55%, transparent 60%),
+    radial-gradient(1px 1px at 535px 619px, rgb(255 255 255 / 0.22) 55%, transparent 60%),
+    radial-gradient(1px 1px at 157px 450px, rgb(255 255 255 / 0.24) 55%, transparent 60%),
+    radial-gradient(1px 1px at 3px 134px, rgb(255 255 255 / 0.23) 55%, transparent 60%),
+    radial-gradient(1px 1px at 72px 385px, rgb(255 255 255 / 0.38) 55%, transparent 60%),
+    radial-gradient(1px 1px at 165px 192px, rgb(255 255 255 / 0.42) 55%, transparent 60%),
+    radial-gradient(1px 1px at 2px 263px, rgb(255 255 255 / 0.44) 55%, transparent 60%),
+    radial-gradient(1px 1px at 95px 603px, rgb(255 255 255 / 0.31) 55%, transparent 60%),
+    radial-gradient(1px 1px at 60px 279px, rgb(255 255 255 / 0.33) 55%, transparent 60%),
+    radial-gradient(1px 1px at 120px 142px, rgb(255 255 255 / 0.39) 55%, transparent 60%),
+    radial-gradient(1px 1px at 158px 319px, rgb(255 255 255 / 0.21) 55%, transparent 60%);
+}
+.sky-b {
+  background-size: 700px 700px;
+  background-image:
+    radial-gradient(1px 1px at 258px 169px, rgb(255 255 255 / 0.81) 55%, transparent 60%),
+    radial-gradient(1px 1px at 162px 228px, rgb(255 255 255 / 0.52) 55%, transparent 60%),
+    radial-gradient(1.5px 1.5px at 489px 398px, rgb(255 255 255 / 0.63) 55%, transparent 60%),
+    radial-gradient(1px 1px at 483px 685px, rgb(255 255 255 / 0.77) 55%, transparent 60%),
+    radial-gradient(1px 1px at 400px 619px, rgb(255 255 255 / 0.69) 55%, transparent 60%),
+    radial-gradient(1.5px 1.5px at 453px 291px, rgb(255 255 255 / 0.64) 55%, transparent 60%),
+    radial-gradient(1px 1px at 625px 234px, rgb(255 255 255 / 0.81) 55%, transparent 60%),
+    radial-gradient(1px 1px at 209px 591px, rgb(255 255 255 / 0.87) 55%, transparent 60%),
+    radial-gradient(1.5px 1.5px at 485px 164px, rgb(255 255 255 / 0.55) 55%, transparent 60%),
+    radial-gradient(1.5px 1.5px at 456px 231px, rgb(255 255 255 / 0.65) 55%, transparent 60%),
+    radial-gradient(1px 1px at 692px 520px, rgb(255 255 255 / 0.48) 55%, transparent 60%),
+    radial-gradient(1px 1px at 399px 145px, rgb(255 255 255 / 0.79) 55%, transparent 60%),
+    radial-gradient(1.5px 1.5px at 175px 439px, rgb(255 255 255 / 0.5) 55%, transparent 60%),
+    radial-gradient(1px 1px at 517px 466px, rgb(255 255 255 / 0.6) 55%, transparent 60%),
+    radial-gradient(1px 1px at 516px 666px, rgb(255 255 255 / 0.67) 55%, transparent 60%),
+    radial-gradient(1.5px 1.5px at 462px 558px, rgb(255 255 255 / 0.46) 55%, transparent 60%),
+    radial-gradient(1px 1px at 281px 519px, rgb(255 255 255 / 0.6) 55%, transparent 60%),
+    radial-gradient(1px 1px at 332px 79px, rgb(255 255 255 / 0.86) 55%, transparent 60%),
+    radial-gradient(1px 1px at 432px 337px, rgb(255 255 255 / 0.76) 55%, transparent 60%),
+    radial-gradient(1px 1px at 676px 3px, rgb(255 255 255 / 0.6) 55%, transparent 60%),
+    radial-gradient(1.5px 1.5px at 526px 348px, rgb(255 255 255 / 0.55) 55%, transparent 60%),
+    radial-gradient(1px 1px at 673px 535px, rgb(255 255 255 / 0.57) 55%, transparent 60%);
+}
+.sky-c {
+  background-size: 660px 660px;
+  background-image:
+    radial-gradient(1px 1px at 217px 527px, rgb(255 255 255 / 0.61) 55%, transparent 60%),
+    radial-gradient(1.5px 1.5px at 119px 242px, rgb(255 255 255 / 0.63) 55%, transparent 60%),
+    radial-gradient(1px 1px at 180px 537px, rgb(255 255 255 / 0.51) 55%, transparent 60%),
+    radial-gradient(1px 1px at 244px 546px, rgb(255 255 255 / 0.74) 55%, transparent 60%),
+    radial-gradient(1.5px 1.5px at 224px 494px, rgb(255 255 255 / 0.88) 55%, transparent 60%),
+    radial-gradient(1px 1px at 113px 552px, rgb(255 255 255 / 0.63) 55%, transparent 60%),
+    radial-gradient(1.5px 1.5px at 234px 227px, rgb(255 255 255 / 0.69) 55%, transparent 60%),
+    radial-gradient(1.5px 1.5px at 366px 534px, rgb(255 255 255 / 0.53) 55%, transparent 60%),
+    radial-gradient(1.5px 1.5px at 29px 202px, rgb(255 255 255 / 0.57) 55%, transparent 60%),
+    radial-gradient(1px 1px at 358px 569px, rgb(255 255 255 / 0.9) 55%, transparent 60%),
+    radial-gradient(1px 1px at 187px 189px, rgb(255 255 255 / 0.67) 55%, transparent 60%),
+    radial-gradient(1px 1px at 326px 211px, rgb(255 255 255 / 0.81) 55%, transparent 60%),
+    radial-gradient(1px 1px at 135px 151px, rgb(255 255 255 / 0.86) 55%, transparent 60%),
+    radial-gradient(1px 1px at 35px 137px, rgb(255 255 255 / 0.77) 55%, transparent 60%),
+    radial-gradient(1.5px 1.5px at 159px 13px, rgb(255 255 255 / 0.86) 55%, transparent 60%),
+    radial-gradient(1.5px 1.5px at 569px 260px, rgb(255 255 255 / 0.78) 55%, transparent 60%),
+    radial-gradient(1px 1px at 553px 240px, rgb(255 255 255 / 0.72) 55%, transparent 60%),
+    radial-gradient(1.5px 1.5px at 381px 110px, rgb(255 255 255 / 0.92) 55%, transparent 60%);
+}
+.sky-shoot { position: absolute; top: 12%; left: 62%; width: 110px; height: 1px; opacity: 0; background: linear-gradient(90deg, rgb(255 255 255 / 0.9), transparent); transform: rotate(-24deg); }
+@media (prefers-reduced-motion: no-preference) {
+  .sky-a { animation: drift-a 240s linear infinite; }
+  .sky-b { animation: drift-b 300s linear infinite, twinkle 4.2s ease-in-out infinite alternate; }
+  .sky-c { animation: drift-c 360s linear infinite, twinkle 6.1s ease-in-out -2s infinite alternate; }
+  .sky-shoot { animation: shoot 17s ease-in 5s infinite; }
+}
+@keyframes drift-a { to { transform: translateY(620px); } }
+@keyframes drift-b { to { transform: translateY(700px); } }
+@keyframes drift-c { to { transform: translateY(660px); } }
+@keyframes twinkle { from { opacity: 0.12; } to { opacity: 1; } }
+@keyframes shoot {
+  0%, 93% { opacity: 0; transform: translate(0, 0) rotate(-24deg); }
+  94% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-520px, 232px) rotate(-24deg); }
+}

@@ -1,33 +1,36 @@
 # jcooperkai
 
-> Personal site of jcooperkai (Cooper E.), an agentic engineer in San Diego. It lists my company, my public projects, and how to reach me.
+> Personal site of jcooperkai (Cooper, full name Jeffery Eckert), an agentic engineer in Florida, USA. He is Head of Product & Engineering at Hyperlapse and maintains Webbify. The site lists his experience, projects, skills and how to reach him.
 
 - Site: https://jcooperkai.com/
+- Resume: https://jcooperkai.com/resume
 - GitHub: https://github.com/jcooperkai-sys
 - X: https://x.com/jcooperkai
 - Email: jcooperkai@gmail.com
 
-## Company
+## Experience
 
-- [Webbify](https://webbify.build/): my company. AI agents rebuild and run small-business websites, each with a live client dashboard.
+- [Hyperlapse](https://hyperlapse.com/): Head of Product & Engineering, current. A stock-footage marketplace. hyperlapse.com is its official home.
+- [Webbify](https://webbify.build/): Maintainer, current. An AI-operated web agency where AI agents rebuild and run small-business websites.
 
 ## Projects
 
-- [HisokaOS](https://github.com/jcooperkai-sys/HisokaOS): A from-scratch 32-bit x86 operating system in C and assembly.
-- [Transactional Relational Database Engine](https://github.com/jcooperkai-sys/TRDE): A transactional relational database engine in pure Python.
-- [The Lazy Driver](https://github.com/jcooperkai-sys/The-Lazy-Driver): Self-driving perception and path prediction on dashcam footage.
-- [Bill](https://github.com/jcooperkai-sys/Bill): A local conversational system with memory, retrieval and fact checking.
-- [Reachy RL](https://github.com/jcooperkai-sys/Reachy-RL): Reachy 2 in MuJoCo, set up for reinforcement learning.
+- Autonomous Drone Racing Policy: a neural policy that flies a racing drone through gates in simulation. In progress, private.
 - [GGUF Token Decoder](https://github.com/jcooperkai-sys/GGUF-Token-Decoder): Decodes a GGUF model's token IDs using only the model file.
-- [Editor Browser](https://github.com/jcooperkai-sys/Editor-Browser): A full browser tab inside the VS Code editor.
-- [App Installer](https://github.com/jcooperkai-sys/app-installer): A Windows application with an NSIS installer.
+- [HisokaOS](https://github.com/jcooperkai-sys/HisokaOS): A from-scratch 32-bit x86 operating system in C and assembly.
+- Sentinel: a home security vision system in C++ for a small mini PC and a PTZ camera. Private.
+- Rule-Based Motion Planner (RBMP): a deterministic driving planner on real United States road geometry. Private.
+- [Scan Quality Map](https://github.com/jcooperkai-sys/Scan-Quality-Map): Vesuvius Challenge work that maps where Herculaneum scroll CT scans can still separate the papyrus layers.
+- [Dashcam Perception and Path Prediction Stack](https://github.com/jcooperkai-sys/The-Lazy-Driver): Self-driving perception and path prediction on dashcam footage.
+- [Local Conversational System with Memory and Fact Checking](https://github.com/jcooperkai-sys/Bill): A local language model with memory, retrieval and fact checking.
+- [Reachy 2 Reinforcement Learning Base](https://github.com/jcooperkai-sys/Reachy-RL): Reachy 2 in MuJoCo, set up for reinforcement learning.
 
 ## Private projects
 
 These are private repositories. Only the names and short descriptions are public.
 
 - Flagger
-- Ducky Studio
+- Personal Agent Harness
 - Latent Diffusion Image Generator
 - Motion-Adapter Video Generator
 - On-Demand Language Model with Web Search
@@ -35,6 +38,6 @@ These are private repositories. Only the names and short descriptions are public
 
 ## Optional
 
-- [Full text](https://jcooperkai.com/llms-full.txt): every project description on the site.
-- [Privacy](https://jcooperkai.com/privacy.txt)
-- [Security policy](https://jcooperkai.com/security-policy.txt)
+- [Full text](https://jcooperkai.com/llms-full.txt): every description on the site.
+- [Privacy](https://jcooperkai.com/privacy)
+- [Security policy](https://jcooperkai.com/security-policy)

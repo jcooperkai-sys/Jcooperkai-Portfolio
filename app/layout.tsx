@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import "./stars.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://jcooperkai.com"),
@@ -29,9 +30,8 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
-/* Structured data for search engines and AI assistants. A fixed constant: no request data and no user
-   input reaches it, and "<" is escaped so it can never close the script tag. Every value here is
-   already public on the page. */
+/* Security: a fixed constant. No request data or user input reaches it, and "<" is escaped so it
+   can never close the script tag. */
 const personJsonLd = JSON.stringify({
   "@context": "https://schema.org",
   "@type": "Person",
@@ -42,7 +42,7 @@ const personJsonLd = JSON.stringify({
   url: "https://jcooperkai.com/",
   image: "https://jcooperkai.com/assets/og.png",
   email: "mailto:jcooperkai@gmail.com",
-  address: { "@type": "PostalAddress", addressLocality: "San Diego", addressRegion: "CA", addressCountry: "US" },
+  address: { "@type": "PostalAddress", addressRegion: "FL", addressCountry: "US" },
   worksFor: { "@type": "Organization", name: "Webbify", url: "https://webbify.build/" },
   sameAs: ["https://github.com/jcooperkai-sys", "https://x.com/jcooperkai"],
 }).replace(/</g, "\\u003c");
@@ -50,7 +50,7 @@ const personJsonLd = JSON.stringify({
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#404147",
+  themeColor: "#000000",
   colorScheme: "dark",
 };
 
