@@ -2,6 +2,7 @@ import { icons, type IconName } from "./icons";
 import { Gallery, type Bundle } from "./gallery";
 import { GitHubActivity } from "./activity";
 import { AskAI } from "./ask";
+import { Nav } from "./nav";
 import { Logo } from "./logo";
 
 const links: { label: string; handle: string; href: string; icon: IconName | "webbify" | "resume" }[] = [
@@ -332,15 +333,7 @@ export default function Home() {
       <div className="frame" id="top">
         <header className="top">
           <a className="brand" href="#top">jcooperkai</a>
-          <nav aria-label="Sections">
-            <ul>
-              {sections.map((s) => (
-                <li key={s.id}>
-                  <a href={`#${s.id}`}>{s.label}</a>
-                </li>
-              ))}
-            </ul>
-          </nav>
+          <Nav sections={sections} />
           <p className="top-where">Florida, USA</p>
         </header>
 

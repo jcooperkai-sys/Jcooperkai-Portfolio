@@ -57,6 +57,8 @@ test("server-renders the portfolio", async () => {
   assert.match(html, /href="\/privacy"/);
   assert.match(html, /href="\/security-policy"/);
   assert.match(html, />Ask AI</);
+  assert.match(html, /class="nav-toggle"[^>]*aria-expanded="false"[^>]*aria-controls="nav-list"/);
+  assert.match(html, /aria-label="Open menu"/);
   assert.doesNotMatch(html, /San Diego/);
   assert.match(html, />GitHub activity</);
   assert.match(html, /© 2026 Cooper\. E/);
