@@ -64,7 +64,10 @@ test("server-renders the portfolio", async () => {
   // Pinned projects are not repeated in the list under them.
   assert.equal(html.split('href="https://github.com/jcooperkai-sys/HisokaOS"').length - 1, 1);
   // The link preview: an image, and no description text at all.
-  assert.match(html, /<meta property="og:image" content="https:\/\/jcooperkai\.com\/assets\/og\.png"/);
+  assert.match(html, /<meta property="og:image" content="https:\/\/jcooperkai\.com\/assets\/share\.png"/);
+  assert.match(html, /<meta name="twitter:image" content="https:\/\/jcooperkai\.com\/assets\/share\.png"/);
+  assert.match(html, /rel="icon" href="\/favicon\.ico\?v=2"/);
+  assert.match(html, /rel="apple-touch-icon" href="\/assets\/apple-touch-icon\.png"/);
   assert.match(html, /<meta name="twitter:card" content="summary_large_image"/);
   assert.doesNotMatch(html, /name="description"|og:description|twitter:description/);
   // Retired site content must never come back.
@@ -84,7 +87,11 @@ test("all authored local assets and downloadable files exist", async () => {
   );
 
   assert.ok(references.size >= 8, "expected a complete set of local artifacts");
-  await access(new URL("../public/assets/og.png", import.meta.url));
+  for (const file of ["share.png", "og.png", "apple-touch-icon.png", "icon.svg", "icon-512.png", "jc-avatar.png"]) {
+    await access(new URL(`../public/assets/${file}`, import.meta.url));
+  }
+  const ico = await readFile(new URL("../public/favicon.ico", import.meta.url));
+  assert.ok(ico.length > 2000 && ico.readUInt16LE(4) >= 3, "favicon.ico should carry several sizes of the current logo");
   await Promise.all(
     [...references].map((path) =>
       access(new URL(`../public${path}`, import.meta.url)),
