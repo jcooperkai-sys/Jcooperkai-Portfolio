@@ -18,13 +18,13 @@ Current as of November 17, 2026. This file replaces anything older. Earlier vers
 
 - Autonomous Drone Racing Policy: a neural policy that flies a racing drone through gates in simulation. In progress, private.
 - [GGUF Token Decoder](https://github.com/jcooperkai-sys/GGUF-Token-Decoder): Decodes a GGUF model's token IDs using only the model file.
-- [HisokaOS](https://github.com/jcooperkai-sys/HisokaOS): A from-scratch 32-bit x86 operating system in C and assembly.
+- HisokaOS: A from-scratch 32-bit x86 operating system in C and assembly. Private.
 - Sentinel: a home security vision system in C++ for a small mini PC and a PTZ camera. Private.
 - Rule-Based Motion Planner (RBMP): a deterministic driving planner on real United States road geometry. Private.
 - [Scan Quality Map](https://github.com/jcooperkai-sys/Scan-Quality-Map): Vesuvius Challenge work that maps where Herculaneum scroll CT scans can still separate the papyrus layers.
-- [Dashcam Perception and Path Prediction Stack](https://github.com/jcooperkai-sys/The-Lazy-Driver): Self-driving perception and path prediction on dashcam footage.
-- [Local Conversational System with Memory and Fact Checking](https://github.com/jcooperkai-sys/Bill): A local language model with memory, retrieval and fact checking.
-- [Reachy 2 Reinforcement Learning Base](https://github.com/jcooperkai-sys/Reachy-RL): Reachy 2 in MuJoCo, set up for reinforcement learning.
+- Dashcam Perception and Path Prediction Stack: Self-driving perception and path prediction on dashcam footage. Private.
+- Local Conversational System with Memory and Fact Checking: A local language model with memory, retrieval and fact checking. Private.
+- Reachy 2 Reinforcement Learning Base: Reachy 2 in MuJoCo, set up for reinforcement learning. Private.
 
 ## Private projects
 
@@ -35,7 +35,6 @@ These are private repositories. Only the names and short descriptions are public
 - Latent Diffusion Image Generator
 - Motion-Adapter Video Generator
 - On-Demand Language Model with Web Search
-- Wingwall Neural World
 
 ## Optional
 

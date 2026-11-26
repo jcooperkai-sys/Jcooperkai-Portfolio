@@ -65,7 +65,10 @@ test("server-renders the portfolio", async () => {
   assert.match(html, /© 2026 Cooper\. E/);
   assert.match(html, /See more projects on GitHub/);
   // Pinned projects are not repeated in the list under them.
-  assert.equal(html.split('href="https://github.com/jcooperkai-sys/HisokaOS"').length - 1, 1);
+  for (const repo of ["HisokaOS", "The-Lazy-Driver", "Bill", "Reachy-RL"]) {
+    assert.doesNotMatch(html, new RegExp(`href="https://github.com/jcooperkai-sys/${repo}"`));
+  }
+  assert.doesNotMatch(html, /Wingwall|gallery\/wingwall|Cooper circuit/);
   assert.match(html, /<meta property="og:image" content="https:\/\/jcooperkai\.com\/assets\/share\.png"/);
   assert.match(html, /<meta name="twitter:image" content="https:\/\/jcooperkai\.com\/assets\/share\.png"/);
   assert.match(html, /rel="icon" href="\/favicon\.ico\?v=2"/);
@@ -390,7 +393,7 @@ test("llms.txt files describe the current site", async () => {
   for (const [name, text] of [["llms.txt", brief], ["llms-full.txt", full]]) {
     assert.match(text, /jcooperkai/, `${name}: missing the handle`);
     assert.match(text, /Agentic Engineer|agentic engineer/, `${name}: missing the role`);
-    for (const project of ["GGUF Token Decoder", "Sentinel", "HisokaOS", "Wingwall Neural World", "Hyperlapse"]) {
+    for (const project of ["GGUF Token Decoder", "Sentinel", "HisokaOS", "Hyperlapse"]) {
       assert.ok(text.includes(project), `${name}: missing ${project}`);
     }
     assert.doesNotMatch(text, /Buddy|AI Lab|visitor|—/, `${name}: carries retired content or an em dash`);
