@@ -51,6 +51,7 @@ test("server-renders the portfolio", async () => {
   assert.match(html, /Head of Product &amp; Engineering/);
   assert.match(html, /Personal Agent Harness/);
   assert.doesNotMatch(html, /Ducky Studio|Editor Browser|App Installer|Transactional Relational|Live at webbify/);
+  assert.doesNotMatch(html, /webbify/i);
   assert.match(html, /href="#gallery-drone"/);
   assert.match(html, /id="gallery-drone"/);
   assert.match(html, /href="\/resume"/);
@@ -75,7 +76,7 @@ test("server-renders the portfolio", async () => {
   const ld = JSON.parse(html.match(/<script type="application\/ld\+json">(.*?)<\/script>/s)[1]);
   const person = ld["@graph"].find((node) => node["@type"] === "Person");
   assert.equal(person.name, "Jeffery Eckert");
-  assert.deepEqual(person.worksFor.map((org) => org.name), ["Hyperlapse", "Webbify"]);
+  assert.deepEqual(person.worksFor.map((org) => org.name), ["Hyperlapse"]);
   assert.equal(person.address.addressRegion, "FL");
   assert.ok(ld["@graph"].some((node) => node["@type"] === "ProfilePage"));
   // Retired site content must never come back.

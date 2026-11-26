@@ -15,17 +15,6 @@ const experience = [
       "Keep every rate limit and abuse control in one central policy module, with backups, alerts and a rehearsed staging-to-production cutover.",
     ],
   },
-  {
-    company: "Webbify",
-    role: "Maintainer",
-    when: "Current",
-    where: "webbify.build",
-    points: [
-      "Maintain an AI-operated web agency where agents rebuild and run small-business websites.",
-      "Own the backend systems, the edge workers that take leads and contact forms, Stripe billing and the public status page.",
-      "Run the agents that design, build, review and operate client sites, with watchdog checks that restart failed services.",
-    ],
-  },
 ];
 
 const projects = [

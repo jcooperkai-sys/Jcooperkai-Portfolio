@@ -5,11 +5,10 @@ import { AskAI } from "./ask";
 import { Nav } from "./nav";
 import { Logo } from "./logo";
 
-const links: { label: string; handle: string; href: string; icon: IconName | "webbify" | "resume" }[] = [
+const links: { label: string; handle: string; href: string; icon: IconName | "resume" }[] = [
   { label: "GitHub", handle: "jcooperkai-sys", href: "https://github.com/jcooperkai-sys", icon: "github" },
   { label: "X", handle: "@jcooperkai", href: "https://x.com/jcooperkai", icon: "x-twitter" },
   { label: "Email", handle: "jcooperkai@gmail.com", href: "mailto:jcooperkai@gmail.com", icon: "envelope" },
-  { label: "Webbify", handle: "webbify.build", href: "https://webbify.build/", icon: "webbify" },
   { label: "Resume", handle: "Resume", href: "/resume", icon: "resume" },
 ];
 
@@ -21,14 +20,6 @@ const experience: { company: string; role: string; href: string; site: string; t
     site: "hyperlapse.com",
     text: "A stock-footage marketplace. I lead product and engineering for the site, the backend and operations. hyperlapse.com is its official home.",
     mark: "/assets/hyperlapse-mark.svg",
-  },
-  {
-    company: "Webbify",
-    role: "Maintainer",
-    href: "https://webbify.build/",
-    site: "webbify.build",
-    text: "An AI-operated web agency. AI agents rebuild and run small-business websites, and I maintain the systems they run on.",
-    mark: "/assets/webbify-mark.png",
   },
 ];
 
@@ -108,7 +99,7 @@ const projects: Project[] = [
 
 const privateProjects: { name: string; text: string }[] = [
   { name: "Flagger",
-    text: "The traffic proxy in front of my GPU server's local language models. It holds Ollama's port and runs one GPU job at a time, most important first: Webbify clients, then public chat, then my own tools, then background work. It also checks every Webbify service every 15 seconds and restarts any that fail three checks in a row." },
+    text: "The traffic proxy in front of my GPU server's local language models. It holds Ollama's port and runs one GPU job at a time, most important first: client sites, then public chat, then my own tools, then background work. It also checks every client service every 15 seconds and restarts any that fail three checks in a row." },
   { name: "Personal Agent Harness",
     text: "My desktop app for working with the models on my GPU server. It has chat with tool calling, scheduled tasks that run against a real model, model downloads with live progress, and a view of both machines." },
   { name: "Latent Diffusion Image Generator",
@@ -360,9 +351,7 @@ export default function Home() {
                 {links.map((l) => (
                   <li key={l.label}>
                     <a className="link-button" href={l.href} {...(l.href.startsWith("http") ? { rel: l.label === "GitHub" || l.label === "X" ? "me noopener noreferrer" : "noopener noreferrer" } : {})}>
-                      {l.icon === "webbify" ? (
-                        <img className="link-icon" src="/assets/webbify-mark.png" width={18} height={17} alt="" />
-                      ) : l.icon === "resume" ? (
+                      {l.icon === "resume" ? (
                         <ResumeIcon className="link-icon" />
                       ) : (
                         <Icon name={l.icon} className="link-icon" />
