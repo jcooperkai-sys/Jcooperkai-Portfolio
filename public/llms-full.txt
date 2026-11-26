@@ -30,7 +30,11 @@ A stock-footage marketplace. I lead product and engineering for the site, the ba
 
 ### Autonomous Drone Racing Policy
 
-An autonomous neural policy that flies a racing drone through gates in simulation, lap after lap. In progress. Private repository. Race footage is in the site gallery.
+A neural control policy that races a drone through gates. A PPO teacher with full state trains an onboard student that flies from a 64×48 depth image and noisy IMU state, and an analytic gap-centering module handles tight openings. It outputs thrust and body rates at 100 Hz. In simulation the student reaches 100% success on all three fixed tracks with nominal dynamics. Private repository. Race footage is in the site gallery.
+
+### Drone Racing Gym
+
+A quadrotor gate-racing environment in PyTorch that simulates thousands of drones in parallel at 400 Hz, takes thrust and body-rate commands, and has a PyBullet backend and renderer for validation and video. Private repository. Footage is in the site gallery.
 
 ### GGUF Token Decoder
 
@@ -44,7 +48,7 @@ Private repository.
 
 A 32-bit x86 operating system I wrote from scratch in C and assembly. It boots its own kernel in QEMU to an interactive shell, with paging, PCI, an RTL8139 network driver and a RAM filesystem. C, MIT.
 
-### Sentinel
+### Perimeter Net
 
 A home security vision system in C++ for a small mini PC and a PTZ camera. It detects and tracks people, vehicles and animals, zooms in to verify before it alerts, and patrols like a guard. Training, export and runtime are all C++. Private repository.
 

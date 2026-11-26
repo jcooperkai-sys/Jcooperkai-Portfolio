@@ -16,10 +16,11 @@ Current as of November 17, 2026. This file replaces anything older. Earlier vers
 
 ## Projects
 
-- Autonomous Drone Racing Policy: a neural policy that flies a racing drone through gates in simulation. In progress, private.
+- Autonomous Drone Racing Policy: a PPO teacher and an onboard depth-and-IMU student that race a drone through gates, with a gap-centering module for tight openings. Private.
+- Drone Racing Gym: a GPU-vectorised quadrotor gate-racing simulator with a PyBullet backend and renderer. Private.
 - [GGUF Token Decoder](https://github.com/jcooperkai-sys/GGUF-Token-Decoder): Decodes a GGUF model's token IDs using only the model file.
 - HisokaOS: A from-scratch 32-bit x86 operating system in C and assembly. Private.
-- Sentinel: a home security vision system in C++ for a small mini PC and a PTZ camera. Private.
+- Perimeter Net: a home security vision system in C++ for a small mini PC and a PTZ camera. Private.
 - Rule-Based Motion Planner (RBMP): a deterministic driving planner on real United States road geometry. Private.
 - [Scan Quality Map](https://github.com/jcooperkai-sys/Scan-Quality-Map): Vesuvius Challenge work that maps where Herculaneum scroll CT scans can still separate the papyrus layers.
 - Dashcam Perception and Path Prediction Stack: Self-driving perception and path prediction on dashcam footage. Private.

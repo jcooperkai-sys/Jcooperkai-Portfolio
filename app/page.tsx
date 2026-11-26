@@ -30,9 +30,17 @@ const featured: (Project & { logo: string })[] = [
     name: "Autonomous Drone Racing Policy",
     href: "#gallery-drone",
     short: "A neural policy that races a drone through gates.",
-    blurb: "An autonomous neural policy that flies a racing drone through gates in simulation, lap after lap. I'm working on it now. The arrow goes to the race footage.",
-    meta: "In progress · Private",
+    blurb: "A neural control policy that races a drone through gates. A PPO teacher with full state trains an onboard student that flies from a 64×48 depth image and noisy IMU state, and an analytic gap-centering module handles tight openings. It outputs thrust and body rates at 100 Hz with no autopilot underneath. In simulation the student reaches 100% success on all three fixed tracks with nominal dynamics, and the gap module was validated in PyBullet. The arrow goes to the race footage.",
+    meta: "Python · PyTorch · Private",
     logo: "/assets/projects/drone-racer.png",
+  },
+  {
+    name: "Drone Racing Gym",
+    href: "#gallery-gym",
+    short: "A GPU-vectorised quadrotor gate-racing simulator.",
+    blurb: "A quadrotor gate-racing environment in PyTorch that simulates thousands of drones in parallel at 400 Hz, takes thrust and body-rate commands like an FPV pilot in acro mode, and has a PyBullet backend and renderer for validation and video. The policy above trained in it at about 266,000 environment steps per second on one GPU. The arrow goes to the footage.",
+    meta: "Python · PyTorch · Private",
+    logo: "/assets/projects/drone-gym.png",
   },
   {
     name: "GGUF Token Decoder",
@@ -54,7 +62,7 @@ const featured: (Project & { logo: string })[] = [
 
 const projects: Project[] = [
   {
-    name: "Sentinel",
+    name: "Perimeter Net",
     href: null,
     short: "A home security vision system in C++ for a small mini PC and a PTZ camera. It detects and tracks people, vehicles and animals, zooms in to verify before it alerts, and patrols like a guard.",
     blurb: "",
@@ -212,6 +220,16 @@ const bundles: Bundle[] = [
       { kind: "video", thumb: "/assets/gallery/drone/fpv-race-splits-thumb.webp", full: "/assets/gallery/drone/fpv-race-splits.mp4", width: 640, height: 480, title: "Split course, onboard", alt: "Onboard view of the drone threading gates on the split course." },
       { kind: "video", thumb: "/assets/gallery/drone/chase-race-splits-thumb.webp", full: "/assets/gallery/drone/chase-race-splits.mp4", width: 640, height: 480, title: "Split course, chase camera", alt: "Chase-camera view of the drone passing an orange gate on the split course." },
       { kind: "video", thumb: "/assets/gallery/drone/fpv-bando-smokestack-dive-thumb.webp", full: "/assets/gallery/drone/fpv-bando-smokestack-dive.mp4", width: 640, height: 480, title: "Smokestack dive, onboard", alt: "Onboard view of the drone diving down a smokestack." },
+    ],
+  },
+  {
+    id: "gym",
+    name: "Drone racing gym",
+    note: "Chase-camera footage from the simulator.",
+    items: [
+      { kind: "video", thumb: "/assets/gallery/gym/chase-split-s-thumb.webp", full: "/assets/gallery/gym/chase-split-s.mp4", width: 640, height: 480, title: "Split-S, chase camera", alt: "Chase-camera view of a drone approaching an orange gate on the Split-S track in the simulator." },
+      { kind: "video", thumb: "/assets/gallery/gym/reference-flyer-chase-thumb.webp", full: "/assets/gallery/gym/reference-flyer-chase.mp4", width: 640, height: 480, title: "Reference flyer on the 64-gate course", alt: "Chase-camera view of the scripted reference flyer passing a gate on the 64-gate speed course." },
+      { kind: "image", thumb: "/assets/gallery/gym/chase-frame-thumb.webp", full: "/assets/gallery/gym/chase-frame.webp", width: 640, height: 480, title: "Chase-camera frame", alt: "A single chase-camera frame of a drone approaching a green gate over a grey tiled floor." },
     ],
   },
   {

@@ -54,6 +54,10 @@ test("server-renders the portfolio", async () => {
   assert.doesNotMatch(html, /webbify/i);
   assert.match(html, /href="#gallery-drone"/);
   assert.match(html, /id="gallery-drone"/);
+  assert.match(html, /Drone Racing Gym/);
+  assert.match(html, /href="#gallery-gym"/);
+  assert.match(html, /id="gallery-gym"/);
+  assert.doesNotMatch(html, /Sentinel/);
   assert.match(html, /href="\/resume"/);
   assert.match(html, /href="\/privacy"/);
   assert.match(html, /href="\/security-policy"/);
@@ -393,7 +397,7 @@ test("llms.txt files describe the current site", async () => {
   for (const [name, text] of [["llms.txt", brief], ["llms-full.txt", full]]) {
     assert.match(text, /jcooperkai/, `${name}: missing the handle`);
     assert.match(text, /Agentic Engineer|agentic engineer/, `${name}: missing the role`);
-    for (const project of ["GGUF Token Decoder", "Sentinel", "HisokaOS", "Hyperlapse"]) {
+    for (const project of ["GGUF Token Decoder", "Perimeter Net", "HisokaOS", "Hyperlapse"]) {
       assert.ok(text.includes(project), `${name}: missing ${project}`);
     }
     assert.doesNotMatch(text, /Buddy|AI Lab|visitor|—/, `${name}: carries retired content or an em dash`);
