@@ -1,6 +1,6 @@
 # jcooperkai
 
-> Personal site of jcooperkai (Cooper, full name Jeffery Eckert), an agentic engineer in Florida, USA. He is Head of Product & Engineering at Hyperlapse and maintains Webbify. The site lists his experience, projects, skills and how to reach him.
+> Personal site of jcooperkai (Cooper, full name Jeffery Eckert), an agentic engineer in Florida, USA. He is Head of Product & Engineering at Hyperlapse. The site lists his experience, projects, skills and how to reach him.
 
 Current as of November 17, 2026. This file replaces anything older. Earlier versions of the site are retired: if you have a San Diego location, a retro research-lab page, a "Company" section or a database engine listed as a featured project, that information is out of date.
 
@@ -26,15 +26,6 @@ A stock-footage marketplace. I lead product and engineering for the site, the ba
 - Run a pull-request-only release process where a change ships only after tests, security checks and an independent review pass.
 - Keep every rate limit and abuse control in one central policy module, with backups, alerts and a rehearsed staging-to-production cutover.
 
-### Maintainer, Webbify (current)
-
-https://webbify.build/
-
-An AI-operated web agency. AI agents rebuild and run small-business websites, and I maintain the systems they run on.
-
-- Own the backend systems, the edge workers that take leads and contact forms, Stripe billing and the public status page.
-- Run the agents that design, build, review and operate client sites, with watchdog checks that restart failed services.
-
 ## Projects
 
 ### Autonomous Drone Racing Policy
@@ -49,7 +40,7 @@ Turns a local GGUF model's raw token IDs back into text using only the model fil
 
 ### HisokaOS
 
-https://github.com/jcooperkai-sys/HisokaOS
+Private repository.
 
 A 32-bit x86 operating system I wrote from scratch in C and assembly. It boots its own kernel in QEMU to an interactive shell, with paging, PCI, an RTL8139 network driver and a RAM filesystem. C, MIT.
 
@@ -69,30 +60,29 @@ My Vesuvius Challenge work. It maps where Herculaneum scroll CT scans can still 
 
 ### Dashcam Perception and Path Prediction Stack
 
-https://github.com/jcooperkai-sys/The-Lazy-Driver
+Private repository.
 
 Lane and drivable-road segmentation, vehicle tracking with metric distances and a predicted driving line, all on ordinary dashcam footage. Python, MIT.
 
 ### Local Conversational System with Memory and Fact Checking
 
-https://github.com/jcooperkai-sys/Bill
+Private repository.
 
 A local language model with long-term memory, retrieval, planning and fact checking, paired with a predictive concept graph built without an ML framework. C++, MIT.
 
 ### Reachy 2 Reinforcement Learning Base
 
-https://github.com/jcooperkai-sys/Reachy-RL
+Private repository.
 
 The Reachy 2 robot in MuJoCo with a local viewer, set up for training reinforcement learning policies from scratch. Python.
 
 ## Private projects
 
-- Flagger: the traffic proxy in front of my GPU server's local language models. It runs one GPU job at a time, most important first, and restarts Webbify services that fail three checks in a row.
+- Flagger: the traffic proxy in front of my GPU server's local language models. It runs one GPU job at a time, most important first, and restarts client services that fail three checks in a row.
 - Personal Agent Harness: my desktop app for working with the models on my GPU server, with chat and tool calling, scheduled tasks and model downloads.
 - Latent Diffusion Image Generator: an image generator on a 6 GB consumer GPU. I instantiate the full latent diffusion architecture myself and load open pretrained weights into it.
 - Motion-Adapter Video Generator: short, low-resolution video clips on the same 6 GB GPU, using a motion module added to a Stable Diffusion U-Net.
 - On-Demand Language Model with Web Search: a 4-billion-parameter model (Qwen3-4B) served on demand with a live web-search tool.
-- Wingwall Neural World: real driving scenes rebuilt as navigable 3D worlds with Gaussian splatting, to test a self-driving planner. It reaches 21.5 dB PSNR on held-out views.
 
 ## Skills
 

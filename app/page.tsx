@@ -5,11 +5,10 @@ import { AskAI } from "./ask";
 import { Nav } from "./nav";
 import { Logo } from "./logo";
 
-const links: { label: string; handle: string; href: string; icon: IconName | "webbify" | "resume" }[] = [
+const links: { label: string; handle: string; href: string; icon: IconName | "resume" }[] = [
   { label: "GitHub", handle: "jcooperkai-sys", href: "https://github.com/jcooperkai-sys", icon: "github" },
   { label: "X", handle: "@jcooperkai", href: "https://x.com/jcooperkai", icon: "x-twitter" },
   { label: "Email", handle: "jcooperkai@gmail.com", href: "mailto:jcooperkai@gmail.com", icon: "envelope" },
-  { label: "Webbify", handle: "webbify.build", href: "https://webbify.build/", icon: "webbify" },
   { label: "Resume", handle: "Resume", href: "/resume", icon: "resume" },
 ];
 
@@ -21,14 +20,6 @@ const experience: { company: string; role: string; href: string; site: string; t
     site: "hyperlapse.com",
     text: "A stock-footage marketplace. I lead product and engineering for the site, the backend and operations. hyperlapse.com is its official home.",
     mark: "/assets/hyperlapse-mark.svg",
-  },
-  {
-    company: "Webbify",
-    role: "Maintainer",
-    href: "https://webbify.build/",
-    site: "webbify.build",
-    text: "An AI-operated web agency. AI agents rebuild and run small-business websites, and I maintain the systems they run on.",
-    mark: "/assets/webbify-mark.png",
   },
 ];
 
@@ -53,10 +44,10 @@ const featured: (Project & { logo: string })[] = [
   },
   {
     name: "HisokaOS",
-    href: "https://github.com/jcooperkai-sys/HisokaOS",
+    href: null,
     short: "A from-scratch 32-bit x86 operating system in C and assembly.",
     blurb: "A 32-bit x86 operating system I wrote from scratch in C and assembly. It boots its own kernel in QEMU to an interactive shell, with paging, PCI, an RTL8139 network driver and a RAM filesystem.",
-    meta: "C · MIT",
+    meta: "C · MIT · Private",
     logo: "/assets/projects/hisokaos.png",
   },
 ];
@@ -85,30 +76,30 @@ const projects: Project[] = [
   },
   {
     name: "Dashcam Perception and Path Prediction Stack",
-    href: "https://github.com/jcooperkai-sys/The-Lazy-Driver",
+    href: null,
     short: "Lane and drivable-road segmentation, vehicle tracking with metric distances and a predicted driving line, all on ordinary dashcam footage.",
     blurb: "",
-    meta: "Python · MIT",
+    meta: "Python · MIT · Private",
   },
   {
     name: "Local Conversational System with Memory and Fact Checking",
-    href: "https://github.com/jcooperkai-sys/Bill",
+    href: null,
     short: "A local language model with long-term memory, retrieval, planning and fact checking, paired with a predictive concept graph built without an ML framework.",
     blurb: "",
-    meta: "C++ · MIT",
+    meta: "C++ · MIT · Private",
   },
   {
     name: "Reachy 2 Reinforcement Learning Base",
-    href: "https://github.com/jcooperkai-sys/Reachy-RL",
+    href: null,
     short: "The Reachy 2 robot in MuJoCo with a local viewer, set up for training reinforcement learning policies from scratch.",
     blurb: "",
-    meta: "Python",
+    meta: "Python · Private",
   },
 ];
 
 const privateProjects: { name: string; text: string }[] = [
   { name: "Flagger",
-    text: "The traffic proxy in front of my GPU server's local language models. It holds Ollama's port and runs one GPU job at a time, most important first: Webbify clients, then public chat, then my own tools, then background work. It also checks every Webbify service every 15 seconds and restarts any that fail three checks in a row." },
+    text: "The traffic proxy in front of my GPU server's local language models. It holds Ollama's port and runs one GPU job at a time, most important first: client sites, then public chat, then my own tools, then background work. It also checks every client service every 15 seconds and restarts any that fail three checks in a row." },
   { name: "Personal Agent Harness",
     text: "My desktop app for working with the models on my GPU server. It has chat with tool calling, scheduled tasks that run against a real model, model downloads with live progress, and a view of both machines." },
   { name: "Latent Diffusion Image Generator",
@@ -117,8 +108,6 @@ const privateProjects: { name: string; text: string }[] = [
     text: "Short, low-resolution video clips on the same 6 GB GPU, using a motion module added to a Stable Diffusion U-Net. I tracked an older checkpoint that only ever output noise to a fault in how its time layers merge, and switched to AnimateLCM." },
   { name: "On-Demand Language Model with Web Search",
     text: "A 4-billion-parameter model (Qwen3-4B) served on demand. It looks things up with a live web-search tool when an answer is time-sensitive." },
-  { name: "Wingwall Neural World",
-    text: "Real driving scenes rebuilt as navigable 3D worlds with Gaussian splatting, made as a place to test a self-driving planner. It reaches 21.5 dB PSNR on held-out views." },
 ];
 
 const interests = [
@@ -217,20 +206,12 @@ const bundles: Bundle[] = [
     name: "Autonomous drone racing",
     note: "The neural policy flying in simulation.",
     items: [
-      { kind: "video", thumb: "/assets/gallery/drone/fpv-race-cooper-circuit-thumb.webp", full: "/assets/gallery/drone/fpv-race-cooper-circuit.mp4", width: 640, height: 480, title: "Cooper circuit, onboard", alt: "Onboard view of the drone banking toward a green gate on the Cooper circuit." },
+      { kind: "video", thumb: "/assets/gallery/drone/fpv-race-cooper-circuit-thumb.webp", full: "/assets/gallery/drone/fpv-race-cooper-circuit.mp4", width: 640, height: 480, title: "Gate circuit, onboard", alt: "Onboard view of the drone banking toward a green gate on the gate circuit." },
       { kind: "video", thumb: "/assets/gallery/drone/fpv-race-speedway-launch-thumb.webp", full: "/assets/gallery/drone/fpv-race-speedway-launch.mp4", width: 640, height: 480, title: "Speedway launch, onboard", alt: "Onboard view of the drone accelerating off the line toward the first gate." },
       { kind: "video", thumb: "/assets/gallery/drone/fpv-race-speedway-night-thumb.webp", full: "/assets/gallery/drone/fpv-race-speedway-night.mp4", width: 640, height: 480, title: "Speedway at night, onboard", alt: "Onboard view of the drone racing through lit gates in the dark." },
       { kind: "video", thumb: "/assets/gallery/drone/fpv-race-splits-thumb.webp", full: "/assets/gallery/drone/fpv-race-splits.mp4", width: 640, height: 480, title: "Split course, onboard", alt: "Onboard view of the drone threading gates on the split course." },
       { kind: "video", thumb: "/assets/gallery/drone/chase-race-splits-thumb.webp", full: "/assets/gallery/drone/chase-race-splits.mp4", width: 640, height: 480, title: "Split course, chase camera", alt: "Chase-camera view of the drone passing an orange gate on the split course." },
       { kind: "video", thumb: "/assets/gallery/drone/fpv-bando-smokestack-dive-thumb.webp", full: "/assets/gallery/drone/fpv-bando-smokestack-dive.mp4", width: 640, height: 480, title: "Smokestack dive, onboard", alt: "Onboard view of the drone diving down a smokestack." },
-    ],
-  },
-  {
-    id: "wingwall",
-    name: "Wingwall Neural World",
-    note: "Lidar map in CARLA.",
-    items: [
-      { kind: "image", thumb: "/assets/gallery/wingwall/lidar-thumb.webp", full: "/assets/gallery/wingwall/lidar.webp", width: 1280, height: 720, title: "Lidar map in CARLA", alt: "A dense grey lidar point cloud of a city street, with my car following a green planned path around a bend." },
     ],
   },
   {
@@ -360,9 +341,7 @@ export default function Home() {
                 {links.map((l) => (
                   <li key={l.label}>
                     <a className="link-button" href={l.href} {...(l.href.startsWith("http") ? { rel: l.label === "GitHub" || l.label === "X" ? "me noopener noreferrer" : "noopener noreferrer" } : {})}>
-                      {l.icon === "webbify" ? (
-                        <img className="link-icon" src="/assets/webbify-mark.png" width={18} height={17} alt="" />
-                      ) : l.icon === "resume" ? (
+                      {l.icon === "resume" ? (
                         <ResumeIcon className="link-icon" />
                       ) : (
                         <Icon name={l.icon} className="link-icon" />
@@ -411,7 +390,7 @@ export default function Home() {
             <div>
               <ul className="rows">
                 {featured.map((p) => (
-                  <li className="row row-featured" key={p.name}>
+                  <li className={p.href ? "row row-featured" : "row row-featured row-static"} key={p.name}>
                     <img className="row-logo" src={p.logo} width={56} height={56} alt="" decoding="async" />
                     <h3>
                       <ProjectLink project={p} />

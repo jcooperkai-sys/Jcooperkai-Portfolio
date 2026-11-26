@@ -15,17 +15,6 @@ const experience = [
       "Keep every rate limit and abuse control in one central policy module, with backups, alerts and a rehearsed staging-to-production cutover.",
     ],
   },
-  {
-    company: "Webbify",
-    role: "Maintainer",
-    when: "Current",
-    where: "webbify.build",
-    points: [
-      "Maintain an AI-operated web agency where agents rebuild and run small-business websites.",
-      "Own the backend systems, the edge workers that take leads and contact forms, Stripe billing and the public status page.",
-      "Run the agents that design, build, review and operate client sites, with watchdog checks that restart failed services.",
-    ],
-  },
 ];
 
 const projects = [
@@ -34,7 +23,6 @@ const projects = [
   { name: "Rule-Based Motion Planner (RBMP)", stack: "Python, SUMO, OpenStreetMap", text: "Deterministic driving planner on real United States road geometry. It obeys a traffic-law rulebook with an explicit precedence order and ships with the benchmarks that measure it." },
   { name: "Scan Quality Map", stack: "Python, OME-Zarr", text: "Maps where Herculaneum scroll CT scans can still separate the papyrus layers and where haze hides them, with an atlas of all 22 First Letters scrolls. Built for the Vesuvius Challenge." },
   { name: "HisokaOS", stack: "C, x86 assembly, QEMU", text: "A 32-bit x86 operating system from scratch: its own kernel, paging, PCI, an RTL8139 network driver, a RAM filesystem and an interactive shell." },
-  { name: "Wingwall Neural World", stack: "Gaussian splatting, CARLA", text: "Real driving scenes rebuilt as navigable 3D worlds to test a self-driving planner. Reaches 21.5 dB PSNR on held-out views." },
   { name: "GGUF Token Decoder", stack: "Python", text: "Turns a local GGUF model's raw token IDs back into text using only the model file, with no ML framework." },
 ];
 

@@ -6,7 +6,7 @@ Last updated: September 30, 2026
 SCOPE
 
 This policy covers the website and files served from jcooperkai.com and
-www.jcooperkai.com. Linked third-party services (GitHub, X, Webbify) are
+www.jcooperkai.com. Linked third-party services (GitHub, X) are
 outside its scope.
 
 HOW TO REPORT
