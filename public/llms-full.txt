@@ -40,7 +40,7 @@ Turns a local GGUF model's raw token IDs back into text using only the model fil
 
 ### HisokaOS
 
-https://github.com/jcooperkai-sys/HisokaOS
+Private repository.
 
 A 32-bit x86 operating system I wrote from scratch in C and assembly. It boots its own kernel in QEMU to an interactive shell, with paging, PCI, an RTL8139 network driver and a RAM filesystem. C, MIT.
 
@@ -60,19 +60,19 @@ My Vesuvius Challenge work. It maps where Herculaneum scroll CT scans can still 
 
 ### Dashcam Perception and Path Prediction Stack
 
-https://github.com/jcooperkai-sys/The-Lazy-Driver
+Private repository.
 
 Lane and drivable-road segmentation, vehicle tracking with metric distances and a predicted driving line, all on ordinary dashcam footage. Python, MIT.
 
 ### Local Conversational System with Memory and Fact Checking
 
-https://github.com/jcooperkai-sys/Bill
+Private repository.
 
 A local language model with long-term memory, retrieval, planning and fact checking, paired with a predictive concept graph built without an ML framework. C++, MIT.
 
 ### Reachy 2 Reinforcement Learning Base
 
-https://github.com/jcooperkai-sys/Reachy-RL
+Private repository.
 
 The Reachy 2 robot in MuJoCo with a local viewer, set up for training reinforcement learning policies from scratch. Python.
 
@@ -83,7 +83,6 @@ The Reachy 2 robot in MuJoCo with a local viewer, set up for training reinforcem
 - Latent Diffusion Image Generator: an image generator on a 6 GB consumer GPU. I instantiate the full latent diffusion architecture myself and load open pretrained weights into it.
 - Motion-Adapter Video Generator: short, low-resolution video clips on the same 6 GB GPU, using a motion module added to a Stable Diffusion U-Net.
 - On-Demand Language Model with Web Search: a 4-billion-parameter model (Qwen3-4B) served on demand with a live web-search tool.
-- Wingwall Neural World: real driving scenes rebuilt as navigable 3D worlds with Gaussian splatting, to test a self-driving planner. It reaches 21.5 dB PSNR on held-out views.
 
 ## Skills
 
