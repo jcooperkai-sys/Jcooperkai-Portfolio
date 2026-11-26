@@ -11,7 +11,6 @@ The current site is described in `README.md`; security boundaries are in `SECURI
 - Email: `jcooperkai@gmail.com`
 - X: `https://x.com/jcooperkai`
 - GitHub: `https://github.com/jcooperkai-sys`
-- Company: Webbify, `https://webbify.build/`
 
 ## Design decisions to keep
 

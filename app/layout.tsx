@@ -3,7 +3,7 @@ import "./globals.css";
 import "./stars.css";
 
 const DESCRIPTION =
-  "jcooperkai is Cooper (Jeffery Eckert), an agentic engineer in Florida, USA. Head of Product & Engineering at Hyperlapse and maintainer of Webbify. Projects, skills, resume and live GitHub activity.";
+  "jcooperkai is Cooper (Jeffery Eckert), an agentic engineer in Florida, USA. Head of Product & Engineering at Hyperlapse. Projects, skills, resume and live GitHub activity.";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://jcooperkai.com"),
@@ -76,7 +76,6 @@ const personJsonLd = JSON.stringify({
       homeLocation: { "@type": "Place", name: "Florida, USA" },
       worksFor: [
         { "@type": "Organization", name: "Hyperlapse", url: "https://hyperlapse.com/" },
-        { "@type": "Organization", name: "Webbify", url: "https://webbify.build/" },
       ],
       knowsAbout: [
         "Agentic software engineering",

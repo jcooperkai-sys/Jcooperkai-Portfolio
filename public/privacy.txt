@@ -29,7 +29,7 @@ and sell nothing.
 
 LINKS AND EMAIL
 
-Links to GitHub, X and Webbify follow those sites' own privacy policies. The
+Links to GitHub and X follow those sites' own privacy policies. The
 email link opens your mail app, and the message is then handled by your email
 provider and mine.
 
