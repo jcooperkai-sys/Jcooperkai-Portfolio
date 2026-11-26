@@ -18,8 +18,9 @@ const experience = [
 ];
 
 const projects = [
-  { name: "Sentinel", stack: "C++17, LibTorch, ncnn, PPO", text: "Home security vision system for a small mini PC and a PTZ camera. It detects and tracks people, vehicles and animals, zooms in to verify before alerting, and patrols like a guard. Training, export and runtime are all C++." },
-  { name: "Autonomous Drone Racing Policy", stack: "Reinforcement learning, simulation", text: "A neural policy that flies a racing drone through gates in simulation, lap after lap. In progress." },
+  { name: "Perimeter Net", stack: "C++17, LibTorch, ncnn, PPO", text: "Home security vision system for a small mini PC and a PTZ camera. It detects and tracks people, vehicles and animals, zooms in to verify before alerting, and patrols like a guard. Training, export and runtime are all C++." },
+  { name: "Autonomous Drone Racing Policy", stack: "Python, PyTorch, PPO, PyBullet", text: "A neural policy that races a drone through gates. A PPO teacher trains an onboard student that flies from a 64×48 depth image and noisy IMU state, with an analytic gap-centering module for tight openings. It commands thrust and body rates at 100 Hz." },
+  { name: "Drone Racing Gym", stack: "Python, PyTorch, PyBullet", text: "A GPU-vectorised quadrotor gate-racing simulator that runs thousands of drones in parallel at 400 Hz, with a PyBullet validation backend and an FPV and chase-camera renderer." },
   { name: "Rule-Based Motion Planner (RBMP)", stack: "Python, SUMO, OpenStreetMap", text: "Deterministic driving planner on real United States road geometry. It obeys a traffic-law rulebook with an explicit precedence order and ships with the benchmarks that measure it." },
   { name: "Scan Quality Map", stack: "Python, OME-Zarr", text: "Maps where Herculaneum scroll CT scans can still separate the papyrus layers and where haze hides them, with an atlas of all 22 First Letters scrolls. Built for the Vesuvius Challenge." },
   { name: "HisokaOS", stack: "C, x86 assembly, QEMU", text: "A 32-bit x86 operating system from scratch: its own kernel, paging, PCI, an RTL8139 network driver, a RAM filesystem and an interactive shell." },
