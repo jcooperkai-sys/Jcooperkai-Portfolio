@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-export const metadata: Metadata = { title: "Resume, Jeffery Eckert", alternates: { canonical: "/resume" } };
+export const metadata: Metadata = { title: "Resume, Cooper Eckert", alternates: { canonical: "/resume" } };
 
 const experience = [
   {
@@ -54,12 +54,12 @@ export default function Resume() {
             <h1 className="label">Resume</h1>
             <p className="doc-links">
               <a className="link-button" href="/">Back home</a>
-              <a className="link-button" href="/assets/Jeffery-Eckert-Resume.pdf" download>Download PDF</a>
+              <a className="link-button" href="/assets/Cooper-Eckert-Resume.pdf" download>Download PDF</a>
             </p>
           </div>
           <article className="paper">
             <header>
-              <p className="paper-name">Jeffery Eckert</p>
+              <p className="paper-name">Cooper Eckert</p>
               <p className="paper-contact">
                 Florida, USA · <a href="mailto:jcooperkai@gmail.com">jcooperkai@gmail.com</a> ·{" "}
                 <a href="https://jcooperkai.com/">jcooperkai.com</a> ·{" "}
