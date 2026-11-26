@@ -74,11 +74,11 @@ test("server-renders the portfolio", async () => {
   assert.match(html, /rel="icon" href="\/favicon\.ico\?v=2"/);
   assert.match(html, /rel="apple-touch-icon" href="\/assets\/apple-touch-icon\.png"/);
   assert.match(html, /<meta name="twitter:card" content="summary_large_image"/);
-  assert.match(html, /<meta name="description" content="jcooperkai is Cooper \(Jeffery Eckert\), an agentic engineer in Florida, USA\./);
+  assert.match(html, /<meta name="description" content="jcooperkai is Cooper Eckert, an agentic engineer in Florida, USA\./);
   assert.match(html, /<meta property="og:description" content="jcooperkai is Cooper/);
   const ld = JSON.parse(html.match(/<script type="application\/ld\+json">(.*?)<\/script>/s)[1]);
   const person = ld["@graph"].find((node) => node["@type"] === "Person");
-  assert.equal(person.name, "Jeffery Eckert");
+  assert.equal(person.name, "Cooper Eckert");
   assert.deepEqual(person.worksFor.map((org) => org.name), ["Hyperlapse"]);
   assert.equal(person.address.addressRegion, "FL");
   assert.ok(ld["@graph"].some((node) => node["@type"] === "ProfilePage"));
@@ -523,7 +523,7 @@ test("policy and resume pages render as pages", async () => {
   for (const [path, heading] of [
     ["/privacy", "Privacy and local files"],
     ["/security-policy", "Responsible disclosure"],
-    ["/resume", "Jeffery Eckert"],
+    ["/resume", "Cooper Eckert"],
   ]) {
     const response = await render(`http://localhost${path}`);
     assert.equal(response.status, 200, path);
@@ -531,7 +531,7 @@ test("policy and resume pages render as pages", async () => {
     assert.ok(html.includes(heading), `${path}: missing ${heading}`);
     assert.match(html, /href="\/"/, `${path}: no way back home`);
   }
-  await access(new URL("../public/assets/Jeffery-Eckert-Resume.pdf", import.meta.url));
+  await access(new URL("../public/assets/Cooper-Eckert-Resume.pdf", import.meta.url));
 });
 
 test("every gallery file named in the page exists", async () => {

@@ -3,7 +3,7 @@ import "./globals.css";
 import "./stars.css";
 
 const DESCRIPTION =
-  "jcooperkai is Cooper (Jeffery Eckert), an agentic engineer in Florida, USA. Head of Product & Engineering at Hyperlapse. Projects, skills, resume and live GitHub activity.";
+  "jcooperkai is Cooper Eckert, an agentic engineer in Florida, USA. Head of Product & Engineering at Hyperlapse. Projects, skills, resume and live GitHub activity.";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://jcooperkai.com"),
@@ -64,7 +64,7 @@ const personJsonLd = JSON.stringify({
     {
       "@type": "Person",
       "@id": "https://jcooperkai.com/#person",
-      name: "Jeffery Eckert",
+      name: "Cooper Eckert",
       alternateName: ["Cooper", "jcooperkai", "Cooper E."],
       description: DESCRIPTION,
       jobTitle: "Head of Product & Engineering",

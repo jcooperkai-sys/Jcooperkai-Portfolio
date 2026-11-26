@@ -27,7 +27,7 @@ npm test
 After editing `app/resume/page.tsx`, regenerate the PDF with the dev server running:
 
 ```bash
-"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --no-pdf-header-footer --print-to-pdf=public/assets/Jeffery-Eckert-Resume.pdf http://localhost:3001/resume
+"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --no-pdf-header-footer --print-to-pdf=public/assets/Cooper-Eckert-Resume.pdf http://localhost:3001/resume
 ```
 
 ## Site structure
